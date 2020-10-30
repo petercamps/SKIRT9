@@ -23,34 +23,44 @@
     TO DO: describe built-in and file input options. */
 class SpheroidalSilicateGrainComposition : public PolarizedSilicateGrainComposition
 {
+
+    ENUM_DEF(TableType, Builtin, OneTable, TwoTables)
+        ENUM_VAL(TableType, Builtin, "builtin resources")
+        ENUM_VAL(TableType, OneTable, "single custom table")
+        ENUM_VAL(TableType, TwoTables, "two custom tables with interpolation")
+    ENUM_END()
+
     ITEM_CONCRETE(SpheroidalSilicateGrainComposition, PolarizedSilicateGrainComposition,
                   "a spheroidal silicate dust grain composition with support for polarization")
         ATTRIBUTE_TYPE_DISPLAYED_IF(SpheroidalSilicateGrainComposition, "Spheroidal")
 
+        PROPERTY_ENUM(tableType, TableType, "the type of emission tables to use")
+        ATTRIBUTE_DEFAULT_VALUE(tableType, "Builtin")
+
+        PROPERTY_STRING(emissionTable, "the name of the file tabulating properties for polarized emission by "
+                                       "arbitrarily aligned spheroidal grains")
+        ATTRIBUTE_RELEVANT_IF(emissionTable, "tableTypeOneTable")
+
         PROPERTY_STRING(
             alignedEmissionTable,
             "the name of the file tabulating properties for polarized emission by perfectly aligned spheroidal grains")
-        ATTRIBUTE_DEFAULT_VALUE(alignedEmissionTable, "")
-        ATTRIBUTE_REQUIRED_IF(alignedEmissionTable, "false")
+        ATTRIBUTE_RELEVANT_IF(alignedEmissionTable, "tableTypeTwoTables")
 
         PROPERTY_STRING(
             nonAlignedEmissionTable,
             "the name of the file tabulating properties for polarized emission by non-aligned spheroidal grains")
-        ATTRIBUTE_DEFAULT_VALUE(nonAlignedEmissionTable, "")
-        ATTRIBUTE_REQUIRED_IF(nonAlignedEmissionTable, "false")
+        ATTRIBUTE_RELEVANT_IF(nonAlignedEmissionTable, "tableTypeTwoTables")
 
         PROPERTY_DOUBLE(alignmentFraction,
                         "the alignment fraction of the spheroidal grains with the local magnetic field")
         ATTRIBUTE_DEFAULT_VALUE(alignmentFraction, "1.")
         ATTRIBUTE_MIN_VALUE(alignmentFraction, "0.")
         ATTRIBUTE_MAX_VALUE(alignmentFraction, "1.")
+        ATTRIBUTE_RELEVANT_IF(alignmentFraction, "tableTypeBuiltin|tableTypeTwoTables")
 
     ITEM_END()
 
 public:
-    /** This function verifies that all attribute values have been appropriately set. */
-    void setupSelfBefore() override;
-
     /** This function returns a brief human-readable identifier for this grain composition. */
     string name() const override;
 
