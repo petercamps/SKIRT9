@@ -20,27 +20,26 @@ bool SpheroidalSilicateGrainComposition::resourcesForSpheroidalEmission(bool& re
                                                                         std::string& tableName2) const
 {
 
-    if (_tableType == TableType::Builtin)
+    switch (_tableType)
     {
-        throw FATALERROR("Spheroidal tables are not part of the SKIRT resources yet!");
-        resource = true;
-        interpol = _alignmentFraction;
-        tableName1 = "NAME OF PRECOMPUTED NON-ALIGNED TABLE";
-        tableName2 = "NAME OF PRECOMPUTED ALIGNED TABLE";
-    }
-    else if (_tableType == TableType::OneTable)
-    {
-        resource = false;
-        interpol = 0;
-        tableName1 = _emissionTable;
-        tableName2 = string();
-    }
-    else if (_tableType == TableType::TwoTables)
-    {
-        resource = false;
-        interpol = _alignmentFraction;
-        tableName1 = _nonAlignedEmissionTable;
-        tableName2 = _alignedEmissionTable;
+        case TableType::Builtin:
+            resource = true;
+            interpol = _alignmentFraction;
+            tableName1 = "SpheroidalSilicateNonAlignedEmissionOpticalProps";
+            tableName2 = "SpheroidalSilicateAlignedEmissionOpticalProps";
+            break;
+        case TableType::OneTable:
+            resource = false;
+            interpol = 0;
+            tableName1 = _emissionTable;
+            tableName2 = string();
+            break;
+        case TableType::TwoTables:
+            resource = false;
+            interpol = _alignmentFraction;
+            tableName1 = _nonAlignedEmissionTable;
+            tableName2 = _alignedEmissionTable;
+            break;
     }
 
     return true;
