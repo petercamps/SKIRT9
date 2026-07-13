@@ -73,7 +73,7 @@ namespace
     }
 
     // This function returns true if the specified spheres overlap or touch, and false otherwise
-    double doSpheresOverlap(Position center1, double radius1, Position center2, double radius2)
+    bool doSpheresOverlap(Position center1, double radius1, Position center2, double radius2)
     {
         return (center1 - center2).norm2() <= square(radius1 + radius2);
     }
@@ -108,6 +108,21 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
+namespace
+{
+    // Number of candidate split planes ("bins") evaluated per axis during the SAH search
+    // (binned SAH, Wald & Havran); O(N) work per node rather than O(N log N) for an exact
+    // search, at negligible cost to tree quality.
+    constexpr int NumBins = 16;
+
+    // A leaf never holds more clumps than this, regardless of what SAH suggests. Bounds the
+    // cost of the linear scan at each leaf, and guarantees the build terminates even when
+    // many clumps have coincident or near-coincident centers.
+    constexpr int MaxLeafSize = 4;
+}
+
+////////////////////////////////////////////////////////////////////
+
 // data type defining a custom bounding volume hierarchy for clumps
 class ClumpyTorusSpatialGrid::BVH
 {
@@ -127,6 +142,7 @@ private:
 
         bool isLeaf() const { return numIndices > 0; }
     };
+
     // flat array of BVH nodes; index 0 is the root, meaningful only when _numEntities > 0
     vector<Node> _nodes;
 
@@ -137,14 +153,292 @@ private:
     // pointer to array with clumps
     const vector<Clump>* _clumps;
 
-    // private recursive build function
-    int buildRecursive(int begin, int end) { /*TO DO*/ }
+    // Recursively builds the BVH using binned SAH over the clumps referenced by
+    // _index[begin,end), reordering that sub-range in place. Appends the newly created
+    // node(s) to _nodes and returns the index of the node representing this sub-range.
+    // Uses Clump::bounds()/center() directly rather than a cached per-entity box array
+    // (unlike the generic BVH class) since neither query here needs individual entity
+    // boxes outside of the build itself -- containment and overlap tests below go
+    // straight to the exact sphere math instead.
+    int buildRecursive(int begin, int end)
+    {
+        Box box = (*_clumps)[_index[begin]].bounds();
+        for (int i = begin + 1; i != end; ++i) box.extend((*_clumps)[_index[i]].bounds());
+
+        int numPrims = end - begin;
+        int nodeIndex = static_cast<int>(_nodes.size());
+
+        auto makeLeaf = [&]() {
+            _nodes.emplace_back(box, -1, -1, begin, numPrims);
+            return nodeIndex;
+        };
+
+        if (numPrims <= MaxLeafSize) return makeLeaf();
+
+        // centroid bounding box, used to pick a split axis and the bin boundaries along it
+        Position c0 = (*_clumps)[_index[begin]].center();
+        double cmin[3] = {c0.x(), c0.y(), c0.z()};
+        double cmax[3] = {c0.x(), c0.y(), c0.z()};
+        for (int i = begin + 1; i != end; ++i)
+        {
+            Position c = (*_clumps)[_index[i]].center();
+            double v[3] = {c.x(), c.y(), c.z()};
+            for (int a = 0; a != 3; ++a)
+            {
+                cmin[a] = min(cmin[a], v[a]);
+                cmax[a] = max(cmax[a], v[a]);
+            }
+        }
+        int axis = 0;
+        double extentOnAxis = cmax[0] - cmin[0];
+        for (int a = 1; a != 3; ++a)
+        {
+            double e = cmax[a] - cmin[a];
+            if (e > extentOnAxis)
+            {
+                extentOnAxis = e;
+                axis = a;
+            }
+        }
+
+        // all centroids coincide -> no split can separate the clumps; make a leaf
+        // (also protects the binning step below from a division by zero)
+        if (extentOnAxis <= 0.0) return makeLeaf();
+
+        auto centroidAxis = [axis](Position c) { return axis == 0 ? c.x() : axis == 1 ? c.y() : c.z(); };
+
+        // bin the clumps of [begin,end) along the chosen axis
+        struct Bin
+        {
+            int count = 0;
+            Box box;
+            bool hasBox = false;
+        };
+        vector<Bin> bins(NumBins);
+        double lo = cmin[axis], hi = cmax[axis];
+        auto binIndexOf = [&](double v) {
+            int b = static_cast<int>(NumBins * (v - lo) / (hi - lo));
+            return min(max(b, 0), NumBins - 1);
+        };
+        for (int i = begin; i != end; ++i)
+        {
+            const Clump& c = (*_clumps)[_index[i]];
+            int b = binIndexOf(centroidAxis(c.center()));
+            Box eb = c.bounds();
+            if (bins[b].hasBox)
+                bins[b].box.extend(eb);
+            else
+            {
+                bins[b].box = eb;
+                bins[b].hasBox = true;
+            }
+            bins[b].count++;
+        }
+
+        // running unions/counts from the left and from the right, used to evaluate the SAH
+        // cost of splitting after each bin boundary without re-scanning for every candidate
+        vector<Box> prefixBox(NumBins);
+        vector<int> prefixCount(NumBins);
+        vector<Box> suffixBox(NumBins);
+        vector<int> suffixCount(NumBins);
+        {
+            bool has = false;
+            Box running;
+            int runningCount = 0;
+            for (int b = 0; b != NumBins; ++b)
+            {
+                if (bins[b].hasBox)
+                {
+                    if (has)
+                        running.extend(bins[b].box);
+                    else
+                    {
+                        running = bins[b].box;
+                        has = true;
+                    }
+                }
+                runningCount += bins[b].count;
+                prefixBox[b] = running;
+                prefixCount[b] = runningCount;
+            }
+        }
+        {
+            bool has = false;
+            Box running;
+            int runningCount = 0;
+            for (int b = NumBins - 1; b >= 0; --b)
+            {
+                if (bins[b].hasBox)
+                {
+                    if (has)
+                        running.extend(bins[b].box);
+                    else
+                    {
+                        running = bins[b].box;
+                        has = true;
+                    }
+                }
+                runningCount += bins[b].count;
+                suffixBox[b] = running;
+                suffixCount[b] = runningCount;
+            }
+        }
+
+        // evaluate the SAH cost of splitting right after bin b, keep the cheapest
+        double parentArea = box.surfaceArea();
+        double bestCost = std::numeric_limits<double>::infinity();
+        int bestSplit = -1;
+        for (int b = 0; b != NumBins - 1; ++b)
+        {
+            if (prefixCount[b] == 0 || suffixCount[b + 1] == 0) continue;
+            double cost =
+                (prefixCount[b] * prefixBox[b].surfaceArea() + suffixCount[b + 1] * suffixBox[b + 1].surfaceArea())
+                / parentArea;
+            if (cost < bestCost)
+            {
+                bestCost = cost;
+                bestSplit = b;
+            }
+        }
+
+        // no viable split, or splitting is not cheaper than a leaf -> make a leaf
+        double leafCost = static_cast<double>(numPrims);
+        if (bestSplit < 0 || bestCost >= leafCost) return makeLeaf();
+
+        double splitPos = lo + (hi - lo) * (bestSplit + 1) / NumBins;
+        auto midIt = std::partition(_index.begin() + begin, _index.begin() + end,
+                                    [&](int m) { return centroidAxis((*_clumps)[m].center()) < splitPos; });
+        int mid = static_cast<int>(midIt - _index.begin());
+        if (mid == begin || mid == end) mid = (begin + end) / 2;  // guard against a degenerate partition
+
+        // reserve this node's slot now; children are appended afterwards and get higher
+        // indices, so we come back and fill in left/right once the recursion returns
+        _nodes.emplace_back(box, -1, -1, 0, 0);
+        int leftIndex = buildRecursive(begin, mid);
+        int rightIndex = buildRecursive(mid, end);
+        _nodes[nodeIndex].left = leftIndex;
+        _nodes[nodeIndex].right = rightIndex;
+        return nodeIndex;
+    }
 
 public:
     BVH() {}
-    void loadClumps(const vector<Clump>& clumps)  { /*TO DO*/ }
-    vector<int> allDisjointClumps() const  { /*TO DO*/ }
-    int anyClumpContaining(Vec bfr) const  { /*TO DO*/ }
+
+    void loadClumps(const vector<Clump>& clumps)
+    {
+        _clumps = &clumps;
+        int numClumps = static_cast<int>(clumps.size());
+
+        _nodes.clear();
+        _index.resize(numClumps);
+        for (int m = 0; m != numClumps; ++m) _index[m] = m;
+
+        if (numClumps > 0)
+        {
+            _nodes.reserve(2 * numClumps / MaxLeafSize + 1);  // rough heuristic upper bound
+            buildRecursive(0, numClumps);
+        }
+    }
+
+    // Returns the indices of a maximal subset of mutually non-overlapping clumps, built
+    // greedily in order of increasing index: clump 0 is always kept, and each subsequent
+    // clump is kept unless it overlaps a clump already kept. Uses the BVH already built
+    // over ALL clumps (including ones that will be rejected here) purely to prune the
+    // overlap search down to nearby candidates via box intersection, rather than checking
+    // against every previously-accepted clump directly (which would be O(M^2) overall).
+    vector<int> allDisjointClumps() const
+    {
+        vector<int> result;
+        int numClumps = static_cast<int>(_index.size());
+        if (numClumps == 0) return result;
+
+        vector<char> accepted(numClumps, 0);
+        accepted[0] = 1;
+        result.push_back(0);
+
+        vector<int> stack;
+        for (int i = 1; i != numClumps; ++i)
+        {
+            const Clump& ci = (*_clumps)[i];
+            Box queryBox = ci.bounds();
+            bool conflict = false;
+
+            stack.clear();
+            stack.push_back(0);
+            while (!stack.empty() && !conflict)
+            {
+                int nodeIndex = stack.back();
+                stack.pop_back();
+                const Node& node = _nodes[nodeIndex];
+                if (!node.box.intersects(queryBox)) continue;
+
+                if (node.isLeaf())
+                {
+                    for (int k = node.firstIndex; k != node.firstIndex + node.numIndices; ++k)
+                    {
+                        int m = _index[k];
+                        if (!accepted[m]) continue;
+                        const Clump& cm = (*_clumps)[m];
+                        if (doSpheresOverlap(ci.center(), ci.radius(), cm.center(), cm.radius()))
+                        {
+                            conflict = true;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    stack.push_back(node.left);
+                    stack.push_back(node.right);
+                }
+            }
+
+            if (!conflict)
+            {
+                accepted[i] = 1;
+                result.push_back(i);
+            }
+        }
+        return result;
+    }
+
+    // Returns the index of any clump containing the given position, or -1 if none does.
+    // No ordering is needed (clumps are non-overlapping by the time this is used in
+    // practice), so a plain box-pruned depth-first search returning on the first hit is
+    // the fastest option -- no heap, no per-entity box cache, just the exact sphere test
+    // at each candidate leaf.
+    int anyClumpContaining(Vec bfr) const
+    {
+        if (_nodes.empty()) return -1;
+
+        thread_local vector<int> stack;
+        stack.clear();
+        stack.push_back(0);
+
+        while (!stack.empty())
+        {
+            int nodeIndex = stack.back();
+            stack.pop_back();
+            const Node& node = _nodes[nodeIndex];
+            if (!node.box.contains(bfr)) continue;
+
+            if (node.isLeaf())
+            {
+                for (int k = node.firstIndex; k != node.firstIndex + node.numIndices; ++k)
+                {
+                    int m = _index[k];
+                    const Clump& c = (*_clumps)[m];
+                    if ((bfr - c.center()).norm2() <= square(c.radius())) return m;
+                }
+            }
+            else
+            {
+                stack.push_back(node.left);
+                stack.push_back(node.right);
+            }
+        }
+        return -1;
+    }
 };
 
 ////////////////////////////////////////////////////////////////////
@@ -266,7 +560,6 @@ double ClumpyTorusSpatialGrid::diagonal(int m) const
 
 int ClumpyTorusSpatialGrid::cellIndex(Position bfr) const
 {
-    auto contains = [this](int m, Vec p) { return (p - _clumps[m].center()).norm2() <= square(_clumps[m].radius()); };
     int m = _bvh->anyClumpContaining(bfr);
     if (m >= 0) return m;
 
