@@ -610,8 +610,9 @@ Position ClumpyTorusSpatialGrid::randomPositionInCell(int m) const
         while (true)
         {
             Position candidate = randomPositionInTorus(random(), _openingAngle, _minRadius, _maxRadius);
-            // reject the position if it is inside one of the clumps
-            if (cellIndex(candidate) == _numClumps) return candidate;
+            // accept the position if it is not inside one of the clumps
+            int m = _bvh->anyClumpContaining(candidate);
+            if (m < 0) return candidate;
         }
     }
     return Position();
