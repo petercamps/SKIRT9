@@ -13,6 +13,7 @@
 
 ////////////////////////////////////////////////////////////////////
 
+// Geometric helper functions
 namespace
 {
     // This function returns the square of a value
@@ -72,8 +73,14 @@ namespace
         return true;
     }
 
+    // This function returns true if the given position is inside the given sphere
+    bool isPositionInSphere(Vec p, Vec center, double r)
+    {
+        return (p - center).norm2() <= square(r);
+    }
+
     // This function returns true if the specified spheres overlap or touch, and false otherwise
-    bool doSpheresOverlap(Position center1, double radius1, Position center2, double radius2)
+    bool doSpheresOverlap(Vec center1, double radius1, Vec center2, double radius2)
     {
         return (center1 - center2).norm2() <= square(radius1 + radius2);
     }
@@ -123,18 +130,22 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
-// data type defining a custom bounding volume hierarchy for clumps
+// Private utility class for organizing spheres in a data structure that allows efficient queries.
+// The implementation employs a linearized Bounding Volume Hierarchy (BVH) that is bulk-loaded
+// using a surface area heuristic (SAH) for optimal balance. Construction of the data structure
+// runs in a single serial thread. Because the data structure does not change after initial
+// construction, all queries are thread-safe.
 class ClumpyTorusSpatialGrid::BVH
 {
 private:
     class Node
     {
     public:
-        Box box;         // union of the bounding boxes of all entities in this node's subtree
+        Box box;         // union of the bounding boxes of all clumps in this node's subtree
         int left;        // index into _nodes of the left child, or -1 if this is a leaf
         int right;       // index into _nodes of the right child, or -1 if this is a leaf
         int firstIndex;  // for a leaf: start of this leaf's range in _index
-        int numIndices;  // for a leaf: number of entities in this leaf; 0 for an interior node
+        int numIndices;  // for a leaf: number of clumps in this leaf; 0 for an interior node
 
         Node(const Box& box_, int left_, int right_, int firstIndex_, int numIndices_)
             : box(box_), left(left_), right(right_), firstIndex(firstIndex_), numIndices(numIndices_)
@@ -146,22 +157,20 @@ private:
     // flat array of BVH nodes; index 0 is the root, meaningful only when _numEntities > 0
     vector<Node> _nodes;
 
-    // entity indices, reordered during the build so that the entities of any single leaf
+    // entity indices, reordered during the build so that the clumps of any single leaf
     // occupy the contiguous range [firstIndex, firstIndex+numIndices) of this array
     vector<int> _index;
 
-    // pointer to array with clumps
+    // pointer to array with clumps, passed on when bulk-loading the BVH
     const vector<Clump>* _clumps;
 
     // Recursively builds the BVH using binned SAH over the clumps referenced by
     // _index[begin,end), reordering that sub-range in place. Appends the newly created
     // node(s) to _nodes and returns the index of the node representing this sub-range.
-    // Uses Clump::bounds()/center() directly rather than a cached per-entity box array
-    // (unlike the generic BVH class) since neither query here needs individual entity
-    // boxes outside of the build itself -- containment and overlap tests below go
-    // straight to the exact sphere math instead.
     int buildRecursive(int begin, int end)
     {
+        // aggregate bounding box for this sub-range: the union of the entity boxes referenced
+        // by _index[begin,end).
         Box box = (*_clumps)[_index[begin]].bounds();
         for (int i = begin + 1; i != end; ++i) box.extend((*_clumps)[_index[i]].bounds());
 
@@ -284,7 +293,9 @@ private:
             }
         }
 
-        // evaluate the SAH cost of splitting right after bin b, keep the cheapest
+        // evaluate the SAH cost of splitting right after bin b, for every interior bin boundary,
+        // and keep the cheapest; cost is expressed relative to the parent's surface area so it
+        // can be compared directly against the cost of not splitting at all
         double parentArea = box.surfaceArea();
         double bestCost = std::numeric_limits<double>::infinity();
         int bestSplit = -1;
@@ -322,8 +333,7 @@ private:
     }
 
 public:
-    BVH() {}
-
+    // Bulk-loads the specified clumps into the BVH
     void loadClumps(const vector<Clump>& clumps)
     {
         _clumps = &clumps;
@@ -335,7 +345,9 @@ public:
 
         if (numClumps > 0)
         {
-            _nodes.reserve(2 * numClumps / MaxLeafSize + 1);  // rough heuristic upper bound
+            // rough heuristic upper bound on the final node count (a binary tree with roughly
+            // numEntities/MaxLeafSize leaves has on the order of twice as many nodes total)
+            _nodes.reserve(2 * numClumps / MaxLeafSize + 1);
             buildRecursive(0, numClumps);
         }
     }
@@ -352,10 +364,13 @@ public:
         int numClumps = static_cast<int>(_index.size());
         if (numClumps == 0) return result;
 
+        // accepted[m] becomes true once entity m has been added to the result; a plain
+        // vector<char> is used instead of vector<bool> for fast, unambiguous random-access.
         vector<char> accepted(numClumps, 0);
         accepted[0] = 1;
         result.push_back(0);
 
+        // For each remaining clump, we need to know whether it overlaps ANY already-accepted clump
         vector<int> stack;
         for (int i = 1; i != numClumps; ++i)
         {
@@ -405,12 +420,12 @@ public:
     // Returns the index of any clump containing the given position, or -1 if none does.
     // No ordering is needed (clumps are non-overlapping by the time this is used in
     // practice), so a plain box-pruned depth-first search returning on the first hit is
-    // the fastest option -- no heap, no per-entity box cache, just the exact sphere test
-    // at each candidate leaf.
+    // the fastest option.
     int anyClumpContaining(Vec bfr) const
     {
         if (_nodes.empty()) return -1;
 
+        // use a thread_local stack to avoid allocations between consecutibe queries
         thread_local vector<int> stack;
         stack.clear();
         stack.push_back(0);
@@ -428,7 +443,7 @@ public:
                 {
                     int m = _index[k];
                     const Clump& c = (*_clumps)[m];
-                    if ((bfr - c.center()).norm2() <= square(c.radius())) return m;
+                    if (isPositionInSphere(bfr, c.center(), c.radius())) return m;
                 }
             }
             else

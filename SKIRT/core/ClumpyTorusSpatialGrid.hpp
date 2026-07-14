@@ -63,6 +63,13 @@
     the additional columns in the file are ignored. (If there are multiple ParticleMedium
     instances, the import files can be concatenated to define all spheres).
 
+    The ClumpyTorusSpatialGrid class removes spheres from the imported list that (1) do not fully
+    lie inside the torus or (2) overlap any of the previously read spheres. Note that the
+    ParticleMedium does NOT do this. This is not a problem for spheres outside the torus because
+    any mass in this region will be ignored when sampling the density of the spatial grid cells.
+    However, the mass of overlapping spheres (removed from the grid but not from the medium) will
+    be included when sampling the grid cell densities, most likely distorting the intended picture.
+
     */
 class ClumpyTorusSpatialGrid : public SpatialGrid
 {
@@ -102,27 +109,37 @@ public:
     /** This function returns the dimension of the grid, which is 3 for this class. */
     int dimension() const override;
 
-    /** This function returns the number of cells in the grid, which equals the numnber of
-        spherical clumps contained in the torus, plus one for the torus itself. */
+    /** This function returns the number of cells in the grid, which equals the number of spherical
+        clumps contained in the torus, plus one for the torus itself. */
     int numCells() const override;
 
-    /** This function returns the bounding box that encloses the grid. */
+    /** This function returns the bounding box that encloses the grid, i.e. the torus. */
     Box boundingBox() const override;
 
-    /** This function returns the volume of the cell with index \f$m\f$. */
+    /** This function returns the volume of the cell with index \f$m\f$. For a clump, this is the
+        spherical volume. For the torus, this is the volume of the torus minus the combined volume
+        of all clumps. */
     double volume(int m) const override;
 
-    /** This function returns the diagonal of the cell with index \f$m\f$. */
+    /** This function returns the diagonal of the cell with index \f$m\f$. For a clump, this is the
+        diagonal of the sphere. For the torus, the function use a simplistic estimate equal to
+        twice the distance between the outer and inner radii. */
     double diagonal(int m) const override;
 
     /** This function returns the index \f$m\f$ of the cell that contains the position
         \f${\bf{r}}\f$. */
     int cellIndex(Position bfr) const override;
 
-    /** This function returns the central location of the cell with index \f$m\f$. */
+    /** This function returns the central location of the cell with index \f$m\f$. For a clump,
+        this is the center of the sphere. For the torus, the function first tries a position on the
+        x-axis halfway between the inner and outer radii. If this position happens to be inside a
+        clump, a random position (in the torus but outside any clumps) is returned. */
     Position centralPositionInCell(int m) const override;
 
-    /** This function returns a random location from the cell with index \f$m\f$. */
+    /** This function returns a random location from the cell with index \f$m\f$. For a clump, a
+        random position within the sphere is generated through analytical inversion. For the torus,
+        first a random position within the torus is generated through analytical inversion, which
+        is then rejected iteratively as long as it happens to be inside one of the clumps. */
     Position randomPositionInCell(int m) const override;
 
     /** This function creates and hands over ownership of a path segment generator (an instance of
@@ -165,7 +182,7 @@ private:
     int _numClumps{0};      // the number of clumps AND the index of the cell representing the torus
     vector<Clump> _clumps;  // index on m, assuming m < _numClumps
 
-    // the custom bounding volume hierarchy that allows efficient querying
+    // the custom bounding volume hierarchy that allows efficient querying for our purposes
     class BVH;
     BVH* _bvh{nullptr};
 
