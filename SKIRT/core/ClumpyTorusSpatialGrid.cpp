@@ -10,6 +10,7 @@
 #include "Random.hpp"
 #include "SpatialGridPlotFile.hpp"
 #include "TextInFile.hpp"
+#include <array>
 
 ////////////////////////////////////////////////////////////////////
 
@@ -233,27 +234,34 @@ namespace
             double t;
             int tag;  // 0: crosses r1, 1: crosses r2, 2: crosses the wedge cone
         };
-        vector<Crossing> crossings;
+
+        // at most 2 roots per surface (r1 sphere, r2 sphere, wedge cone) -> 6 crossings max;
+        // a fixed-size array avoids a heap allocation in this per-ray hot path. 'count' tracks
+        // how many of the 6 slots are actually filled; only crossings[0,count) is ever read.
+        std::array<Crossing, 6> crossings;
+        int count = 0;
 
         double t0, t1;
         int n;
 
         n = intersectSphere(r0, k, Position(), r1, t0, t1);
-        if (n >= 1 && t0 > 0.) crossings.push_back({t0, 0});
-        if (n == 2 && t1 > 0.) crossings.push_back({t1, 0});
+        if (n >= 1 && t0 > 0.) crossings[count++] = {t0, 0};
+        if (n == 2 && t1 > 0.) crossings[count++] = {t1, 0};
 
         n = intersectSphere(r0, k, Position(), r2, t0, t1);
-        if (n >= 1 && t0 > 0.) crossings.push_back({t0, 1});
-        if (n == 2 && t1 > 0.) crossings.push_back({t1, 1});
+        if (n >= 1 && t0 > 0.) crossings[count++] = {t0, 1};
+        if (n == 2 && t1 > 0.) crossings[count++] = {t1, 1};
 
         n = intersectWedgeCone(r0, k, delta, t0, t1);
-        if (n >= 1 && t0 > 0.) crossings.push_back({t0, 2});
-        if (n == 2 && t1 > 0.) crossings.push_back({t1, 2});
+        if (n >= 1 && t0 > 0.) crossings[count++] = {t0, 2};
+        if (n == 2 && t1 > 0.) crossings[count++] = {t1, 2};
 
-        std::sort(crossings.begin(), crossings.end(), [](const Crossing& a, const Crossing& b) { return a.t < b.t; });
+        std::sort(crossings.begin(), crossings.begin() + count,
+                  [](const Crossing& a, const Crossing& b) { return a.t < b.t; });
 
-        for (const Crossing& x : crossings)
+        for (int i = 0; i != count; ++i)
         {
+            const Crossing& x = crossings[i];
             if (x.tag == 0)
                 outsideInner = !outsideInner;
             else if (x.tag == 1)
@@ -265,7 +273,6 @@ namespace
         }
         return 0.;
     }
-
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -627,14 +634,16 @@ public:
 
         double best = tMax;
         int bestIndex = -1;
-        double bestEntry = 0., bestExit = 0.;
+        double bestEntry = 0.;
+        double bestExit = 0.;
 
         struct StackEntry
         {
             int nodeIndex;
             double boxEntry;
         };
-        vector<StackEntry> stack;
+        thread_local vector<StackEntry> stack;  // thread_local to avoid reallocations on repeated use
+        stack.clear();
 
         double smin, smax;
         if (_nodes[0].box.intersects(r0, k, smin, smax) && smin < best) stack.push_back({0, smin});
