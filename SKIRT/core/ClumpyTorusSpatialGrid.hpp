@@ -64,11 +64,11 @@
     instances, the import files can be concatenated to define all spheres).
 
     The ClumpyTorusSpatialGrid class removes spheres from the imported list that (1) do not fully
-    lie inside the torus or (2) overlap any of the previously read spheres. Note that the
-    ParticleMedium does NOT do this. This is not a problem for spheres outside the torus because
-    any mass in this region will be ignored when sampling the density of the spatial grid cells.
-    However, the mass of overlapping spheres (removed from the grid but not from the medium) will
-    be included when sampling the grid cell densities, most likely distorting the intended picture.
+    lie inside the torus or (2) overlap any of the previously read spheres. Obviously, the
+    ParticleMedium does NOT do this. A a result, the mass of these spheres will be taken into
+    account while sampling the density of the spatial grid cells, most likely distorting the
+    intended values. It it therefore best to ensure that the imported spheres are disjoint and
+    inside the torus.
 
     */
 class ClumpyTorusSpatialGrid : public SpatialGrid
