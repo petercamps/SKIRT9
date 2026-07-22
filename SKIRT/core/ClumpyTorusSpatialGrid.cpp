@@ -17,6 +17,9 @@
 // Geometric helper functions
 namespace
 {
+    // small value
+    constexpr double EPS = 1e-12;
+
     // This function returns the square of a value
     double square(double v)
     {
@@ -119,10 +122,9 @@ namespace
     // ray direction makes exactly the wedge's half-angle with the equatorial plane.
     int solveQuadratic(double a, double b, double c, double& t0, double& t1)
     {
-        constexpr double eps = 1e-12;
-        if (std::fabs(a) < eps)
+        if (std::fabs(a) < EPS)
         {
-            if (std::fabs(b) < eps) return 0;
+            if (std::fabs(b) < EPS) return 0;
             t0 = -0.5 * c / b;
             return 1;
         }
@@ -765,6 +767,15 @@ void ClumpyTorusSpatialGrid::setupSelfBefore()
     log->info("  Rejected (outside domain): " + std::to_string(numOutside));
     log->info("  Rejected (overlapping):    " + std::to_string(numOverlapping));
     log->info("  Remaining in spatial grid: " + std::to_string(_numClumps));
+
+    // limit the epsilon we use for progressing the path to a value smaller than the hole and the smallest clump
+    double smallestRadius = _minRadius;
+    for (const Clump& clump : _clumps)
+    {
+        double r = clump.radius();
+        if (r < smallestRadius) smallestRadius = r;
+    }
+    _eps = std::min(EPS * _maxRadius, 0.1 * smallestRadius);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -912,8 +923,7 @@ public:
                 if (ds <= 0.) return false;  // never (re-)enters the domain -- generation is complete
 
                 setEmptySegment(ds);
-                propagater(ds);
-                propagateToNextAfter();
+                propagater(ds + _grid->_eps);
 
                 _cell = _grid->_bvh->anyClumpContaining(r());
                 if (_cell < 0) _cell = _grid->_numClumps;
@@ -932,8 +942,7 @@ public:
                     const Clump& c = _grid->_clumps[_cell];
                     ds = firstIntersectionSphere(r(), k(), c.center(), c.radius());
                     setSegment(_cell, ds);
-                    propagater(ds);
-                    propagateToNextAfter();
+                    propagater(ds + _grid->_eps);
 
                     // clumps are mutually disjoint and don't touch the domain boundary, so
                     // exiting one always lands unambiguously back in the background cell
@@ -953,8 +962,7 @@ public:
 
                     ds = (m >= 0) ? tEntry : dsDomain;
                     setSegment(_grid->_numClumps, ds);
-                    propagater(ds);
-                    propagateToNextAfter();
+                    propagater(ds + _grid->_eps);
 
                     if (m >= 0)
                         _cell = m;

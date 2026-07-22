@@ -186,6 +186,9 @@ private:
     class BVH;
     BVH* _bvh{nullptr};
 
+    // small value used to progress a path
+    double _eps{0.};
+
     // allow our path segment generator to access our private data members
     class MySegmentGenerator;
     friend class MySegmentGenerator;
