@@ -16,13 +16,17 @@
     \\ x_2 &= -b + \sqrt{b^2-c} \\ s_1s_2&=c.\end{aligned}\f] To avoid loss of significance in case
     the solutions have a different order of magnitude, the functions in this class use the first
     and third equations if \f$b>0\f$ and the second and third equations otherwise. */
-class Quadratic
+class Quadratic final
 {
+private:
+    constexpr static double EPS = 1e-12;
+
 public:
     /** This function determines the solutions of \f$x^2 + 2bx + c = 0\f$. If there are two
-        distinct real solutions, they are stored in the arguments x1 and x2. Otherwise, i.e. if
-        there are no solutions or there is just one real solution, x1 and x2 remain unchanged. */
-    static void distinctSolutions(double b, double c, double& x1, double& x2)
+        distinct real solutions, they are stored in the arguments x1 and x2, and the function
+        returns 2. Otherwise, i.e. if there are no real solutions or there is just one real
+        solution, x1 and x2 remain unchanged, and the function returns 0. */
+    static int distinctSolutions(double b, double c, double& x1, double& x2)
     {
         if (b * b > c)  // if discriminant is strictly positive, there are two distinct real solutions
         {
@@ -36,7 +40,28 @@ public:
                 x2 = -b + sqrt(b * b - c);
                 x1 = c / x2;
             }
+            return 2;
         }
+        return 0;
+    }
+
+    /** This function determines the solutions of \f$ax^2 + 2bx + c = 0\f$. If there are two
+        distinct real solutions, they are stored in the arguments x1 and x2, and the function
+        returns 2. If the equation degenerates to a linear equation with a single finite solution,
+        this solution is stored in the argument x1. In that case, x2 remains unchanged and the
+        function returns 1. Otherwise, i.e. if there are no real solutions or the non-generate
+        quadratic equation has two identical solutions, x1 and x2 remain unchanged, and the
+        function returns 0. */
+    static int distinctSolutions(double a, double b, double c, double& x1, double& x2)
+    {
+        if (std::abs(a) > EPS) return distinctSolutions(b / a, c / a, x1, x2);
+        double x = -0.5 * c / b;
+        if (std::isfinite(x))
+        {
+            x1 = x;
+            return 1;
+        }
+        return 0;
     }
 
     /** This function returns the smallest positive solution of \f$x^2 + 2bx + c = 0\f$, or zero
@@ -64,6 +89,17 @@ public:
                 return x2;
             }
         }
+        return 0.;
+    }
+
+    /** This function returns the smallest positive solution of \f$ax^2 + 2bx + c = 0\f$, or zero
+        if there is no positive solution. If the equation degenerates to a linear equation, this
+        equation is solved instead. */
+    static double smallestPositiveSolution(double a, double b, double c)
+    {
+        if (std::abs(a) > EPS) return smallestPositiveSolution(b / a, c / a);
+        double x = -0.5 * c / b;
+        if (std::isfinite(x) && x > 0.) return x;
         return 0.;
     }
 };

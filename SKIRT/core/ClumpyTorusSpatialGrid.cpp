@@ -7,6 +7,7 @@
 #include "FatalError.hpp"
 #include "Log.hpp"
 #include "PathSegmentGenerator.hpp"
+#include "Quadratic.hpp"
 #include "Random.hpp"
 #include "SpatialGridPlotFile.hpp"
 #include "TextInFile.hpp"
@@ -116,100 +117,52 @@ namespace
         return Position(r, theta, phi, Position::CoordinateSystem::SPHERICAL);
     }
 
-    // Solves a*t^2 + 2*b*t + c = 0 for t, returning the number of distinct real roots found
-    // (0, 1, or 2) and storing them in t0 <= t1. Falls back to the linear equation 2*b*t + c = 0
-    // when a is (numerically) zero, which happens for the wedge-cone quadratic below whenever the
-    // ray direction makes exactly the wedge's half-angle with the equatorial plane.
-    int solveQuadratic(double a, double b, double c, double& t0, double& t1)
-    {
-        if (std::fabs(a) < EPS)
-        {
-            if (std::fabs(b) < EPS) return 0;
-            t0 = -0.5 * c / b;
-            return 1;
-        }
-        double disc = b * b - a * c;
-        if (disc < 0.) return 0;
-        double sq = std::sqrt(disc);
-        double r0 = (-b - sq) / a;
-        double r1 = (-b + sq) / a;
-        if (r0 <= r1)
-        {
-            t0 = r0;
-            t1 = r1;
-        }
-        else
-        {
-            t0 = r1;
-            t1 = r0;
-        }
-        return 2;
-    }
-
     // Computes the intersection(s) of the ray (r0, k) -- k assumed a unit vector -- with the
-    // sphere of given center and radius. Returns the number of distinct real roots (0, 1, or 2),
-    // stored in t0 <= t1.
-    int intersectSphere(Position r0, Direction k, Position center, double radius, double& t0, double& t1)
+    // sphere of given center and radius. Returns the number of distinct real roots (0 or 2)
+    // stored in s1 and s2. The equation is already in the monic form (the a coefficient is
+    // dot(k,k)=1 for a unit direction), so there's no degenerate linear case here.
+    int intersectSphere(Position r0, Direction k, Position center, double radius, double& s1, double& s2)
     {
         Vec d = r0 - center;
-        return solveQuadratic(1., Vec::dot(d, k), d.norm2() - square(radius), t0, t1);
-    }
-
-    // Computes the intersection(s) of the ray (r0, k) with the double cone that bounds the torus's
-    // angular wedge, i.e. the surface |z| = s*tan(delta) where s is the cylindrical radius,
-    // expressed in the numerically friendlier factored form
-    //     z^2*cos^2(delta) - (x^2+y^2)*sin^2(delta) = 0
-    // which avoids dividing by s (a problem on the z-axis) or by cos(delta) (a problem as delta
-    // approaches 90 deg). Returns the number of distinct real roots (0, 1, or 2), in t0 <= t1.
-    int intersectWedgeCone(Position r0, Direction k, double delta, double& t0, double& t1)
-    {
-        double c2 = square(std::cos(delta));
-        double s2 = square(std::sin(delta));
-        double a = c2 * square(k.z()) - s2 * (square(k.x()) + square(k.y()));
-        double b = c2 * r0.z() * k.z() - s2 * (r0.x() * k.x() + r0.y() * k.y());
-        double cc = c2 * square(r0.z()) - s2 * (square(r0.x()) + square(r0.y()));
-        return solveQuadratic(a, b, cc, t0, t1);
+        double b = Vec::dot(d, k);
+        double c = d.norm2() - square(radius);
+        return Quadratic::distinctSolutions(b, c, s1, s2);
     }
 
     // Returns the smallest strictly positive root of the ray-sphere intersection, or 0 if there is
     // none (either no real intersection, or both intersections lie behind the ray's origin).
     double firstIntersectionSphere(Position r0, Direction k, Position center, double radius)
     {
-        double t0, t1;
-        int n = intersectSphere(r0, k, center, radius, t0, t1);
-        if (n >= 1 && t0 > 0.) return t0;
-        if (n == 2 && t1 > 0.) return t1;
-        return 0.;
+        Vec d = r0 - center;
+        return Quadratic::smallestPositiveSolution(Vec::dot(d, k), d.norm2() - square(radius));
+    }
+
+    // Computes the intersection(s) of the ray (r0, k) with the double cone that bounds the torus's
+    // angular wedge, i.e. the surface |z| = R*tan(delta) where R is the cylindrical radius,
+    // expressed in the numerically friendlier factored form
+    //     z^2*cos^2(delta) - (x^2+y^2)*sin^2(delta) = 0
+    // which avoids dividing by R (a problem on the z-axis) or by cos(delta) (a problem as delta
+    // approaches 90 deg). Returns the number of distinct real roots (0, 1, or 2) stored in s1 and s2.
+    int intersectWedgeCone(Position r0, Direction k, double delta, double& s1, double& s2)
+    {
+        double cos2 = square(std::cos(delta));
+        double sin2 = square(std::sin(delta));
+        double a = cos2 * square(k.z()) - sin2 * (square(k.x()) + square(k.y()));
+        double b = cos2 * r0.z() * k.z() - sin2 * (r0.x() * k.x() + r0.y() * k.y());
+        double c = cos2 * square(r0.z()) - sin2 * (square(r0.x()) + square(r0.y()));
+        return Quadratic::distinctSolutions(a, b, c, s1, s2);
     }
 
     // Returns the smallest strictly positive root of the ray-wedge-cone intersection, or 0 if
     // there is none.
     double firstIntersectionWedgeCone(Position r0, Direction k, double delta)
     {
-        double t0, t1;
-        int n = intersectWedgeCone(r0, k, delta, t0, t1);
-        if (n >= 1 && t0 > 0.) return t0;
-        if (n == 2 && t1 > 0.) return t1;
-        return 0.;
-    }
-
-    // Given a position known to be INSIDE the torus domain, returns the distance to the nearest
-    // domain-boundary crossing ahead along the ray (r0, k). Because all three domain conditions
-    // (outside r1, inside r2, inside the wedge) currently hold, crossing ANY one of the three
-    // boundary surfaces first is necessarily the moment the domain is exited -- so this is simply
-    // the smallest of the three nearest forward crossings. Returns 0 only in the (should-not-occur
-    // for a bounded domain) case that no exit is found, handled defensively.
-    double distanceToDomainExit(Position r0, Direction k, double delta, double r1, double r2)
-    {
-        double best = DBL_MAX;
-        double t;
-        t = firstIntersectionSphere(r0, k, Position(), r1);
-        if (t > 0. && t < best) best = t;
-        t = firstIntersectionSphere(r0, k, Position(), r2);
-        if (t > 0. && t < best) best = t;
-        t = firstIntersectionWedgeCone(r0, k, delta);
-        if (t > 0. && t < best) best = t;
-        return best < DBL_MAX ? best : 0.;
+        double cos2 = square(std::cos(delta));
+        double sin2 = square(std::sin(delta));
+        double a = cos2 * square(k.z()) - sin2 * (square(k.x()) + square(k.y()));
+        double b = cos2 * r0.z() * k.z() - sin2 * (r0.x() * k.x() + r0.y() * k.y());
+        double c = cos2 * square(r0.z()) - sin2 * (square(r0.x()) + square(r0.y()));
+        return Quadratic::smallestPositiveSolution(a, b, c);
     }
 
     // Given a position possibly OUTSIDE the torus domain, returns the distance to the first
@@ -228,12 +181,12 @@ namespace
         double rho2 = r0.norm2();
         bool outsideInner = rho2 > square(r1);
         bool insideOuter = rho2 < square(r2);
-        double sxy2 = square(r0.x()) + square(r0.y());
-        bool insideWedge = square(r0.z()) < sxy2 * square(std::tan(delta));
+        double xy2 = square(r0.x()) + square(r0.y());
+        bool insideWedge = square(r0.z()) < xy2 * square(std::tan(delta));
 
         struct Crossing
         {
-            double t;
+            double s;
             int tag;  // 0: crosses r1, 1: crosses r2, 2: crosses the wedge cone
         };
 
@@ -243,37 +196,56 @@ namespace
         std::array<Crossing, 6> crossings;
         int count = 0;
 
-        double t0, t1;
+        double s1, s2;
         int n;
 
-        n = intersectSphere(r0, k, Position(), r1, t0, t1);
-        if (n >= 1 && t0 > 0.) crossings[count++] = {t0, 0};
-        if (n == 2 && t1 > 0.) crossings[count++] = {t1, 0};
+        n = intersectSphere(r0, k, Position(), r1, s1, s2);
+        if (n >= 1 && s1 > 0.) crossings[count++] = {s1, 0};
+        if (n == 2 && s2 > 0.) crossings[count++] = {s2, 0};
 
-        n = intersectSphere(r0, k, Position(), r2, t0, t1);
-        if (n >= 1 && t0 > 0.) crossings[count++] = {t0, 1};
-        if (n == 2 && t1 > 0.) crossings[count++] = {t1, 1};
+        n = intersectSphere(r0, k, Position(), r2, s1, s2);
+        if (n >= 1 && s1 > 0.) crossings[count++] = {s1, 1};
+        if (n == 2 && s2 > 0.) crossings[count++] = {s2, 1};
 
-        n = intersectWedgeCone(r0, k, delta, t0, t1);
-        if (n >= 1 && t0 > 0.) crossings[count++] = {t0, 2};
-        if (n == 2 && t1 > 0.) crossings[count++] = {t1, 2};
+        n = intersectWedgeCone(r0, k, delta, s1, s2);
+        if (n >= 1 && s1 > 0.) crossings[count++] = {s1, 2};
+        if (n == 2 && s2 > 0.) crossings[count++] = {s2, 2};
 
         std::sort(crossings.begin(), crossings.begin() + count,
-                  [](const Crossing& a, const Crossing& b) { return a.t < b.t; });
+                  [](const Crossing& a, const Crossing& b) { return a.s < b.s; });
 
         for (int i = 0; i != count; ++i)
         {
-            const Crossing& x = crossings[i];
-            if (x.tag == 0)
+            const Crossing& c = crossings[i];
+            if (c.tag == 0)
                 outsideInner = !outsideInner;
-            else if (x.tag == 1)
+            else if (c.tag == 1)
                 insideOuter = !insideOuter;
             else
                 insideWedge = !insideWedge;
 
-            if (outsideInner && insideOuter && insideWedge) return x.t;
+            if (outsideInner && insideOuter && insideWedge) return c.s;
         }
         return 0.;
+    }
+
+    // Given a position known to be INSIDE the torus domain, returns the distance to the nearest
+    // domain-boundary crossing ahead along the ray (r0, k). Because all three domain conditions
+    // (outside r1, inside r2, inside the wedge) currently hold, crossing ANY one of the three
+    // boundary surfaces first is necessarily the moment the domain is exited -- so this is simply
+    // the smallest of the three nearest forward crossings. Returns 0 only in the (should-not-occur
+    // for a bounded domain) case that no exit is found, handled defensively.
+    double firstDomainExit(Position r0, Direction k, double delta, double r1, double r2)
+    {
+        double sbest = DBL_MAX;
+        double s;
+        s = firstIntersectionSphere(r0, k, Position(), r1);
+        if (s > 0. && s < sbest) sbest = s;
+        s = firstIntersectionSphere(r0, k, Position(), r2);
+        if (s > 0. && s < sbest) sbest = s;
+        s = firstIntersectionWedgeCone(r0, k, delta);
+        if (s > 0. && s < sbest) sbest = s;
+        return sbest < DBL_MAX ? sbest : 0.;
     }
 }
 
@@ -620,8 +592,8 @@ public:
     }
 
     // Returns the index of the nearest clump intersected by the ray (r0,k) at a forward
-    // distance strictly between 0 and tMax, or -1 if there is none. On success, tEntry and
-    // tExit are set to the entry and exit distances of that specific clump.
+    // distance strictly between 0 and sBest, or -1 if there is none. On success, sBest is
+    // set to the entry distance of that specific clump.
     //
     // This is a nearest-first, depth-first traversal with branch-and-bound pruning: a node's
     // ray-box entry distance (from Box::intersects) is a valid lower bound on the entry
@@ -630,14 +602,11 @@ public:
     // child first tends to tighten that bound quickly. Unlike an ordered multi-hit iterator,
     // this only ever needs the single nearest hit, since the segment generator re-queries
     // fresh from its new position after every segment.
-    int nearestClumpAlongRay(Position r0, Direction k, double tMax, double& tEntry, double& tExit) const
+    int nearestClumpAlongRay(Position r0, Direction k, double& sBest) const
     {
         if (_nodes.empty()) return -1;
 
-        double best = tMax;
         int bestIndex = -1;
-        double bestEntry = 0.;
-        double bestExit = 0.;
 
         struct StackEntry
         {
@@ -648,13 +617,13 @@ public:
         stack.clear();
 
         double smin, smax;
-        if (_nodes[0].box.intersects(r0, k, smin, smax) && smin < best) stack.push_back({0, smin});
+        if (_nodes[0].box.intersects(r0, k, smin, smax) && smin < sBest) stack.push_back({0, smin});
 
         while (!stack.empty())
         {
             StackEntry top = stack.back();
             stack.pop_back();
-            if (top.boxEntry >= best) continue;  // superseded by a tighter bound found meanwhile
+            if (top.boxEntry >= sBest) continue;  // superseded by a tighter bound found meanwhile
 
             const Node& node = _nodes[top.nodeIndex];
             if (node.isLeaf())
@@ -663,22 +632,19 @@ public:
                 {
                     int m = _index[i];
                     const Clump& c = (*_clumps)[m];
-                    double t0, t1;
-                    int n = intersectSphere(r0, k, c.center(), c.radius(), t0, t1);
-                    if (n >= 1 && t0 > 0. && t0 < best)
+                    double s0 = firstIntersectionSphere(r0, k, c.center(), c.radius());
+                    if (s0 > 0. && s0 < sBest)
                     {
-                        best = t0;
+                        sBest = s0;
                         bestIndex = m;
-                        bestEntry = t0;
-                        bestExit = (n == 2) ? t1 : t0;
                     }
                 }
             }
             else
             {
                 double sminL, smaxL, sminR, smaxR;
-                bool hitL = _nodes[node.left].box.intersects(r0, k, sminL, smaxL) && sminL < best;
-                bool hitR = _nodes[node.right].box.intersects(r0, k, sminR, smaxR) && sminR < best;
+                bool hitL = _nodes[node.left].box.intersects(r0, k, sminL, smaxL) && sminL < sBest;
+                bool hitR = _nodes[node.right].box.intersects(r0, k, sminR, smaxR) && sminR < sBest;
 
                 // push the farther child first so the nearer one is popped (and processed) first
                 if (hitL && hitR)
@@ -701,8 +667,6 @@ public:
             }
         }
 
-        tEntry = bestEntry;
-        tExit = bestExit;
         return bestIndex;
     }
 };
@@ -955,12 +919,8 @@ public:
                     // the BVH search by the domain-exit distance both prunes the search and
                     // means "no clump found" and "found beyond the domain boundary" collapse
                     // into the same outcome
-                    double dsDomain =
-                        distanceToDomainExit(r(), k(), _grid->_openingAngle, _grid->_minRadius, _grid->_maxRadius);
-                    double tEntry, tExit;
-                    int m = _grid->_bvh->nearestClumpAlongRay(r(), k(), dsDomain, tEntry, tExit);
-
-                    ds = (m >= 0) ? tEntry : dsDomain;
+                    double ds = firstDomainExit(r(), k(), _grid->_openingAngle, _grid->_minRadius, _grid->_maxRadius);
+                    int m = _grid->_bvh->nearestClumpAlongRay(r(), k(), ds);
                     setSegment(_grid->_numClumps, ds);
                     propagater(ds + _grid->_eps);
 
