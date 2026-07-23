@@ -116,15 +116,6 @@ Position Sphere2DSpatialGrid::randomPositionInCell(int m) const
 
 namespace
 {
-    // returns the smallest positive solution of a*x^2 + 2*b*x + c = 0, or 0 if there is no positive solution
-    double smallestPositiveSolution(double a, double b, double c)
-    {
-        if (fabs(a) > 1e-9) return Quadratic::smallestPositiveSolution(b / a, c / a);
-        double x = -0.5 * c / b;
-        if (x > 0.) return x;
-        return 0.;
-    }
-
     // returns the distance to the first intersection between the ray (bfr,bfk) and the sphere with given radius,
     // or 0 if there is no intersection
     double firstIntersectionSphere(Vec bfr, Vec bfk, double r)
@@ -136,8 +127,9 @@ namespace
     // or 0 if there is no intersection (the degenarate cone with zero cosine is treated separately)
     double firstIntersectionCone(Vec bfr, Vec bfk, double c)
     {
-        return c ? smallestPositiveSolution(c * c - bfk.z() * bfk.z(), c * c * Vec::dot(bfr, bfk) - bfr.z() * bfk.z(),
-                                            c * c * bfr.norm2() - bfr.z() * bfr.z())
+        return c ? Quadratic::smallestPositiveSolution(c * c - bfk.z() * bfk.z(),
+                                                       c * c * Vec::dot(bfr, bfk) - bfr.z() * bfk.z(),
+                                                       c * c * bfr.norm2() - bfr.z() * bfr.z())
                  : -bfr.z() / bfk.z();  // degenerate cone identical to xy-plane
     }
 }

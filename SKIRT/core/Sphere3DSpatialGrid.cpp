@@ -197,23 +197,14 @@ public:
         return Quadratic::smallestPositiveSolution(Vec::dot(r(), k()), r().norm2() - _grid->_rv[i] * _grid->_rv[i]);
     }
 
-    // returns the smallest positive solution of a*x^2 + 2*b*x + c = 0, or 0 if there is no positive solution
-    static double smallestPositiveSolution(double a, double b, double c)
-    {
-        if (abs(a) > EPS) return Quadratic::smallestPositiveSolution(b / a, c / a);
-        double x = -0.5 * c / b;
-        if (x > 0.) return x;
-        return 0.;
-    }
-
     // returns the distance to the first intersection (or 0 if there is no intersection)
     // between the current path and the cone with given bin index
     // (the degenarate cone with zero cosine is treated separately)
     double firstIntersectionCone(int j)
     {
         double c = _grid->_cv[j];
-        return c ? smallestPositiveSolution(c * c - kz() * kz(), c * c * Vec::dot(r(), k()) - rz() * kz(),
-                                            c * c * r().norm2() - rz() * rz())
+        return c ? Quadratic::smallestPositiveSolution(c * c - kz() * kz(), c * c * Vec::dot(r(), k()) - rz() * kz(),
+                                                       c * c * r().norm2() - rz() * rz())
                  : -rz() / kz();  // degenerate cone identical to xy-plane
     }
 
