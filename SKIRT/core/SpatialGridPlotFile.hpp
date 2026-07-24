@@ -23,16 +23,16 @@
 class SpatialGridPlotFile : TextOutFile
 {
     // ----------- Construction ----------
-public:
 
+public:
     /** The constructor invokes the base class constructor to create an output file with the
         specified name and sets the appropriate precision for the numerical values in the text
         file. */
     SpatialGridPlotFile(const SimulationItem* item, string filename);
 
     // ----------- 2D functions ----------
-public:
 
+public:
     /** This function outputs the specified 2D line segment. */
     void writeLine(double beg1, double beg2, double end1, double end2);
 
@@ -52,6 +52,7 @@ public:
     void writeArc(double radius, double begAngle, double endAngle);
 
     // ----------- 3D functions ----------
+
 public:
     /** This function outputs the specified 3D line segment. */
     void writeLine(double x1, double y1, double z1, double x2, double y2, double z2);

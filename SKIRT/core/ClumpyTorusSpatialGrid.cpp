@@ -669,6 +669,45 @@ public:
 
         return bestIndex;
     }
+
+    // Returns the indices of the clumps whose bounding box may cross the coordinate plane
+    // where coordinate 'axis' (0=x, 1=y, 2=z) equals 'value'. Runs once at plotting time, so
+    // a plain box-pruned traversal (no thread_local reuse) is fine. The result can include a
+    // few clumps whose bounding box straddles the plane but whose actual sphere doesn't quite
+    // reach it; the caller is expected to apply the exact test itself, which it needs anyway
+    // to get the intersection circle's radius.
+    vector<int> clumpsCrossingPlane(int axis, double value) const
+    {
+        vector<int> result;
+        if (_nodes.empty()) return result;
+
+        auto straddles = [axis, value](const Box& b) {
+            double lo = axis == 0 ? b.xmin() : axis == 1 ? b.ymin() : b.zmin();
+            double hi = axis == 0 ? b.xmax() : axis == 1 ? b.ymax() : b.zmax();
+            return lo <= value && value <= hi;
+        };
+
+        vector<int> stack;
+        stack.push_back(0);
+        while (!stack.empty())
+        {
+            int nodeIndex = stack.back();
+            stack.pop_back();
+            const Node& node = _nodes[nodeIndex];
+            if (!straddles(node.box)) continue;
+
+            if (node.isLeaf())
+            {
+                for (int k = node.firstIndex; k != node.firstIndex + node.numIndices; ++k) result.push_back(_index[k]);
+            }
+            else
+            {
+                stack.push_back(node.left);
+                stack.push_back(node.right);
+            }
+        }
+        return result;
+    }
 };
 
 ////////////////////////////////////////////////////////////////////
@@ -964,6 +1003,20 @@ namespace
         outfile->writeLine(r1 * cosdelta, -r1 * sindelta, r2 * cosdelta, -r2 * sindelta);
         outfile->writeLine(-r1 * cosdelta, r1 * sindelta, -r2 * cosdelta, r2 * sindelta);
     }
+
+    // Determines the circle formed by intersecting a sphere (given its radius and its center's
+    // coordinate along the axis perpendicular to the plane) with a coordinate plane through the
+    // origin. Returns true and sets circleRadius if the sphere reaches the plane; returns false
+    // (leaving circleRadius unchanged) if it doesn't. The circle's center in the plane is simply
+    // the sphere center's own two in-plane coordinates, so the caller already has those and
+    // doesn't need them returned here.
+    bool sphereIntersectsPlane(double sphereRadius, double outOfPlaneCenterCoord, double& circleRadius)
+    {
+        double r2 = square(sphereRadius) - square(outOfPlaneCenterCoord);
+        if (r2 <= 0.) return false;
+        circleRadius = std::sqrt(r2);
+        return true;
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -975,8 +1028,13 @@ void ClumpyTorusSpatialGrid::write_xy(SpatialGridPlotFile* outfile) const
     outfile->writeCircle(_maxRadius);
 
     // spherical clumps
-    // TO DO (next line is for illustration only)
-    outfile->writeCircle(_maxRadius / 2., 3. * _minRadius, 2. * _minRadius);
+    for (int m : _bvh->clumpsCrossingPlane(2, 0.))
+    {
+        const Clump& c = _clumps[m];
+        double circleRadius;
+        if (sphereIntersectsPlane(c.radius(), c.center().z(), circleRadius))
+            outfile->writeCircle(c.center().x(), c.center().y(), circleRadius);
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -987,7 +1045,13 @@ void ClumpyTorusSpatialGrid::write_xz(SpatialGridPlotFile* outfile) const
     writeMeridionalView(outfile, _openingAngle, _minRadius, _maxRadius);
 
     // spherical clumps
-    // TO DO
+    for (int m : _bvh->clumpsCrossingPlane(1, 0.))
+    {
+        const Clump& c = _clumps[m];
+        double circleRadius;
+        if (sphereIntersectsPlane(c.radius(), c.center().y(), circleRadius))
+            outfile->writeCircle(c.center().x(), c.center().z(), circleRadius);
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -998,7 +1062,13 @@ void ClumpyTorusSpatialGrid::write_yz(SpatialGridPlotFile* outfile) const
     writeMeridionalView(outfile, _openingAngle, _minRadius, _maxRadius);
 
     // spherical clumps
-    // TO DO
+    for (int m : _bvh->clumpsCrossingPlane(0, 0.))
+    {
+        const Clump& c = _clumps[m];
+        double circleRadius;
+        if (sphereIntersectsPlane(c.radius(), c.center().x(), circleRadius))
+            outfile->writeCircle(c.center().y(), c.center().z(), circleRadius);
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
