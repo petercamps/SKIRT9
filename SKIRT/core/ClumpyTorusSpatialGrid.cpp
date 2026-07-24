@@ -181,8 +181,7 @@ namespace
         double rho2 = r0.norm2();
         bool outsideInner = rho2 > square(r1);
         bool insideOuter = rho2 < square(r2);
-        double xy2 = square(r0.x()) + square(r0.y());
-        bool insideWedge = square(r0.z()) < xy2 * square(std::tan(delta));
+        bool insideWedge = rho2 == 0. || square(r0.z()) < (square(r0.x()) + square(r0.y())) * square(std::tan(delta));
 
         struct Crossing
         {
