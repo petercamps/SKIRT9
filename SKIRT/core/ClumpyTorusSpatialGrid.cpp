@@ -945,29 +945,67 @@ std::unique_ptr<PathSegmentGenerator> ClumpyTorusSpatialGrid::createPathSegmentG
 
 //////////////////////////////////////////////////////////////////////
 
+namespace
+{
+    // writes the intersection of the torus boundaries with a meridional plane
+    void writeMeridionalView(SpatialGridPlotFile* outfile, double delta, double r1, double r2)
+    {
+        // inner and outer sphere
+        outfile->writeArc(r1, -delta, delta);
+        outfile->writeArc(r2, -delta, delta);
+        outfile->writeArc(r1, M_PI - delta, M_PI + delta);
+        outfile->writeArc(r2, M_PI - delta, M_PI + delta);
+
+        // cone
+        double sindelta = sin(delta);
+        double cosdelta = cos(delta);
+        outfile->writeLine(r1 * cosdelta, r1 * sindelta, r2 * cosdelta, r2 * sindelta);
+        outfile->writeLine(-r1 * cosdelta, -r1 * sindelta, -r2 * cosdelta, -r2 * sindelta);
+        outfile->writeLine(r1 * cosdelta, -r1 * sindelta, r2 * cosdelta, -r2 * sindelta);
+        outfile->writeLine(-r1 * cosdelta, r1 * sindelta, -r2 * cosdelta, r2 * sindelta);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
+
 void ClumpyTorusSpatialGrid::write_xy(SpatialGridPlotFile* outfile) const
 {
-    (void)outfile;
+    // inner and outer sphere
+    outfile->writeCircle(_minRadius);
+    outfile->writeCircle(_maxRadius);
+
+    // spherical clumps
+    // TO DO (next line is for illustration only)
+    outfile->writeCircle(_maxRadius / 2., 3. * _minRadius, 2. * _minRadius);
 }
 
 //////////////////////////////////////////////////////////////////////
 
 void ClumpyTorusSpatialGrid::write_xz(SpatialGridPlotFile* outfile) const
 {
-    (void)outfile;
+    // torus boundaries
+    writeMeridionalView(outfile, _openingAngle, _minRadius, _maxRadius);
+
+    // spherical clumps
+    // TO DO
 }
 
 //////////////////////////////////////////////////////////////////////
 
 void ClumpyTorusSpatialGrid::write_yz(SpatialGridPlotFile* outfile) const
 {
-    (void)outfile;
+    // torus boundaries
+    writeMeridionalView(outfile, _openingAngle, _minRadius, _maxRadius);
+
+    // spherical clumps
+    // TO DO
 }
 
 //////////////////////////////////////////////////////////////////////
 
 void ClumpyTorusSpatialGrid::write_xyz(SpatialGridPlotFile* outfile) const
 {
+    // intentionally unimplemented
     (void)outfile;
 }
 

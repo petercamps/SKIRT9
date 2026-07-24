@@ -52,6 +52,24 @@ void SpatialGridPlotFile::writeRectangle(double min1, double min2, double max1, 
 
 ////////////////////////////////////////////////////////////////////
 
+void SpatialGridPlotFile::writeCircle(double x, double y, double radius)
+{
+    if (!_out.is_open()) return;
+
+    x = _units->olength(x);
+    y = _units->olength(y);
+    radius = _units->olength(radius);
+
+    for (int l = 0; l <= 360; l++)
+    {
+        double phi = l * M_PI / 180;
+        _out << x + radius * cos(phi) << '\t' << y + radius * sin(phi) << '\n';
+    }
+    _out << '\n';
+}
+
+////////////////////////////////////////////////////////////////////
+
 void SpatialGridPlotFile::writeCircle(double radius)
 {
     if (!_out.is_open()) return;
@@ -63,6 +81,24 @@ void SpatialGridPlotFile::writeCircle(double radius)
         double phi = l * M_PI / 180;
         _out << radius * cos(phi) << '\t' << radius * sin(phi) << '\n';
     }
+    _out << '\n';
+}
+
+////////////////////////////////////////////////////////////////////
+
+void SpatialGridPlotFile::writeArc(double radius, double begAngle, double endAngle)
+{
+    if (!_out.is_open()) return;
+
+    radius = _units->olength(radius);
+
+    constexpr double dphi = M_PI / 180.;
+    for (double phi = begAngle; phi < endAngle; phi += dphi)
+    {
+        _out << radius * cos(phi) << '\t' << radius * sin(phi) << '\n';
+    }
+    _out << radius * cos(endAngle) << '\t' << radius * sin(endAngle) << '\n';
+
     _out << '\n';
 }
 
