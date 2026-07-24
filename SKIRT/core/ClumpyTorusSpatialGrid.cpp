@@ -18,8 +18,8 @@
 // Geometric helper functions
 namespace
 {
-    // small value
-    constexpr double EPS = 1e-12;
+    // small value; leave at 1e-10 because with 1e-11 some inaccuracies start to occur
+    constexpr double EPS = 1e-10;
 
     // This function returns the square of a value
     double square(double v)
