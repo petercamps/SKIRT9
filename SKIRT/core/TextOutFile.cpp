@@ -72,7 +72,7 @@ void TextOutFile::writeLine(string line)
 {
     if (_out.is_open())
     {
-        _out << line << std::endl;
+        _out << line << "\n";
     }
 }
 
