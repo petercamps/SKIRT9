@@ -16,6 +16,12 @@ if(POLICY CMP0156)
   cmake_policy(SET CMP0156 NEW)
 endif()
 
+# if supported (by CMake version 3.9 and up), honor the INTERPROCEDURAL_OPTIMIZATION target property for all compilers
+# rather than just for the Intel classic compiler on Linux, which is needed for link-time optimization (see below)
+if(POLICY CMP0069)
+  cmake_policy(SET CMP0069 NEW)
+endif()
+
 # define project
 project(SKIRTproject)
 
@@ -30,6 +36,29 @@ option(BUILD_DOX_STYLE "build doxstyle, documentation block streamliner")
 
 # define a user-configurable option to force warnings to be handled as errors
 option (WARNINGS_AS_ERRORS "handle warnings as errors")
+
+# define a user-configurable option to build with link-time optimization (LTO), which allows the compiler to optimize
+# across source file and library boundaries at the cost of a longer link step; it applies to the Release build type only
+option(BUILD_WITH_LTO "build with link-time optimization, if supported by the compiler" ON)
+
+# enable link-time optimization for the Release build type of all targets, if requested and supported; this must be
+# done before adding the subdirectories because a target takes on the value of this variable at the time it is created
+if (BUILD_WITH_LTO AND NOT CMAKE_VERSION VERSION_LESS 3.9)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT LTO_SUPPORTED OUTPUT LTO_OUTPUT LANGUAGES C CXX)
+    if (APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        # GCC needs a linker plugin for LTO, which the Apple linker lacks: linking succeeds but nothing is optimized,
+        # while the executable grows several-fold from carrying along the unused intermediate code
+        set(LTO_SUPPORTED FALSE)
+    endif()
+    if (LTO_SUPPORTED)
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+        message(STATUS "Link-time optimization enabled for Release builds")
+    else()
+        message(STATUS "Link-time optimization is not supported with this compiler and platform; building without it")
+        message(VERBOSE "${LTO_OUTPUT}")
+    endif()
+endif()
 
 # add all relevant subdirectories; each subdirectory defines a single target
 add_subdirectory(SMILE)
