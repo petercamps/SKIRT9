@@ -22,6 +22,7 @@
 #include "AxPowerLawRedistributeGeometryDecorator.hpp"
 #include "BandLuminosityNormalization.hpp"
 #include "BegemannPorousAluminaGrainComposition.hpp"
+#include "BinTreeSpatialGrid.hpp"
 #include "BinnedWavelengthDistribution.hpp"
 #include "BlackBodySED.hpp"
 #include "BlackBodySEDFamily.hpp"
@@ -536,6 +537,7 @@ SimulationItemRegistry::SimulationItemRegistry(string version, string format)
     ItemRegistry::add<TreeSpatialGrid>();
     ItemRegistry::add<PolicyTreeSpatialGrid>();
     ItemRegistry::add<FileTreeSpatialGrid>();
+    ItemRegistry::add<BinTreeSpatialGrid>();
     ItemRegistry::add<AdaptiveMeshSpatialGrid>();
     ItemRegistry::add<VoronoiMeshSpatialGrid>();
     ItemRegistry::add<TetraMeshSpatialGrid>();
