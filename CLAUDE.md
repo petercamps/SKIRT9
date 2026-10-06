@@ -15,7 +15,7 @@ The build lives in a sibling directory `../release` (i.e. next to `git/`, not in
 ./makeSKIRT.sh <threads>      # build, e.g. ./makeSKIRT.sh 8
 ```
 
-`makeSKIRT.sh` builds the `skirt` CLI (`release/SKIRT/main/skirt`) and, if enabled, `MakeUp.app`. It also regenerates the SMILE schema file (`release/schemas/skirt.smile`) as part of the build — a malformed SMILE conditional-value-expression (e.g. in an `ATTRIBUTE_TYPE_INSERT`/`ATTRIBUTE_INSERT`/`ATTRIBUTE_TYPE_ALLOWED_IF` string) surfaces as a build failure at that step, so a clean build is a reasonable sanity check for schema-metadata edits, not just C++ changes.
+`makeSKIRT.sh` builds the `skirt` CLI (`release/SKIRT/main/skirt`) and, if enabled, `MakeUp.app`. When `BUILD_MAKE_UP` is enabled, building MakeUp also regenerates the SMILE schema file (`release/MakeUp/schemas/skirt.smile`) by running `skirt -x` — a malformed SMILE conditional-value-expression (e.g. in an `ATTRIBUTE_TYPE_INSERT`/`ATTRIBUTE_INSERT`/`ATTRIBUTE_TYPE_ALLOWED_IF` string) surfaces as a build failure at that step, so with MakeUp enabled a clean build is a reasonable sanity check for schema-metadata edits, not just C++ changes. Without MakeUp, running `skirt -x` by hand performs the same check; it writes `skirt.smile` to the current directory.
 
 To adjust a build option: `./configSKIRT.sh <OPTION_NAME>=<value>`. Relevant options (see top-level `CMakeLists.txt`, `SKIRT/mpi/CMakeLists.txt`): `BUILD_MAKE_UP` (requires Qt5/Qt6), `BUILD_WITH_MPI`, `WARNINGS_AS_ERRORS` (CI builds with this on), `BUILD_DOX_STYLE`. SMILE-only options `BUILD_SMILE_TOOL`/`BUILD_SMILE_SHAPES` build small standalone SMILE example/console tools.
 
