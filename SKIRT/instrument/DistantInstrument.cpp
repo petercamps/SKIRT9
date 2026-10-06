@@ -54,8 +54,8 @@ void DistantInstrument::setupSelfBefore()
 
 void DistantInstrument::determineSameObserverAsPreceding(const Instrument* precedingInstrument)
 {
-    auto other = dynamic_cast<const DistantInstrument*>(precedingInstrument);
-    if (other && distance() == other->distance() && inclination() == other->inclination()
+    if (auto other = dynamic_cast<const DistantInstrument*>(precedingInstrument);
+        other && distance() == other->distance() && inclination() == other->inclination()
         && azimuth() == other->azimuth() && roll() == other->roll())
     {
         setSameObserverAsPreceding();

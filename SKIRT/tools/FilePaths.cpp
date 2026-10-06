@@ -270,9 +270,8 @@ string FilePaths::resourceName(string type, const vector<string>& segments)
 
     // look for matching resource filename
     string result;
-    for (const auto& pair : _resourcePaths)
+    for (const auto& [resource, path] : _resourcePaths)
     {
-        const string& resource = pair.first;
         if (matches(resource, type, segments))
         {
             // fail if there is ambiguity

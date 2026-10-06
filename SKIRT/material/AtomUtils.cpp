@@ -68,9 +68,10 @@ std::pair<short, short> AtomUtils::parseIon(string ion)
     string plus = match[2].str();
     string number = match[3].str();
 
-    auto it = atomMap.find(element);
-    if (it == atomMap.end()) throw FATALERROR("No element found with name " + element + " for ion: " + ion);
-    Z = it->second;
+    if (auto it = atomMap.find(element); it != atomMap.end())
+        Z = it->second;
+    else
+        throw FATALERROR("No element found with name " + element + " for ion: " + ion);
 
     // enforce format to avoid ambiguities
     if (number.empty())

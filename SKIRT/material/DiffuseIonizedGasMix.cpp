@@ -270,15 +270,15 @@ void DiffuseIonizedGasMix::setupSelfBefore()
         _dNAxisDeltaIds.clear();
         _dCAxisValues.clear();
         _dCAxisDeltaIds.clear();
-        for (const auto& p : dNcandidates)
+        for (const auto& [value, deltaId] : dNcandidates)
         {
-            _dNAxisValues.push_back(p.first);
-            _dNAxisDeltaIds.push_back(p.second);
+            _dNAxisValues.push_back(value);
+            _dNAxisDeltaIds.push_back(deltaId);
         }
-        for (const auto& p : dCcandidates)
+        for (const auto& [value, deltaId] : dCcandidates)
         {
-            _dCAxisValues.push_back(p.first);
-            _dCAxisDeltaIds.push_back(p.second);
+            _dCAxisValues.push_back(value);
+            _dCAxisDeltaIds.push_back(deltaId);
         }
         _stabDNmin = _dNAxisValues.front();
         _stabDNmax = _dNAxisValues.back();

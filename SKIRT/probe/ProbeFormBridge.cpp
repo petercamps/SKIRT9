@@ -320,8 +320,7 @@ void ProbeFormBridge::writeQuantity(string fileid, string quantity, string descr
         for (auto snapshot : snapshots)
         {
             snapshot->getEntities(entities, bfr);
-            double svw, sw;
-            std::tie(svw, sw) =
+            auto [svw, sw] =
                 entities.average([snapshot, valueInEntity](int m) { return valueInEntity(snapshot, m); },
                                  [snapshot, weightInEntity](int m) { return weightInEntity(snapshot, m); });
             sumvw += svw;
@@ -338,8 +337,7 @@ void ProbeFormBridge::writeQuantity(string fileid, string quantity, string descr
         for (auto snapshot : snapshots)
         {
             snapshot->getEntities(entities, bfr, bfk);
-            double svw, sw;
-            std::tie(svw, sw) =
+            auto [svw, sw] =
                 entities.average([snapshot, valueInEntity](int m) { return valueInEntity(snapshot, m); },
                                  [snapshot, weightInEntity](int m) { return weightInEntity(snapshot, m); });
             sumvw += svw;
@@ -366,9 +364,7 @@ void ProbeFormBridge::writeQuantity(string fileid, string quantity, string descr
         for (auto snapshot : snapshots)
         {
             snapshot->getEntities(entities, bfr);
-            Vec svw;
-            double sw;
-            std::tie(svw, sw) =
+            auto [svw, sw] =
                 entities.average([snapshot, valueInEntity](int m) { return valueInEntity(snapshot, m); },
                                  [snapshot, weightInEntity](int m) { return weightInEntity(snapshot, m); });
             sumvw += svw;
@@ -385,9 +381,7 @@ void ProbeFormBridge::writeQuantity(string fileid, string quantity, string descr
         for (auto snapshot : snapshots)
         {
             snapshot->getEntities(entities, bfr, bfk);
-            Vec svw;
-            double sw;
-            std::tie(svw, sw) =
+            auto [svw, sw] =
                 entities.average([snapshot, valueInEntity](int m) { return valueInEntity(snapshot, m); },
                                  [snapshot, weightInEntity](int m) { return weightInEntity(snapshot, m); });
             sumvw += svw;

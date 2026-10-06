@@ -147,8 +147,7 @@ void OpacityProbe::probe()
 
                 for (int h : ms->dustMediumIndices())
                 {
-                    auto mix = ms->mix(0, h)->find<FragmentDustMixDecorator>(false);
-                    if (mix)
+                    if (auto mix = ms->mix(0, h)->find<FragmentDustMixDecorator>(false))
                     {
                         int numPops = mix->numPopulations();
                         for (int f = 0; f != numPops; ++f)

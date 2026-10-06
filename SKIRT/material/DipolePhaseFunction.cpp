@@ -174,8 +174,7 @@ Direction DipolePhaseFunction::performScattering(Direction bfk, StokesVector* sv
     {
         // sample the angles between the previous and new direction from the dipole phase function,
         // given the incoming polarization state
-        double theta, phi;
-        std::tie(theta, phi) = generateAnglesFromPhaseFunction(sv);
+        auto [theta, phi] = generateAnglesFromPhaseFunction(sv);
 
         // rotate the Stokes vector (and the scattering plane) of the photon packet
         sv->rotateStokes(phi, bfk);

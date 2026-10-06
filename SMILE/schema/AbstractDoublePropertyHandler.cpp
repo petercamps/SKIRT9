@@ -238,11 +238,11 @@ string AbstractDoublePropertyHandler::quantity() const
     {
         // construct a handler for the target property and get its enumeration value
         auto handler = schema()->createPropertyHandler(target(), result.substr(1), nameManager());
-        EnumPropertyHandler* enumHandler = dynamic_cast<EnumPropertyHandler*>(handler.get());
 
         // if the property has the wrong type, or its value is an unknown quantity,
         // return the empty string, which means "dimensionless"
-        if (enumHandler && schema()->has(enumHandler->value()))
+        if (auto enumHandler = dynamic_cast<EnumPropertyHandler*>(handler.get());
+            enumHandler && schema()->has(enumHandler->value()))
             result = enumHandler->value();
         else
             result.clear();
@@ -315,8 +315,7 @@ string AbstractDoublePropertyHandler::unitStyle() const
         {
             // return the value of the first enumeration property, if any
             auto handler = schema()->createPropertyHandler(unitSystemItem, property, nameManager());
-            auto enumHandler = dynamic_cast<EnumPropertyHandler*>(handler.get());
-            if (enumHandler) return enumHandler->value();
+            if (auto enumHandler = dynamic_cast<EnumPropertyHandler*>(handler.get())) return enumHandler->value();
         }
     }
     return string();

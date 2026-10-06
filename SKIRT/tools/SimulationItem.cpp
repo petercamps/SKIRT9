@@ -16,8 +16,7 @@ void SimulationItem::setup()
     setupSelfBefore();
     for (Item* child : children())
     {
-        SimulationItem* item = dynamic_cast<SimulationItem*>(child);
-        if (item) item->setup();
+        if (auto item = dynamic_cast<SimulationItem*>(child)) item->setup();
     }
     setupSelfAfter();
 }
@@ -99,9 +98,10 @@ SimulationItem* SimulationItem::interface(int upLevels, int downLevels, bool set
             return uppermost;
         }
         if (level == upLevels) break;
-        SimulationItem* parent = dynamic_cast<SimulationItem*>(uppermost->parent());
-        if (!parent) break;
-        uppermost = parent;
+        if (auto parent = dynamic_cast<SimulationItem*>(uppermost->parent()))
+            uppermost = parent;
+        else
+            break;
     }
 
     // starting from the uppermost considered ancestor, recursively test its descendants,
@@ -110,11 +110,9 @@ SimulationItem* SimulationItem::interface(int upLevels, int downLevels, bool set
     {
         for (Item* child : uppermost->children())
         {
-            auto candidate = dynamic_cast<SimulationItem*>(child);
-            if (candidate)
+            if (auto candidate = dynamic_cast<SimulationItem*>(child))
             {
-                auto result = candidate->interface(0, downLevels - 1, false, offersRequestedInterface);
-                if (result)
+                if (auto result = candidate->interface(0, downLevels - 1, false, offersRequestedInterface))
                 {
                     if (setup) result->setup();
                     return result;

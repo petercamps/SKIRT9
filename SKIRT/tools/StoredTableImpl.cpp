@@ -186,10 +186,10 @@ void StoredTable_Impl::open(size_t numAxes, const SimulationItem* item, string f
     }
 
     // acquire a memory map for the file; the function returns zeros if the memory map cannot be created
-    auto map = System::acquireMemoryMap(filePath);
-    if (!map.first) throw FATALERROR("Cannot acquire memory map for file: " + filePath);
+    auto [start, size] = System::acquireMemoryMap(filePath);
+    if (!start) throw FATALERROR("Cannot acquire memory map for file: " + filePath);
 
-    parse(map.first, numAxes, axes, quantity, filePath, axBeg, qtyBeg, axLen, qtyStep, axLog, qtyLog);
+    parse(start, numAxes, axes, quantity, filePath, axBeg, qtyBeg, axLen, qtyStep, axLog, qtyLog);
     logOpened(item, filePath);
 }
 
@@ -200,13 +200,13 @@ void StoredTable_Impl::openAt(size_t numAxes, string filePath, size_t byteOffset
                               size_t* qtyStep, bool* axLog, bool* qtyLog)
 {
     // acquire a memory map for the file; the function returns zeros if the memory map cannot be created
-    auto map = System::acquireMemoryMap(filePath);
-    if (!map.first) throw FATALERROR("Cannot acquire memory map for file: " + filePath);
+    auto [start, size] = System::acquireMemoryMap(filePath);
+    if (!start) throw FATALERROR("Cannot acquire memory map for file: " + filePath);
 
     // unlike open(), this function does not log anything on success: the dictionary that spawned
     // this stored table already logged a single message when it was opened
-    parse(static_cast<const char*>(map.first) + byteOffset, numAxes, axes, quantity, label, axBeg, qtyBeg, axLen,
-          qtyStep, axLog, qtyLog);
+    parse(static_cast<const char*>(start) + byteOffset, numAxes, axes, quantity, label, axBeg, qtyBeg, axLen, qtyStep,
+          axLog, qtyLog);
 }
 
 ////////////////////////////////////////////////////////////////////

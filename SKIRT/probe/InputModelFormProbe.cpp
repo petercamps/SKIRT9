@@ -43,8 +43,8 @@ void InputModelFormProbe::probe()
         int numMedia = media.size();
         for (int h = 0; h != numMedia; ++h)
         {
-            auto importedMedium = dynamic_cast<ImportedMedium*>(media[h]);
-            if (importedMedium) probeImportedMedium(std::to_string(h), importedMedium, importedMedium->snapshot());
+            if (auto importedMedium = dynamic_cast<ImportedMedium*>(media[h]))
+                probeImportedMedium(std::to_string(h), importedMedium, importedMedium->snapshot());
         }
     }
 }

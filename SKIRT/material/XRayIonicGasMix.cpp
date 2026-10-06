@@ -284,8 +284,7 @@ void XRayIonicGasMix::setupSelfBefore()
     {
         if (_abundances[i] > 0.)
         {
-            int Z, N;
-            std::tie(Z, N) = AtomUtils::parseIon(ionStrings[i]);
+            auto [Z, N] = AtomUtils::parseIon(ionStrings[i]);
             _ionParamv.push_back({Z, N});
             abundances.push_back(_abundances[i]);
         }

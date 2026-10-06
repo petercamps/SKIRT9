@@ -56,10 +56,9 @@ void StoredTableDictionary_Impl::open(const SimulationItem* item, string filenam
     filePath = FilePaths::resource(filename);
 
     // acquire a memory map for the file; the function returns zeros if the memory map cannot be created
-    auto map = System::acquireMemoryMap(filePath);
-    if (!map.first) throw FATALERROR("Cannot acquire memory map for file: " + filePath);
-    const char* base = static_cast<const char*>(map.first);
-    size_t length = map.second;
+    auto [start, length] = System::acquireMemoryMap(filePath);
+    if (!start) throw FATALERROR("Cannot acquire memory map for file: " + filePath);
+    const char* base = static_cast<const char*>(start);
 
     // walk the sequence of ustar header blocks, each followed by that member's data rounded up to a
     // multiple of the block size; the archive ends at the first all-zero header block (or at the end
@@ -115,9 +114,8 @@ bool StoredTableDictionary_Impl::has(const Index& index, string name)
 size_t StoredTableDictionary_Impl::locate(const Index& index, const string& filePath, string name)
 {
     name = normalize(name);
-    auto it = index.find(name);
-    if (it == index.end()) throw FATALERROR("Stored table " + name + " not found in dictionary file: " + filePath);
-    return it->second.first;
+    if (auto it = index.find(name); it != index.end()) return it->second.first;
+    throw FATALERROR("Stored table " + name + " not found in dictionary file: " + filePath);
 }
 
 ////////////////////////////////////////////////////////////////////

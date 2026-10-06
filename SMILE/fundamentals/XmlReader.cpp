@@ -171,8 +171,7 @@ string XmlReader::attributeValue(string name) const
     if (!_elementStack.empty())
     {
         auto& map = _elementStack.back().attributeValues;
-        auto pair = map.find(name);
-        if (pair != map.cend()) return pair->second;
+        if (auto pair = map.find(name); pair != map.cend()) return pair->second;
     }
     return string();
 }

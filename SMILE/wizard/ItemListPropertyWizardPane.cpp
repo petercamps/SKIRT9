@@ -28,13 +28,13 @@ namespace
         for (const string& property : schema->properties(item->type()))
         {
             auto handler = schema->createPropertyHandler(item, property, nullptr);
-            auto itemhandler = dynamic_cast<ItemPropertyHandler*>(handler.get());
-            if (itemhandler && itemhandler->isConfigured() && itemhandler->value())
+            if (auto itemhandler = dynamic_cast<ItemPropertyHandler*>(handler.get());
+                itemhandler && itemhandler->isConfigured() && itemhandler->value())
             {
                 return item->type() + " (" + itemhandler->name() + ": " + itemhandler->value()->type() + ")";
             }
-            auto stringhandler = dynamic_cast<StringPropertyHandler*>(handler.get());
-            if (stringhandler && stringhandler->isConfigured() && !stringhandler->value().empty())
+            if (auto stringhandler = dynamic_cast<StringPropertyHandler*>(handler.get());
+                stringhandler && stringhandler->isConfigured() && !stringhandler->value().empty())
             {
                 return item->type() + " (" + stringhandler->name() + ": " + stringhandler->value() + ")";
             }

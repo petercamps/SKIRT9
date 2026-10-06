@@ -103,12 +103,12 @@ int WizardEngine::propertyIndexForChild(Item* child)
             auto handler = _schema->createPropertyHandler(parent, property, &_nameMgr);
 
             // check the value of item properties
-            auto itemhandler = dynamic_cast<ItemPropertyHandler*>(handler.get());
-            if (itemhandler && itemhandler->value() == child) return index;
+            if (auto itemhandler = dynamic_cast<ItemPropertyHandler*>(handler.get());
+                itemhandler && itemhandler->value() == child)
+                return index;
 
             // check the values of item list properties
-            auto itemlisthandler = dynamic_cast<ItemListPropertyHandler*>(handler.get());
-            if (itemlisthandler)
+            if (auto itemlisthandler = dynamic_cast<ItemListPropertyHandler*>(handler.get()))
             {
                 for (auto item : itemlisthandler->value())
                     if (item == child) return index;
@@ -317,8 +317,7 @@ namespace
     // The function assumes that the name sets have been properly built before it is called.
     bool isAutomaticItemProperty(PropertyHandler* handler)
     {
-        auto itemhdlr = dynamic_cast<ItemPropertyHandler*>(handler);
-        if (itemhdlr)
+        if (auto itemhdlr = dynamic_cast<ItemPropertyHandler*>(handler))
         {
             auto choices = itemhdlr->allowedAndDisplayedDescendants();
 
@@ -394,8 +393,8 @@ void WizardEngine::advance(bool state, bool descend)
                 auto handler = createPropertyHandler(_firstPropertyIndex);
 
                 // if the property is an item, and the item has properties, then descend the hierarchy
-                auto itemhdlr = dynamic_cast<ItemPropertyHandler*>(handler.get());
-                if (itemhdlr && itemhdlr->value() && _schema->properties(itemhdlr->value()->type()).size() > 0)
+                if (auto itemhdlr = dynamic_cast<ItemPropertyHandler*>(handler.get());
+                    itemhdlr && itemhdlr->value() && _schema->properties(itemhdlr->value()->type()).size() > 0)
                 {
                     _current = itemhdlr->value();
                     _firstPropertyIndex = 0;
@@ -405,8 +404,8 @@ void WizardEngine::advance(bool state, bool descend)
                 // if the property is an item list, and we're editing one of its subitems,
                 // and the subitem has properties, then descend the hierarchy into that subitem;
                 // if the subitem has no properties, fake a descend from which we will back out right away
-                auto itemlisthdlr = dynamic_cast<ItemListPropertyHandler*>(handler.get());
-                if (itemlisthdlr && _subItemIndex >= 0)
+                if (auto itemlisthdlr = dynamic_cast<ItemListPropertyHandler*>(handler.get());
+                    itemlisthdlr && _subItemIndex >= 0)
                 {
                     _current = itemlisthdlr->value()[_subItemIndex];
                     if (_schema->properties(_current->type()).size() > 0)

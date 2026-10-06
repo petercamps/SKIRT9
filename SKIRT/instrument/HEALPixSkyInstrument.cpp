@@ -88,8 +88,8 @@ void HEALPixSkyInstrument::setupSelfBefore()
 
 void HEALPixSkyInstrument::determineSameObserverAsPreceding(const Instrument* precedingInstrument)
 {
-    auto other = dynamic_cast<const HEALPixSkyInstrument*>(precedingInstrument);
-    if (other && radius() == other->radius() && observerX() == other->observerX() && observerY() == other->observerY()
+    if (auto other = dynamic_cast<const HEALPixSkyInstrument*>(precedingInstrument);
+        other && radius() == other->radius() && observerX() == other->observerX() && observerY() == other->observerY()
         && observerZ() == other->observerZ() && crossX() == other->crossX() && crossY() == other->crossY()
         && crossZ() == other->crossZ() && upX() == other->upX() && upY() == other->upY() && upZ() == other->upZ())
     {

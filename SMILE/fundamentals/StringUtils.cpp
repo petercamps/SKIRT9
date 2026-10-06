@@ -74,8 +74,7 @@ bool StringUtils::contains(const vector<string>& list, string find)
 
 int StringUtils::indexOf(const vector<string>& list, string find)
 {
-    auto it = std::find(list.cbegin(), list.cend(), find);
-    if (it != list.cend())
+    if (auto it = std::find(list.cbegin(), list.cend(), find); it != list.cend())
         return static_cast<int>(it - list.cbegin());
     else
         return -1;
@@ -253,8 +252,7 @@ string StringUtils::filename(string filepath)
     if (filepath.length() > 1 && (filepath.back() == '/' || filepath.back() == '\\')) filepath.pop_back();
 
     // locate rightmost slash, if any, and return everything after that position
-    auto index = filepath.find_last_of("/\\");
-    if (index != string::npos) return filepath.substr(index + 1);
+    if (auto index = filepath.find_last_of("/\\"); index != string::npos) return filepath.substr(index + 1);
 
     // if there are no slashes, return the complete path
     return filepath;
@@ -268,8 +266,7 @@ string StringUtils::filenameBase(string filepath)
     filepath = filename(filepath);
 
     // locate rightmost period and remove everything from that position onwards
-    auto index = filepath.rfind('.');
-    if (index != string::npos) filepath.erase(index);
+    if (auto index = filepath.rfind('.'); index != string::npos) filepath.erase(index);
 
     return filepath;
 }
@@ -284,8 +281,7 @@ string StringUtils::dirPath(string filepath)
         if (filepath.back() == '/' || filepath.back() == '\\') filepath.pop_back();
 
         // locate rightmost slash and remove everything after that position
-        auto index = filepath.find_last_of("/\\");
-        if (index != string::npos)
+        if (auto index = filepath.find_last_of("/\\"); index != string::npos)
         {
             filepath.erase(index + 1);
             return filepath;

@@ -28,8 +28,7 @@ void DustGrainSizeDistributionProbe::probe()
         // skipping mixes that don't offer multiple dust grain populations
         for (int h = 0; h != numMedia; ++h)
         {
-            auto mix = ms->media()[h]->mix()->interface<MultiGrainPopulationInterface>(0, 0, false);
-            if (mix)
+            if (auto mix = ms->media()[h]->mix()->interface<MultiGrainPopulationInterface>(0, 0, false))
             {
                 int numPops = mix->numPopulations();
                 for (int c = 0; c != numPops; ++c)

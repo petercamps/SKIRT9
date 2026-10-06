@@ -64,8 +64,7 @@ void ConfigurationSetup::setupSelfBefore()
     else
     {
         _sourceWavelengthRange.set(ss->minWavelength(), ss->maxWavelength());
-        auto is = find<InstrumentSystem>(false);
-        if (is) _defaultWavelengthGrid = is->defaultWavelengthGrid();
+        if (auto is = find<InstrumentSystem>(false)) _defaultWavelengthGrid = is->defaultWavelengthGrid();
     }
 
     // determine source and (provisional) model dimension based on sources only
@@ -78,8 +77,8 @@ void ConfigurationSetup::setupSelfBefore()
         if (source->hasVelocity()) _hasMovingSources = true;
 
     // check for input model probes, which require snapshots to build search data structures
-    auto probesystem = find<ProbeSystem>(false);
-    if (probesystem && probesystem->find<InputModelFormProbe>(false)) _snapshotsNeedGetEntities = true;
+    if (auto probesystem = find<ProbeSystem>(false); probesystem && probesystem->find<InputModelFormProbe>(false))
+        _snapshotsNeedGetEntities = true;
 
     // determine the number of media in the simulation hierarchy
     int numMedia = 0;
@@ -299,8 +298,7 @@ void ConfigurationSetup::setupSelfBefore()
 
     // determine whether media must support the generatePosition() function
     // currently, that function is called only by the VoronoiMeshSpatialGrid class for certain policies
-    auto grid = dynamic_cast<VoronoiMeshSpatialGrid*>(ms->grid());
-    if (grid)
+    if (auto grid = dynamic_cast<VoronoiMeshSpatialGrid*>(ms->grid()))
     {
         auto policy = grid->policy();
         if (policy == VoronoiMeshSpatialGrid::Policy::DustDensity
@@ -539,8 +537,7 @@ namespace
     // The function calls itself recursively.
     void extendForMaterialWavelengthRange(Range& range, Item* item)
     {
-        auto interface = dynamic_cast<MaterialWavelengthRangeInterface*>(item);
-        if (interface)
+        if (auto interface = dynamic_cast<MaterialWavelengthRangeInterface*>(item))
         {
             Range requested = interface->wavelengthRange();
             if (requested.min() > 0) range.extend(requested);
@@ -607,8 +604,7 @@ namespace
     // The function calls itself recursively.
     void addForMaterialWavelengthRange(std::set<double>& wavelengths, Item* item)
     {
-        auto interface = dynamic_cast<MaterialWavelengthRangeInterface*>(item);
-        if (interface)
+        if (auto interface = dynamic_cast<MaterialWavelengthRangeInterface*>(item))
         {
             // if the range indicates a single nonzero wavelength, then add that wavelength
             Range range = interface->wavelengthRange();

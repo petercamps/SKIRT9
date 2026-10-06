@@ -412,9 +412,9 @@ void SchemaDef::save(string filePath, string producer) const
 
     // loop over all type definitions that are not concrete, in alphabetical order
     writer.writeComment("Non-concrete types, in alphabetical order");
-    for (const auto& pair : _allTypes)
+    for (const auto& [typeName, def] : _allTypes)
     {
-        if (!pair.second.concrete()) writeTypeDef(writer, pair.second);
+        if (!def.concrete()) writeTypeDef(writer, def);
     }
 
     // loop over all type definitions that are concrete, in order of definition
@@ -437,21 +437,19 @@ void SchemaDef::save(string filePath, string producer) const
         writer.writeAttribute("type", "Quantity");
 
         // loop over all quantity definitions
-        for (const auto& qpair : _unitDef._quantities)
+        for (const auto& [quantity, units] : _unitDef._quantities)
         {
             // start 'Quantity' and 'units' elements
             writer.writeStartElement("Quantity");
-            writer.writeAttribute("name", qpair.first);
+            writer.writeAttribute("name", quantity);
             writer.writeStartElement("units");
             writer.writeAttribute("type", "Unit");
 
             // loop over all units
-            for (const auto& upair : qpair.second)
+            for (const auto& [unitname, unitspec] : units)
             {
                 // write "Unit" element
-                const string& unitname = upair.first;
-                double factor, power, offset;
-                std::tie(factor, power, offset) = upair.second;
+                auto [factor, power, offset] = unitspec;
                 writer.writeStartElement("Unit");
                 writer.writeAttribute("name", unitname);
                 writer.writeAttribute("factor", StringUtils::toString(factor));
@@ -479,21 +477,21 @@ void SchemaDef::save(string filePath, string producer) const
         writer.writeAttribute("type", "UnitSystem");
 
         // loop over all unit system definitions
-        for (const auto& uspair : _unitDef._unitSystems)
+        for (const auto& [unitSystem, defaultUnits] : _unitDef._unitSystems)
         {
             // start 'UnitSystem' and 'defaultUnits' elements
             writer.writeStartElement("UnitSystem");
-            writer.writeAttribute("name", uspair.first);
+            writer.writeAttribute("name", unitSystem);
             writer.writeStartElement("defaultUnits");
             writer.writeAttribute("type", "DefaultUnit");
 
             // loop over all default units
-            for (const auto& dupair : uspair.second)
+            for (const auto& [quantity, unit] : defaultUnits)
             {
                 // write "DefaultUnit" element
                 writer.writeStartElement("DefaultUnit");
-                writer.writeAttribute("quantity", dupair.first);
-                writer.writeAttribute("unit", dupair.second);
+                writer.writeAttribute("quantity", quantity);
+                writer.writeAttribute("unit", unit);
                 writer.writeEndElement();
             }
 
@@ -852,7 +850,7 @@ string SchemaDef::unitSystemBase() const
 
     // build a list of unit system names (there are at least two)
     vector<string> unitSystems;
-    for (const auto& pair : _unitDef._unitSystems) unitSystems.push_back(pair.first);
+    for (const auto& [unitSystem, defaultUnits] : _unitDef._unitSystems) unitSystems.push_back(unitSystem);
 
     // consider the ascendants of one of the unit systems as candidates for the common base
     for (const auto& candidate : ascendants(unitSystems[0]))
@@ -866,9 +864,8 @@ string SchemaDef::unitSystemBase() const
 
 const TypeDef& SchemaDef::typeDef(string type) const
 {
-    auto pair = _allTypes.find(type);
-    if (pair == _allTypes.cend()) throw FATALERROR("Type '" + type + "' is not defined in the schema");
-    return pair->second;
+    if (auto pair = _allTypes.find(type); pair != _allTypes.cend()) return pair->second;
+    throw FATALERROR("Type '" + type + "' is not defined in the schema");
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -69,8 +69,7 @@ double UnitDef::in(string qty, string unit, double value) const
     // if the unit is defined for the quantity, perform the conversion
     if (_quantities.count(qty) && _quantities.at(qty).count(unit))
     {
-        double factor, power, offset;
-        std::tie(factor, power, offset) = _quantities.at(qty).at(unit);
+        auto [factor, power, offset] = _quantities.at(qty).at(unit);
         if (power != 1.) value = pow(value, power);
         return factor * value + offset;
     }
@@ -89,8 +88,7 @@ double UnitDef::out(string qty, string unit, double value) const
     // if the unit is defined for the quantity, perform the conversion
     if (_quantities.count(qty) && _quantities.at(qty).count(unit))
     {
-        double factor, power, offset;
-        std::tie(factor, power, offset) = _quantities.at(qty).at(unit);
+        auto [factor, power, offset] = _quantities.at(qty).at(unit);
         value = (value - offset) / factor;
         if (power != 1.) value = pow(value, 1. / power);
         return value;

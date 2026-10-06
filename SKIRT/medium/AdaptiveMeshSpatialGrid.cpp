@@ -26,8 +26,8 @@ void AdaptiveMeshSpatialGrid::setupSelfBefore()
 
     // if there is a single medium component, calculate the normalization factor imposed by it;
     // we need this to directly compute cell densities for the DensityInCellInterface
-    auto ms = find<MediumSystem>(false);
-    if (ms && ms->media().size() == 1) _norm = ms->media()[0]->number() / _mesh->mass();
+    if (auto ms = find<MediumSystem>(false); ms && ms->media().size() == 1)
+        _norm = ms->media()[0]->number() / _mesh->mass();
 }
 
 //////////////////////////////////////////////////////////////////////

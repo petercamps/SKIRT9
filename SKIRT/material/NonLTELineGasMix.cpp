@@ -464,8 +464,7 @@ void NonLTELineGasMix::setupSelfBefore()
 
     // verify that the radiation field wavelength grid, if present, has a bin covering the line centers
     // and cache the characteristic wavelengths and bin widths
-    auto rfwlg = find<Configuration>()->radiationFieldWLG();
-    if (rfwlg)
+    if (auto rfwlg = find<Configuration>()->radiationFieldWLG())
     {
         rfwlg->setup();
         for (int k = 0; k != numLines; ++k)

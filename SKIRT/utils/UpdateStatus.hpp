@@ -27,10 +27,10 @@ class UpdateStatus final
 private:
     // bit_0 = 1 indicates updated; bit_1 = 1 indicates not converged
     // this allows status values to be ORed when aggregating them
-    const static uint8_t NotUpdated = 0;
-    const static uint8_t UpdatedConverged = 1;
-    const static uint8_t UpdatedNotConverged = 3;
-    uint8_t _status{NotUpdated};
+    static constexpr std::byte NotUpdated{0};
+    static constexpr std::byte UpdatedConverged{1};
+    static constexpr std::byte UpdatedNotConverged{3};
+    std::byte _status{NotUpdated};
 
     //============= Construction =============
 

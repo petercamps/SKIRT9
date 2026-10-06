@@ -178,11 +178,8 @@ void ImportedSourceLuminosityProbe::probeImportedSources(const vector<const Impo
                 snapshots[h]->getEntities(entities, bfr);
 
             // loop over the entities
-            for (const auto& entity : entities)
+            for (const auto& [m, w] : entities)
             {
-                int m = entity.first;
-                double w = entity.second;
-
                 // loop over the wavelength bins
                 for (int ell = 0; ell != numWaves; ++ell)
                 {

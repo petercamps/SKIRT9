@@ -521,12 +521,12 @@ void Snapshot::parameters(Position bfr, Array& params) const
     // look for the entity with the highest weight
     double wmax = 0.;
     int m = -1;
-    for (const auto& entity : entities)
+    for (const auto& [index, weight] : entities)
     {
-        if (entity.second > wmax)
+        if (weight > wmax)
         {
-            wmax = entity.second;
-            m = entity.first;
+            wmax = weight;
+            m = index;
         }
     }
 

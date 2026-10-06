@@ -188,8 +188,7 @@ namespace
                                 double fractionOfPrevious)
         {
             // determine and log the total absorbed luminosity
-            double Labsprim, Labsseco;
-            std::tie(Labsprim, Labsseco) = mediumSystem->totalDustAbsorbedLuminosity();
+            auto [Labsprim, Labsseco] = mediumSystem->totalDustAbsorbedLuminosity();
             log->info("The total dust-absorbed primary luminosity is "
                       + StringUtils::toString(units->obolluminosity(Labsprim), 'g') + " " + units->ubolluminosity());
             log->info("The total dust-absorbed secondary luminosity in iteration " + std::to_string(iter) + " is "

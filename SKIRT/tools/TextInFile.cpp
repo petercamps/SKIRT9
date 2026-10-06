@@ -400,8 +400,7 @@ bool TextInFile::readRow(Array& values)
         while (_in.good())
         {
             getline(_in, line);
-            auto pos = line.find_first_not_of(" \t");
-            if (pos != string::npos && line[pos] != '#')
+            if (auto pos = line.find_first_not_of(" \t"); pos != string::npos && line[pos] != '#')
             {
                 // resize result array (and clear it in case there are virtual zero columns)
                 if (values.size() != _numLogCols || _haveZeroCols) values.resize(_numLogCols);

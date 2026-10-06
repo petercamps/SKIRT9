@@ -47,8 +47,7 @@ void SecondarySourceSystem::setupSelfBefore()
     {
         for (int h : ms->gasMediumIndices())
         {
-            auto emittingMix = dynamic_cast<const EmittingGasMix*>(ms->mix(0, h));
-            if (emittingMix)
+            if (auto emittingMix = dynamic_cast<const EmittingGasMix*>(ms->mix(0, h)))
             {
                 if (emittingMix->hasContinuumEmission())
                 {

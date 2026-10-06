@@ -36,8 +36,7 @@ void LaunchedPacketsProbe::initialize()
 
     // install ourselves as the launch call-back with the secondary source system, if there is one,
     // and resize the secondary counts table, if needed
-    auto sss = find<SecondarySourceSystem>(false);
-    if (sss)
+    if (auto sss = find<SecondarySourceSystem>(false))
     {
         sss->installLaunchCallBack(this);
         int numSecondarySources = sss->numSources();

@@ -1537,8 +1537,7 @@ bool MediumSystem::updateDynamicStateRecipes()
     });
 
     // synchronize the updated state between processes
-    int numUpdated, numNotConverged;
-    std::tie(numUpdated, numNotConverged) = _state.synchronize(flags);
+    auto [numUpdated, numNotConverged] = _state.synchronize(flags);
 
     // log statistics
     log->info("  Updated cells: " + std::to_string(numUpdated) + " out of " + std::to_string(_numCells) + " ("
@@ -1592,8 +1591,7 @@ bool MediumSystem::updateDynamicStateMedia(bool primary)
     });
 
     // synchronize the updated state between processes
-    int numUpdated, numNotConverged;
-    std::tie(numUpdated, numNotConverged) = _state.synchronize(flags);
+    auto [numUpdated, numNotConverged] = _state.synchronize(flags);
 
     // log statistics
     log->info("  Updated cells: " + std::to_string(numUpdated) + " out of " + std::to_string(_numCells) + " ("

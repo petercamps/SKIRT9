@@ -43,8 +43,7 @@ void DustGrainPopulationsProbe::probe()
         for (int h = 0; h != numMedia; ++h)
         {
             // get the mix and skip mixes that don't offer multiple dust grain populations
-            auto mix = ms->media()[h]->mix()->interface<MultiGrainPopulationInterface>(0, 0, false);
-            if (mix)
+            if (auto mix = ms->media()[h]->mix()->interface<MultiGrainPopulationInterface>(0, 0, false))
             {
                 // create a text file
                 TextOutFile out(this, itemName() + "_grainpops_" + std::to_string(h), "grain populations");

@@ -24,8 +24,7 @@ void SpatialGridSourceDensityProbe::probe()
     int h = 0;
     for (auto source : find<SourceSystem>()->sources())
     {
-        auto geomsource = dynamic_cast<GeometricSource*>(source);
-        if (geomsource)
+        if (auto geomsource = dynamic_cast<GeometricSource*>(source))
         {
             hv.push_back(h);
             geomv.push_back(geomsource->geometry());

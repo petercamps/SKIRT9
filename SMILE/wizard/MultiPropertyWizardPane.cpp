@@ -105,8 +105,7 @@ void MultiPropertyWizardPane::showEvent(QShowEvent* event)
     QWidget* current = this;
     while ((current = current->parentWidget()))
     {
-        auto area = dynamic_cast<QScrollArea*>(current);
-        if (area)
+        if (auto area = dynamic_cast<QScrollArea*>(current))
         {
             area->ensureVisible(0, 0, 0, 0);
             break;

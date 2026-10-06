@@ -37,9 +37,9 @@ void EntityCollection::addSingle(int m)
 double EntityCollection::accumulate(std::function<double(int)> value)
 {
     double sumvw = 0.;
-    for (const auto& entity : _entities)
+    for (const auto& [m, w] : _entities)
     {
-        sumvw += value(entity.first) * entity.second;
+        sumvw += value(m) * w;
     }
     return sumvw;
 }
@@ -51,10 +51,10 @@ std::pair<double, double> EntityCollection::average(std::function<double(int m)>
 {
     double sumvw = 0.;
     double sumw = 0.;
-    for (const auto& entity : _entities)
+    for (const auto& [m, wm] : _entities)
     {
-        double v = value(entity.first);
-        double w = weight(entity.first) * entity.second;
+        double v = value(m);
+        double w = weight(m) * wm;
         sumvw += v * w;
         sumw += w;
     }
@@ -69,8 +69,7 @@ double EntityCollection::averageValue(std::function<double(int)> value, std::fun
     if (numEntities == 0) return 0.;
     if (numEntities == 1) return value(_entities.cbegin()->first);
 
-    double sumvw, sumw;
-    std::tie(sumvw, sumw) = average(value, weight);
+    auto [sumvw, sumw] = average(value, weight);
     return sumw > 0. ? sumvw / sumw : 0.;
 }
 
@@ -80,10 +79,10 @@ std::pair<Vec, double> EntityCollection::average(std::function<Vec(int m)> value
 {
     Vec sumvw;
     double sumw = 0.;
-    for (const auto& entity : _entities)
+    for (const auto& [m, wm] : _entities)
     {
-        Vec v = value(entity.first);
-        double w = weight(entity.first) * entity.second;
+        Vec v = value(m);
+        double w = weight(m) * wm;
         sumvw += v * w;
         sumw += w;
     }
@@ -98,9 +97,7 @@ Vec EntityCollection::averageValue(std::function<Vec(int)> value, std::function<
     if (numEntities == 0) return Vec();
     if (numEntities == 1) return value(_entities.cbegin()->first);
 
-    Vec sumvw;
-    double sumw;
-    std::tie(sumvw, sumw) = average(value, weight);
+    auto [sumvw, sumw] = average(value, weight);
     return sumw > 0. ? sumvw / sumw : Vec();
 }
 

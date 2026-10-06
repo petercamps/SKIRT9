@@ -115,10 +115,10 @@ void ClumpySphericalSpatialGrid::setupSelfAfter()
             int s = index(i, j, k);
 
             bool found = false;
-            for (auto& hit : hits)
-                if (hit.first == s)
+            for (auto& [cell, count] : hits)
+                if (cell == s)
                 {
-                    hit.second++;
+                    count++;
                     found = true;
                     break;
                 }
@@ -534,10 +534,10 @@ void ClumpySphericalSpatialGrid::write_xy(SpatialGridPlotFile* outfile) const
     StructuredSphereSpatialGrid::write_xy(outfile);
 
     // spherical clumps crossing the xy plane
-    for (const auto& hit : _bvh->clumpsCrossingPlane(2, 0.))
+    for (const auto& [clumpIndex, circleRadius] : _bvh->clumpsCrossingPlane(2, 0.))
     {
-        const Clump& c = _clumps[hit.first];
-        outfile->writeCircle(c.center().x(), c.center().y(), hit.second);
+        const Clump& c = _clumps[clumpIndex];
+        outfile->writeCircle(c.center().x(), c.center().y(), circleRadius);
     }
 }
 
@@ -549,10 +549,10 @@ void ClumpySphericalSpatialGrid::write_xz(SpatialGridPlotFile* outfile) const
     writeMeridionalStructure(outfile);
 
     // spherical clumps crossing the xz plane
-    for (const auto& hit : _bvh->clumpsCrossingPlane(1, 0.))
+    for (const auto& [clumpIndex, circleRadius] : _bvh->clumpsCrossingPlane(1, 0.))
     {
-        const Clump& c = _clumps[hit.first];
-        outfile->writeCircle(c.center().x(), c.center().z(), hit.second);
+        const Clump& c = _clumps[clumpIndex];
+        outfile->writeCircle(c.center().x(), c.center().z(), circleRadius);
     }
 }
 
@@ -564,10 +564,10 @@ void ClumpySphericalSpatialGrid::write_yz(SpatialGridPlotFile* outfile) const
     writeMeridionalStructure(outfile);
 
     // spherical clumps crossing the yz plane
-    for (const auto& hit : _bvh->clumpsCrossingPlane(0, 0.))
+    for (const auto& [clumpIndex, circleRadius] : _bvh->clumpsCrossingPlane(0, 0.))
     {
-        const Clump& c = _clumps[hit.first];
-        outfile->writeCircle(c.center().y(), c.center().z(), hit.second);
+        const Clump& c = _clumps[clumpIndex];
+        outfile->writeCircle(c.center().y(), c.center().z(), circleRadius);
     }
 }
 

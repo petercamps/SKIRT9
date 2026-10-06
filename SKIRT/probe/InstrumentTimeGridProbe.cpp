@@ -17,8 +17,7 @@ void InstrumentTimeGridProbe::probe()
     // loop over instruments
     for (auto instrument : find<InstrumentSystem>()->instruments())
     {
-        auto timeInstrument = dynamic_cast<TimeInstrument*>(instrument);
-        if (timeInstrument)
+        if (auto timeInstrument = dynamic_cast<TimeInstrument*>(instrument))
         {
             auto units = find<Units>();
 

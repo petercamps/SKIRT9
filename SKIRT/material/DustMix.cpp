@@ -522,8 +522,7 @@ void DustMix::performScattering(double lambda, const MaterialState* state, Photo
         {
             // sample the angles between the previous and new direction from the material-specific phase function,
             // given the incoming polarization state
-            double theta, phi;
-            std::tie(theta, phi) = generateAnglesFromPhaseFunction(lambda, pp);
+            auto [theta, phi] = generateAnglesFromPhaseFunction(lambda, pp);
 
             // rotate the Stokes vector (and the scattering plane) of the photon packet
             pp->rotateStokes(phi, pp->direction());

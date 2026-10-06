@@ -117,11 +117,11 @@ namespace
         // input string should be non-empty!!
         std::pair<size_t, string> nextReplace(string str) const
         {
-            for (const auto& find_replace : _replText)
+            for (const auto& [from, to] : _replText)
             {
-                if (StringUtils::startsWith(str, find_replace.first))
+                if (StringUtils::startsWith(str, from))
                 {
-                    return std::make_pair(find_replace.first.size(), find_replace.second);
+                    return std::make_pair(from.size(), to);
                 }
             }
             return std::make_pair(1, str.substr(0, 1));
@@ -135,9 +135,9 @@ namespace
             string result;
             while (!str.empty())
             {
-                auto pair = nextReplace(str);
-                result += pair.second;
-                str.erase(0, pair.first);
+                auto [numChars, replacement] = nextReplace(str);
+                result += replacement;
+                str.erase(0, numChars);
             }
             return result;
         }

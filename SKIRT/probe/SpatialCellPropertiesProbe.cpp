@@ -14,8 +14,7 @@
 void SpatialCellPropertiesProbe::probe()
 {
     // locate the medium system and the grid (it is OK for the medium system to have no media components)
-    auto ms = find<MediumSystem>(false);
-    if (ms)
+    if (auto ms = find<MediumSystem>(false))
     {
         auto grid = ms->grid();
         auto units = find<Units>();

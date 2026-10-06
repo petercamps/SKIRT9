@@ -122,8 +122,7 @@ namespace
     // error function with given parameters (dispersion and maximum value)
     double crossSection(double E, std::pair<double, double> sigmoid, const CrossSectionParams& p)
     {
-        double Es, sigmamax;
-        std::tie(Es, sigmamax) = sigmoid;
+        auto [Es, sigmamax] = sigmoid;
         if (E <= p.Eth - 2. * Es) return 0.;
         if (E >= p.Eth + 2. * Es) return crossSection(E, p);
         return sigmamax * (0.5 + 0.5 * std::erf((E - p.Eth) / Es));

@@ -11,8 +11,7 @@
 void SpatialGridPlotProbe::probe()
 {
     // locate the grid (it is OK for the medium system to have no media components)
-    auto ms = find<MediumSystem>(false);
-    if (ms)
+    if (auto ms = find<MediumSystem>(false))
     {
         ms->grid()->writeGridPlotFiles(this);
     }

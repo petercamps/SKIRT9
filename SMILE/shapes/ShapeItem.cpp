@@ -13,8 +13,7 @@ void ShapeItem::paint()
     paintSelf();
     for (auto child : children())
     {
-        auto c = dynamic_cast<ShapeItem*>(child);
-        if (c) c->paint();
+        if (auto c = dynamic_cast<ShapeItem*>(child)) c->paint();
     }
     popState();
 }
@@ -23,16 +22,14 @@ void ShapeItem::paint()
 
 void ShapeItem::pushState()
 {
-    auto p = dynamic_cast<ShapeItem*>(parent());
-    if (p) p->pushState();
+    if (auto p = dynamic_cast<ShapeItem*>(parent())) p->pushState();
 }
 
 ////////////////////////////////////////////////////////////////////
 
 void ShapeItem::popState()
 {
-    auto p = dynamic_cast<ShapeItem*>(parent());
-    if (p) p->popState();
+    if (auto p = dynamic_cast<ShapeItem*>(parent())) p->popState();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -43,24 +40,21 @@ void ShapeItem::paintSelf() {}
 
 void ShapeItem::setColor(double r, double g, double b)
 {
-    auto p = dynamic_cast<ShapeItem*>(parent());
-    if (p) p->setColor(r, g, b);
+    if (auto p = dynamic_cast<ShapeItem*>(parent())) p->setColor(r, g, b);
 }
 
 ////////////////////////////////////////////////////////////////////
 
 void ShapeItem::setWidth(double w)
 {
-    auto p = dynamic_cast<ShapeItem*>(parent());
-    if (p) p->setWidth(w);
+    if (auto p = dynamic_cast<ShapeItem*>(parent())) p->setWidth(w);
 }
 
 ////////////////////////////////////////////////////////////////////
 
 void ShapeItem::drawLine(double x1, double y1, double x2, double y2)
 {
-    auto p = dynamic_cast<ShapeItem*>(parent());
-    if (p) p->drawLine(x1, y1, x2, y2);
+    if (auto p = dynamic_cast<ShapeItem*>(parent())) p->drawLine(x1, y1, x2, y2);
 }
 
 ////////////////////////////////////////////////////////////////////
