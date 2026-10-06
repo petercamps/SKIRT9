@@ -56,21 +56,21 @@ release/SKIRT/main/skirt -o <output-dir> <path-to-ski-file>
 
 The output directory must already exist (`skirt` will not create it). The `.ski` file is validated against the SMILE schema at parse time — this enforces the same `ATTRIBUTE_TYPE_ALLOWED_IF`/`ATTRIBUTE_RELEVANT_IF` metadata rules as the interactive wizard, so a schema-metadata bug can make an otherwise-valid `.ski` file unparseable (or vice versa, let through a combination the runtime then rejects) independently of the C++ runtime logic — when changing behavior that depends on item metadata, both layers may need updating (see Architecture below).
 
-There is no in-repo unit test suite or `ctest` target. Correctness is checked with a separate functional/regression suite of 800+ `.ski` test cases with reference output (in a sibling `Functional9` directory, see below), run via the Python Toolkit for SKIRT (PTS): `pts test_fun <pattern>` (e.g. `pts test_fun *Disk*`) or `pts test_fun .` for the full suite, `pts endorse_fun <pattern>` to accept new reference output after verifying it. Ask before running or modifying anything under `Functional9` — it's not part of this repository.
+There is no in-repo unit test suite or `ctest` target. Correctness is checked with a separate functional/regression suite of 800+ `.ski` test cases with reference output (in a sibling `Functional10` directory on this `v10beta` branch, a copy of the SKIRT 9 suite in `Functional9` that is being updated for SKIRT 10; see below), run via the Python Toolkit for SKIRT (PTS): `pts test_fun <pattern>` (e.g. `pts test_fun *Disk*`) or `pts test_fun .` for the full suite, `pts endorse_fun <pattern>` to accept new reference output after verifying it. Neither directory is part of this repository. On this branch, never run or modify anything under `Functional9`: it holds the SKIRT 9 suite and must stay untouched. Under `Functional10`, Claude may run tests and add or modify test cases, but endorsing — replacing reference output in a `ref/` directory, whether through `pts endorse_fun` or otherwise — requires the user's explicit confirmation, given only after Claude has presented the changed test cases, the nature of the differences, and an explanation; a confirmation covers only the test cases it was given for.
 
 ### Ad hoc test cases while developing a new feature
 
-`Functional9/NEWTESTS/<CaseName>/` is a standing exception to the "ask before touching `Functional9`" rule above: a lightweight, manual staging area for trying out new `.ski` cases while a feature is still under development, before they're ready to become part of the official suite. Claude may create cases there without asking first; everything else under `Functional9` still requires asking. Convention used for these cases:
+`Functional10/NEWTESTS/<CaseName>/` is a lightweight, manual staging area for trying out new `.ski` cases while a feature is still under development, before they're ready to become part of the official suite. Convention used for these cases:
 
-- One case per subdirectory, named descriptively (e.g. `Functional9/NEWTESTS/FileFreqUnits/`), containing a single `.ski` file plus `in/`, `out/` and `ref/` subfolders — mirroring the PTS layout so a case can later be relocated into the real suite with no restructuring.
+- One case per subdirectory, named descriptively (e.g. `Functional10/NEWTESTS/FileFreqUnits/`), containing a single `.ski` file plus `in/`, `out/` and `ref/` subfolders — mirroring the PTS layout so a case can later be relocated into the real suite with no restructuring.
 - Any input file the ski file references (e.g. for a `File...`-style class) goes in `in/`.
 - Run `skirt` directly (not `pts test_fun`), single-threaded, with input/output isolated to that case's own folders:
   ```bash
-  release/SKIRT/main/skirt -t 1 -i Functional9/NEWTESTS/<CaseName>/in -o Functional9/NEWTESTS/<CaseName>/out Functional9/NEWTESTS/<CaseName>/<name>.ski
+  release/SKIRT/main/skirt -t 1 -i Functional10/NEWTESTS/<CaseName>/in -o Functional10/NEWTESTS/<CaseName>/out Functional10/NEWTESTS/<CaseName>/<name>.ski
   ```
-- Leave `ref/` empty. Comparing `out/` against expectations, promoting it into `ref/`, and moving the finished case out of `NEWTESTS` into its permanent location are for the user to do by hand — never do this automatically.
+- Leave `ref/` empty while the case is in `NEWTESTS`. Promoting `out/` into `ref/` is endorsing, and moving a finished case out of `NEWTESTS` into its permanent location adds it to the official suite; both require the user's explicit confirmation, as for endorsing above.
 - For testing an SED (or another similarly self-contained item), a minimal `NoMedium` simulation with one `PointSource` and one or more `SEDInstrument`s is enough; no medium system is needed. When a feature has multiple independent parts worth checking at different resolutions (e.g. several emission lines), give it several `SEDInstrument`s in one ski file rather than several ski files: one coarse instrument spanning the full range (using the system's `defaultWavelengthGrid`) to confirm the spectrum is ~0 away from the features under test, plus one tightly-zoomed instrument per feature, each overriding the default with its own `<wavelengthGrid>` element.
-- For a quick visual sanity check, a temporary plotting script (e.g. Python/matplotlib reading the `*_sed.dat` output) is fine, but keep the script and its images entirely out of `Functional9` — use the scratchpad instead — and delete them once reviewed, since they aren't part of the test deliverable.
+- For a quick visual sanity check, a temporary plotting script (e.g. Python/matplotlib reading the `*_sed.dat` output) is fine, but keep the script and its images entirely out of `Functional10` — use the scratchpad instead — and delete them once reviewed, since they aren't part of the test deliverable.
 
 ## Documentation and project layout
 
@@ -81,7 +81,7 @@ The full user/developer/administrator documentation published on the SKIRT proje
 - `root/text/33-DeveloperGuide/DevItems.txt` and `DevSmile.txt` — the canonical description of the `SimulationItem`/SMILE metadata system summarized below.
 - `root/text/34-AdministratorGuide/AdminFunTests.txt` — the functional/regression test procedure referenced above.
 
-On a full administrator checkout, this repo (`SKIRT9/git`) is one of several sibling project directories under `~/SKIRT`, alongside `PTS9` (the Python toolkit, providing the `pts` command used for functional tests), `Web9` (this documentation), and `Functional9` (the regression test cases) — see `AdminStruct.txt` in the Web9 repo for the full layout.
+On a full administrator checkout, this repo (`SKIRT9/git`) is one of several sibling project directories under `~/SKIRT`, alongside `PTS9` (the Python toolkit, providing the `pts` command used for functional tests), `Web9` (this documentation), `Functional9` (the regression test cases), and, for SKIRT 10 work, `Functional10` (the copy of that suite being updated for SKIRT 10) — see `AdminStruct.txt` in the Web9 repo for the full layout.
 
 ## Architecture
 
