@@ -37,7 +37,7 @@ TimeLogger::~TimeLogger()
 
     // if this destructor is executed while an exception is unwinding the stack,
     // then we shouldn't report a success message!
-    if (std::uncaught_exception()) return;
+    if (std::uncaught_exceptions() > 0) return;
 
     // get the elapsed time in milliseconds
     int64_t msecs = duration_cast<milliseconds>(steady_clock::now() - _started).count();

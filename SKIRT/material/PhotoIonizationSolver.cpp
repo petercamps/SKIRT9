@@ -12,12 +12,6 @@
 
 //////////////////////////////////////////////////////////////////////
 
-// Out-of-line definitions for static constexpr members (required for ODR-use on GCC/Linux)
-constexpr int PhotoIonizationSolver::numStages[];
-constexpr int PhotoIonizationSolver::stageOffset[];
-
-//////////////////////////////////////////////////////////////////////
-
 namespace
 {
     // physical constants in CGS

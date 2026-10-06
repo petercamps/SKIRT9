@@ -138,7 +138,7 @@ void TextInFile::close()
         _hasBinaryOpen = false;
 
         // log "done" message, except if this is a resource file or after an exception has been thrown
-        if (!_isResource && !std::uncaught_exception()) _log->info("Done reading");
+        if (!_isResource && std::uncaught_exceptions() == 0) _log->info("Done reading");
     }
 }
 

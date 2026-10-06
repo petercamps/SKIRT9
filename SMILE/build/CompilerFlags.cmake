@@ -7,7 +7,7 @@
 # adjust C++ compiler flags for current target to our needs
 # ------------------------------------------------------------------
 
-set_property(TARGET ${TARGET} PROPERTY CXX_STANDARD 14)
+set_property(TARGET ${TARGET} PROPERTY CXX_STANDARD 17)
 set_property(TARGET ${TARGET} PROPERTY CXX_STANDARD_REQUIRED ON)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang|IntelLLVM")  # the Intel oneAPI compiler supports Clang options

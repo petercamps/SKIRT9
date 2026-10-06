@@ -43,7 +43,7 @@ void TextOutFile::close()
         _out.close();
 
         // log success message, except if an exception has been thrown
-        if (!std::uncaught_exception()) _log->info(_message);
+        if (std::uncaught_exceptions() == 0) _log->info(_message);
         ;
     }
 }
