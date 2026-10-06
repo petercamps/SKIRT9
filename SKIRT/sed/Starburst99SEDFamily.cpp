@@ -50,7 +50,7 @@ double Starburst99SEDFamily::specificLuminosity(double wavelength, const Array& 
 
 ////////////////////////////////////////////////////////////////////
 
-double Starburst99SEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, const Range& wavelengthRange,
+double Starburst99SEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, Range wavelengthRange,
                                  const Array& parameters) const
 {
     double M = parameters[0] / Constants::Msun();

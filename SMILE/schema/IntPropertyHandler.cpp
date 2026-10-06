@@ -20,7 +20,7 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
-bool IntPropertyHandler::isValidValue(string value) const
+bool IntPropertyHandler::isValidValue(const string& value) const
 {
     return StringUtils::isValidInt(value);
 }

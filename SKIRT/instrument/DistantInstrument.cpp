@@ -64,14 +64,14 @@ void DistantInstrument::determineSameObserverAsPreceding(const Instrument* prece
 
 ////////////////////////////////////////////////////////////////////
 
-Direction DistantInstrument::bfkobs(const Position& /*bfr*/) const
+Direction DistantInstrument::bfkobs(Position /*bfr*/) const
 {
     return _bfkobs;
 }
 
 ////////////////////////////////////////////////////////////////////
 
-Direction DistantInstrument::bfky(const Position& /*bfr*/) const
+Direction DistantInstrument::bfky(Position /*bfr*/) const
 {
     return _bfky;
 }

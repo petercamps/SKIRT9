@@ -70,7 +70,7 @@ public:
         over all entities in the collection, \f[\sum_m f(m)\,w_m.\f] The argument specifies the
         scalar field \f$f(m)\f$; the call-back function should return the field value corresponding
         to a given entity index. */
-    double accumulate(std::function<double(int m)> value);
+    double accumulate(const std::function<double(int m)>& value);
 
     /** This function returns the nominator and denominator for the weighted average of a given
         scalar field \f$f(m)\f$ with given external weight \f$\omega(m)\f$ over all entities in the
@@ -81,7 +81,8 @@ public:
         The function combines the external weights with the weights stored internally for each
         entity in the collection. Specifically, it calculates \f$\sum_m f(m)\,\omega(m)\,w_m\f$ and
         \f$\sum_m \omega(m)\,w_m\f$. */
-    std::pair<double, double> average(std::function<double(int m)> value, std::function<double(int m)> weight);
+    std::pair<double, double> average(const std::function<double(int m)>& value,
+                                      const std::function<double(int m)>& weight);
 
     /** This function returns the weighted average of a given scalar field \f$f(m)\f$ with given
         external weight \f$\omega(m)\f$ over all entities in the collection. The arguments
@@ -92,7 +93,7 @@ public:
         The function combines the external weights with the weights stored internally for each
         entity in the collection. Specifically, it calculates \f$\sum_m f(m)\,\omega(m)\,w_m /
         \sum_m \omega(m)\,w_m\f$. */
-    double averageValue(std::function<double(int m)> value, std::function<double(int m)> weight);
+    double averageValue(std::function<double(int m)> value, const std::function<double(int m)>& weight);
 
     /** This function returns the nominator and denominator for the weighted average of a given
         vector field \f${\bf{f}}(m)\f$ with given external weight \f$\omega(m)\f$ over all entities
@@ -103,7 +104,7 @@ public:
         The function combines the external weights with the weights stored internally for each
         entity in the collection. Specifically, it calculates \f$\sum_m
         {\bf{f}}(m)\,\omega(m)\,w_m\f$ and \f$\sum_m \omega(m)\,w_m\f$. */
-    std::pair<Vec, double> average(std::function<Vec(int m)> value, std::function<double(int m)> weight);
+    std::pair<Vec, double> average(const std::function<Vec(int m)>& value, const std::function<double(int m)>& weight);
 
     /** This function returns the weighted average of a given vector field \f${\bf{f}}(m)\f$ with
         given external weight \f$\omega(m)\f$ over all entities in the collection. The arguments
@@ -114,7 +115,7 @@ public:
         The function combines the external weights with the weights stored internally for each
         entity in the collection. Specifically, it calculates \f$\sum_m {\bf{f}}(m)\,\omega(m)\,w_m
         / \sum_m \omega(m)\,w_m\f$. */
-    Vec averageValue(std::function<Vec(int m)> value, std::function<double(int m)> weight);
+    Vec averageValue(std::function<Vec(int m)> value, const std::function<double(int m)>& weight);
 
     // ------- Data members -------
 

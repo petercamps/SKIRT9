@@ -34,8 +34,9 @@ ProbeFormBridge::ProbeFormBridge(const Probe* probe, const Form* form)
 
 ////////////////////////////////////////////////////////////////////
 
-void ProbeFormBridge::writeQuantity(string fileid, string projectedFileid, string quantity, string projectedQuantity,
-                                    string description, string projectedDescription, ScalarValueInCell valueInCell)
+void ProbeFormBridge::writeQuantity(string fileid, string projectedFileid, const string& quantity,
+                                    const string& projectedQuantity, string description, string projectedDescription,
+                                    ScalarValueInCell valueInCell)
 {
     _type = Type::GridScalarAccumulated;
 
@@ -58,8 +59,9 @@ void ProbeFormBridge::writeQuantity(string fileid, string projectedFileid, strin
 
 ////////////////////////////////////////////////////////////////////
 
-void ProbeFormBridge::writeQuantity(string fileid, string quantity, string description, string projectedDescription,
-                                    ScalarValueInCell valueInCell, WeightInCell weightInCell)
+void ProbeFormBridge::writeQuantity(string fileid, const string& quantity, string description,
+                                    string projectedDescription, ScalarValueInCell valueInCell,
+                                    WeightInCell weightInCell)
 {
     _type = Type::GridScalarAveraged;
 
@@ -83,8 +85,9 @@ void ProbeFormBridge::writeQuantity(string fileid, string quantity, string descr
 
 ////////////////////////////////////////////////////////////////////
 
-void ProbeFormBridge::writeQuantity(string fileid, string quantity, string description, string projectedDescription,
-                                    VectorValueInCell valueInCell, WeightInCell weightInCell)
+void ProbeFormBridge::writeQuantity(string fileid, const string& quantity, string description,
+                                    string projectedDescription, VectorValueInCell valueInCell,
+                                    WeightInCell weightInCell)
 {
     _type = Type::GridVectorAveraged;
 
@@ -111,9 +114,10 @@ void ProbeFormBridge::writeQuantity(string fileid, string quantity, string descr
 
 ////////////////////////////////////////////////////////////////////
 
-void ProbeFormBridge::writeQuantity(string fileid, string projectedFileid, string quantity, string projectedQuantity,
-                                    string description, string projectedDescription, const Array& axis, string axisUnit,
-                                    AddColumnDefinitions addColumnDefinitions, CompoundValueInCell valueInCell)
+void ProbeFormBridge::writeQuantity(string fileid, string projectedFileid, const string& quantity,
+                                    const string& projectedQuantity, string description, string projectedDescription,
+                                    const Array& axis, string axisUnit, AddColumnDefinitions addColumnDefinitions,
+                                    CompoundValueInCell valueInCell)
 {
     _type = Type::GridCompoundAccumulated;
 
@@ -191,8 +195,8 @@ void ProbeFormBridge::writeQuantity(string fileid, string unit, string descripti
 
 ////////////////////////////////////////////////////////////////////
 
-void ProbeFormBridge::writeQuantity(string fileid, string projectedFileid, string quantity, string projectedQuantity,
-                                    string description, string projectedDescription,
+void ProbeFormBridge::writeQuantity(string fileid, string projectedFileid, const string& quantity,
+                                    const string& projectedQuantity, string description, string projectedDescription,
                                     ScalarValueAtPosition valueAtPosition, ScalarValueAlongPath valueAlongPath)
 {
     _type = Type::InputScalar;
@@ -217,8 +221,8 @@ void ProbeFormBridge::writeQuantity(string fileid, string projectedFileid, strin
 
 ////////////////////////////////////////////////////////////////////
 
-void ProbeFormBridge::writeQuantity(string fileid, string projectedFileid, string quantity, string projectedQuantity,
-                                    string description, string projectedDescription,
+void ProbeFormBridge::writeQuantity(string fileid, string projectedFileid, const string& quantity,
+                                    const string& projectedQuantity, string description, string projectedDescription,
                                     VectorValueAtPosition valueAtPosition, VectorValueAlongPath valueAlongPath)
 {
     _type = Type::InputVector;
@@ -274,9 +278,10 @@ void ProbeFormBridge::writeQuantity(string fileid, string projectedFileid, strin
 
 ////////////////////////////////////////////////////////////////////
 
-void ProbeFormBridge::writeQuantity(string fileid, string projectedFileid, string quantity, string projectedQuantity,
-                                    string description, string projectedDescription,
-                                    const vector<const Snapshot*>& snapshots, ScalarValueInEntity valueInEntity)
+void ProbeFormBridge::writeQuantity(const string& fileid, const string& projectedFileid, const string& quantity,
+                                    const string& projectedQuantity, const string& description,
+                                    const string& projectedDescription, const vector<const Snapshot*>& snapshots,
+                                    ScalarValueInEntity valueInEntity)
 {
     // define the call-back function to retrieve an accumulated value at a given position
     auto valueAtPosition = [&snapshots, valueInEntity](Position bfr) {
@@ -308,9 +313,9 @@ void ProbeFormBridge::writeQuantity(string fileid, string projectedFileid, strin
 
 ////////////////////////////////////////////////////////////////////
 
-void ProbeFormBridge::writeQuantity(string fileid, string quantity, string description, string projectedDescription,
-                                    const vector<const Snapshot*>& snapshots, ScalarValueInEntity valueInEntity,
-                                    WeightInEntity weightInEntity)
+void ProbeFormBridge::writeQuantity(const string& fileid, const string& quantity, const string& description,
+                                    const string& projectedDescription, const vector<const Snapshot*>& snapshots,
+                                    ScalarValueInEntity valueInEntity, WeightInEntity weightInEntity)
 {
     // define the call-back function to retrieve an averaged value at a given position
     auto valueAtPosition = [&snapshots, valueInEntity, weightInEntity](Position bfr) {
@@ -352,9 +357,9 @@ void ProbeFormBridge::writeQuantity(string fileid, string quantity, string descr
 
 ////////////////////////////////////////////////////////////////////
 
-void ProbeFormBridge::writeQuantity(string fileid, string quantity, string description, string projectedDescription,
-                                    const vector<const Snapshot*>& snapshots, VectorValueInEntity valueInEntity,
-                                    WeightInEntity weightInEntity)
+void ProbeFormBridge::writeQuantity(const string& fileid, const string& quantity, const string& description,
+                                    const string& projectedDescription, const vector<const Snapshot*>& snapshots,
+                                    VectorValueInEntity valueInEntity, WeightInEntity weightInEntity)
 {
     // define the call-back function to retrieve an averaged value at a given position
     auto valueAtPosition = [&snapshots, valueInEntity, weightInEntity](Position bfr) {

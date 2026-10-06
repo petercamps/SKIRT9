@@ -11,7 +11,8 @@
 
 ////////////////////////////////////////////////////////////////////
 
-void ImportedMediumVelocityProbe::probeImportedMedium(string sh, const ImportedMedium* medium, const Snapshot* snapshot)
+void ImportedMediumVelocityProbe::probeImportedMedium(const string& sh, const ImportedMedium* medium,
+                                                      const Snapshot* snapshot)
 {
     if (snapshot->hasVelocity())
     {

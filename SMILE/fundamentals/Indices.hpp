@@ -35,7 +35,7 @@ private:
     {
     public:
         Iterator(int value, int step) : _value(value), _step(step) {}
-        bool operator!=(Iterator const& other) const { return _value != other._value; }
+        bool operator!=(Iterator other) const { return _value != other._value; }
         int operator*() const { return _value; }
         Iterator& operator++()
         {

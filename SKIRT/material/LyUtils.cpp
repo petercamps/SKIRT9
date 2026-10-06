@@ -80,7 +80,7 @@ std::pair<Vec, double> LyUtils::sampleAtomVelocity(double lambda, double center,
 
 ////////////////////////////////////////////////////////////////////
 
-double LyUtils::shiftWavelength(double lambda, const Vec& vatom, const Direction& kin, const Direction& kout)
+double LyUtils::shiftWavelength(double lambda, Vec vatom, Direction kin, Direction kout)
 {
     return lambda / (1 - Vec::dot(kin, vatom) / c) * (1 - Vec::dot(kout, vatom) / c);
 }

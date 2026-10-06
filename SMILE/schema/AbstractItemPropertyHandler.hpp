@@ -27,7 +27,7 @@ public:
     /** Returns true if the given string can be successfully converted to a value of the property's
         type. For item and item list properties, the function returns true if the string matches
         the type name of one of the currently allowed descendants, and false otherwise. */
-    bool isValidValue(string value) const override;
+    bool isValidValue(const string& value) const override;
 
     /** Returns true, indicating that the handled property type is compound, i.e. it aggregates
         other items that are part of the item hierarchy. */

@@ -61,17 +61,17 @@ class Units : public SimulationItem
 public:
     /** This function returns true if the specified combination of physical quantity and unit or
         unit system is present in the unit definition, and false if not. */
-    bool has(string qty, string unit) const;
+    bool has(const string& qty, const string& unit) const;
 
     /** This function returns the definition of the specified units in the form of a tuple
         providing the front factor, power exponent and offset for conversion from input to internal
         quantities. */
-    std::tuple<double, double, double> def(string qty, string unit) const;
+    std::tuple<double, double, double> def(const string& qty, const string& unit) const;
 
     /** This function converts a physical value from the specified units to internal program units.
         If the specified combination is not present in the unit definition, the function throws an
         exception. */
-    double in(string qty, string unit, double value) const;
+    double in(const string& qty, const string& unit, double value) const;
 
     /** This function converts a specific luminosity from a given input style to the internal
         per-wavelength style, assuming a given wavelength. Both the input values and the returned
@@ -104,13 +104,13 @@ public:
         program for the specified physical quantity. The name of the physical quantity must be
         specified in all lowercase and without any spaces. The function throws a fatal error if the
         specified physical quantity is unknown. */
-    string unit(string qty) const;
+    string unit(const string& qty) const;
 
     /** This function converts a physical value from internal SI units to the output units adopted
         by the program. The name of the physical quantity must be specified in all lowercase and
         without any spaces. If the specified combination of physical quantity and unit is unknown,
         the function throws a fatal error. */
-    double out(string qty, double value) const;
+    double out(const string& qty, double value) const;
 
     /** This function returns a string containing the name of the unit of length adopted by the
         program for output. Apart from this unit of length, the program uses an independent unit of

@@ -12,7 +12,7 @@
 
 ////////////////////////////////////////////////////////////////////
 
-bool AbstractItemPropertyHandler::isValidValue(string value) const
+bool AbstractItemPropertyHandler::isValidValue(const string& value) const
 {
     return !value.empty() && schema()->inherits(value, baseType())
            && nameManager()->evaluateBoolean(schema()->allowed(value));

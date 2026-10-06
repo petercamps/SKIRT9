@@ -90,14 +90,14 @@ protected:
         convert a value in this unit to a value in the corresponding internal program unit. The
         conversion is performed using \f[ v_\mathrm{program} = f\,v^p + o.\f] If not specified, the
         power index defaults to one and the offset defaults to zero. */
-    void addUnit(string quantity, string unit, double factor, double power = 1., double offset = 0.);
+    void addUnit(const string& quantity, const string& unit, double factor, double power = 1., double offset = 0.);
 
     /** This function specifies the default unit for a particular quantity in a given unit system.
         It can be called from the constructor of a subclass to load the appropriate information
         into the definition. In order of occurrence, the arguments specify the name of the unit
         system, the name of the physical quantity, and the name of the corresponding default unit.
         */
-    void addDefaultUnit(string unitSystem, string quantity, string unit);
+    void addDefaultUnit(const string& unitSystem, const string& quantity, string unit);
 
     // ================== Retrieving information ==================
 
@@ -111,26 +111,26 @@ public:
         quantity must always be specified. The unit can be specified either directly, or
         indirectly by providing the name of a unit system. In the latter case, the function uses
         the default unit for the specified quantity in the specified unit system. */
-    bool has(string qty, string unit) const;
+    bool has(const string& qty, string unit) const;
 
     /** This function returns the definition of the specified combination of physical quantity and
         unit or unit system in the form of a tuple providing the front factor, power exponent and
         offset for conversion from input to internal quantities. Refer to the has() function for a
         description of how to specify the physical quantity and unit. If the specified combination
         is not present in the unit definition, the function throws an exception. */
-    std::tuple<double, double, double> def(string qty, string unit) const;
+    std::tuple<double, double, double> def(const string& qty, string unit) const;
 
     /** This function converts a physical value from the specified units to internal program units.
         Refer to the has() function for a description of how to specify the physical quantity and
         unit. If the specified combination is not present in the unit definition, the function
         throws an exception. */
-    double in(string qty, string unit, double value) const;
+    double in(const string& qty, string unit, double value) const;
 
     /** This function converts a physical value from internal program units to the specified units.
         Refer to the has() function for a description of how to specify the physical quantity and
         unit. If the specified combination is not present in the unit definition, the function
         throws an exception. */
-    double out(string qty, string unit, double value) const;
+    double out(const string& qty, string unit, double value) const;
 
     /** This function returns the name of the default unit listed in the schema definition for the
         specified physical quantity in the specified unit system. If the unit style is specified
@@ -139,7 +139,7 @@ public:
         function tries again with the regular quantity name. If the specified combination of
         physical quantity (embellished or not) and unit system is not present in the unit
         definition, the function throws an exception. */
-    string unit(string qty, string unitSystem, string unitStyle = string()) const;
+    string unit(string qty, string unitSystem, const string& unitStyle = string()) const;
 
     // ================== Data members ==================
 

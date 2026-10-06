@@ -64,7 +64,7 @@ protected:
         of occurrence. The first argument is a string representation of the zero-based component
         index (including non-imported components). The implementation in this base class does
         nothing. */
-    virtual void probeImportedMedium(string sh, const ImportedMedium* medium, const Snapshot* snapshot);
+    virtual void probeImportedMedium(const string& sh, const ImportedMedium* medium, const Snapshot* snapshot);
 };
 
 ////////////////////////////////////////////////////////////////////

@@ -89,12 +89,12 @@ public:
     void determineSameObserverAsPreceding(const Instrument* precedingInstrument) override;
 
     /** Returns the direction towards the eye from the given photon packet launching position. */
-    Direction bfkobs(const Position& bfr) const override;
+    Direction bfkobs(Position bfr) const override;
 
     /** Returns the direction along the positive y-axis of the instrument frame, expressed in model
         coordinates. The provided photon packet's launching position is not used because the
         orientation of the instrument frame does not depend on it. */
-    Direction bfky(const Position& bfr) const override;
+    Direction bfky(Position bfr) const override;
 
 protected:
     /** This function simulates the detection of a photon packet by the instrument. */

@@ -496,7 +496,7 @@ void MonteCarloSimulation::runMergedEmissionIterations()
 
 ////////////////////////////////////////////////////////////////////
 
-void MonteCarloSimulation::wait(std::string scope)
+void MonteCarloSimulation::wait(const std::string& scope)
 {
     if (ProcessManager::isMultiProc())
     {

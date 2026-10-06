@@ -141,7 +141,7 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
-void XmlHierarchyWriter::write(Item* item, const SchemaDef* schema, string filePath, string producer)
+void XmlHierarchyWriter::write(Item* item, const SchemaDef* schema, const string& filePath, const string& producer)
 {
     // setup the XML writer and cache some pointers for use in other member functions
     XmlWriter writer(filePath);

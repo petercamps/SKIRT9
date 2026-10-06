@@ -256,8 +256,8 @@ void ProcessManager::sumToRoot(Array& arr, bool wait)
 
 //////////////////////////////////////////////////////////////////////
 
-void ProcessManager::broadcastAllToAll(std::function<void(vector<double>&)> producer,
-                                       std::function<void(const vector<double>&)> consumer)
+void ProcessManager::broadcastAllToAll(const std::function<void(vector<double>&)>& producer,
+                                       const std::function<void(const vector<double>&)>& consumer)
 {
 #ifdef BUILD_WITH_MPI
     if (isMultiProc())

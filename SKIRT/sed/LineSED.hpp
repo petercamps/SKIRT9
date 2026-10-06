@@ -58,7 +58,7 @@ public:
     /** This function returns the normalized integrated luminosity \f$L\f$ (i.e. radiative power)
         over the specified wavelength range. For the current class, this corresponds to the sum of
         the normalized luminosities for all lines with a wavelength in the specified range. */
-    double integratedLuminosity(const Range& wavelengthRange) const override;
+    double integratedLuminosity(Range wavelengthRange) const override;
 
     /** This function draws a random wavelength from the normalized spectral energy distribution.
         For the current class, it chooses one of the line wavelengths. */

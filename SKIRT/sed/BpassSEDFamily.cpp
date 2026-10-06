@@ -62,8 +62,7 @@ double BpassSEDFamily::specificLuminosity(double wavelength, const Array& parame
 
 ////////////////////////////////////////////////////////////////////
 
-double BpassSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, const Range& wavelengthRange,
-                           const Array& parameters) const
+double BpassSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, Range wavelengthRange, const Array& parameters) const
 {
     double M = parameters[0] / Constants::Msun();
     double Z = parameters[1];

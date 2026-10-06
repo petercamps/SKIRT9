@@ -97,7 +97,7 @@ bool Log::memoryLogging() const
 
 ////////////////////////////////////////////////////////////////////
 
-void Log::info(string message)
+void Log::info(const string& message)
 {
     // Pass the message to the linked log
     if (_link) _link->info(message);
@@ -187,7 +187,7 @@ void Log::warning(string message, bool store)
 
 ////////////////////////////////////////////////////////////////////
 
-void Log::success(string message)
+void Log::success(const string& message)
 {
     // Pass the message to the linked log
     if (_link) _link->success(message);

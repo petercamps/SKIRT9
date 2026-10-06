@@ -40,7 +40,7 @@ double BlackBodySED::specificLuminosity(double wavelength) const
 
 //////////////////////////////////////////////////////////////////////
 
-void BlackBodySED::specificLuminosityArray(Array& lambdav, Array& pv, const Range& wavelengthRange) const
+void BlackBodySED::specificLuminosityArray(Array& lambdav, Array& pv, Range wavelengthRange) const
 {
     Array Pv;  // the contents of this array is not used, so this could be optimized if needed
     double Ltot = _planck->cdf(lambdav, pv, Pv, wavelengthRange);
@@ -49,7 +49,7 @@ void BlackBodySED::specificLuminosityArray(Array& lambdav, Array& pv, const Rang
 
 //////////////////////////////////////////////////////////////////////
 
-double BlackBodySED::integratedLuminosity(const Range& wavelengthRange) const
+double BlackBodySED::integratedLuminosity(Range wavelengthRange) const
 {
     Array lambdav, pv, Pv;  // the contents of these arrays is not used, so this could be optimized if needed
     return _planck->cdf(lambdav, pv, Pv, wavelengthRange) / _Ltot;

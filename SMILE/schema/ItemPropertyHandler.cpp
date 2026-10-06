@@ -63,7 +63,7 @@ bool ItemPropertyHandler::setValue(Item* value)
 
 ////////////////////////////////////////////////////////////////////
 
-bool ItemPropertyHandler::setToNewItemOfType(string type)
+bool ItemPropertyHandler::setToNewItemOfType(const string& type)
 {
     if (isValidValue(type))
     {

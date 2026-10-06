@@ -419,7 +419,7 @@ private:
         to finish the work (i.e. it places a barrier). The string argument is included in the log
         message to indicate the scope of work that is being finished. If there is only a single
         process, the function does nothing. */
-    void wait(string scope);
+    void wait(const string& scope);
 
     /** This function initializes the progress counter used in logprogress() for the specified
         segment and logs the number of photon packets to be processed. */

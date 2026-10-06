@@ -16,7 +16,7 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
-SpatialGridPath::SpatialGridPath(const Position& bfr, const Direction& bfk) : _bfr(bfr), _bfk(bfk)
+SpatialGridPath::SpatialGridPath(Position bfr, Direction bfk) : _bfr(bfr), _bfk(bfk)
 {
     _segments.reserve(INITIAL_CAPACITY);
 }

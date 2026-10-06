@@ -66,7 +66,7 @@ public:
     /** This alternate constructor constructs a stored columns instance and immediately associates
         a given stored columns file with it by calling the open() function. Refer to the open()
         function for more information. */
-    StoredColumns(string filename) { open(filename); }
+    StoredColumns(const string& filename) { open(filename); }
 
     /** The destructor releases the association with a stored columns file established by the
         alternate constructor or the open() function, if there is any. */

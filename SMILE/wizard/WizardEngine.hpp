@@ -114,13 +114,13 @@ public:
 
 public slots:
     /** This function updates the basic choice to the specified values. */
-    void setBasicChoice(bool openExisting, string libraryPath, string schemaName);
+    void setBasicChoice(bool openExisting, const string& libraryPath, string schemaName);
 
     /** If the current root does not have the specified type (or if there is no current root), this
         function deletes the current dataset (if present), and replaces it by a newly created root
         item of the specified type. If the current root already has the specified type, this
         function does nothing. */
-    void setRootType(string newRootType);
+    void setRootType(const string& newRootType);
 
     /** This function deletes the current dataset (if present), and replaces it by the new dataset
         specified through it root item. The function adopts ownership for specified dataset. This

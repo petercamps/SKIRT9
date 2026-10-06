@@ -9,7 +9,7 @@
 
 ////////////////////////////////////////////////////////////////////
 
-SpatialGridPlotFile::SpatialGridPlotFile(const SimulationItem* item, string filename)
+SpatialGridPlotFile::SpatialGridPlotFile(const SimulationItem* item, const string& filename)
     : TextOutFile(item, filename, "data to plot the spatial grid")
 {
     // Set the precision

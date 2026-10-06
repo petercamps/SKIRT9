@@ -416,7 +416,7 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
-std::unique_ptr<Item> XmlHierarchyCreator::readFile(const SchemaDef* schema, string filepath)
+std::unique_ptr<Item> XmlHierarchyCreator::readFile(const SchemaDef* schema, const string& filepath)
 {
     // construct the XML reader and call the common read() function
     XmlReader reader(filepath);
@@ -425,7 +425,8 @@ std::unique_ptr<Item> XmlHierarchyCreator::readFile(const SchemaDef* schema, str
 
 ////////////////////////////////////////////////////////////////////
 
-std::unique_ptr<Item> XmlHierarchyCreator::readString(const SchemaDef* schema, string contents, string description)
+std::unique_ptr<Item> XmlHierarchyCreator::readString(const SchemaDef* schema, const string& contents,
+                                                      const string& description)
 {
     // construct the XML reader and call the common read() function
     std::istringstream stream(contents);

@@ -69,7 +69,7 @@ namespace
 {
     // this function writes one of the output files for this probe;
     // Jv must be discretized on the simulation's radiation field wavelength grid
-    void writeEmissivitiesForField(Probe* probe, const Array& Jv, string name, string title)
+    void writeEmissivitiesForField(Probe* probe, const Array& Jv, const string& name, const string& title)
     {
         auto ms = probe->find<MediumSystem>();
         auto units = probe->find<Units>();

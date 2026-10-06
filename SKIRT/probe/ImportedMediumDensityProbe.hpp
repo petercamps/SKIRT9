@@ -25,7 +25,7 @@ class ImportedMediumDensityProbe : public InputModelFormProbe
 
 protected:
     /** This function probes the specified imported medium component. */
-    void probeImportedMedium(string sh, const ImportedMedium* medium, const Snapshot* snapshot) override;
+    void probeImportedMedium(const string& sh, const ImportedMedium* medium, const Snapshot* snapshot) override;
 };
 
 ////////////////////////////////////////////////////////////////////

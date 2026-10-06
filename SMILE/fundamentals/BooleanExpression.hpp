@@ -63,14 +63,15 @@ public:
         identifier is replaced by the value returned by the specified callback function. The
         function throws an error if the expression string does not conform to the syntax of a
         Boolean expression. */
-    static bool evaluateBoolean(string expression, std::function<bool(string)> isIdentifierTrue);
+    static bool evaluateBoolean(const string& expression, const std::function<bool(string)>& isIdentifierTrue);
 
     /** This function evaluates the specified string as a conditional value expression in the
         format decribed in the class header, and returns the result. When evaluating the
         expression, each identifier is replaced by the value returned by the specified callback
         function. The function throws an error if the expression string does not conform to the
         syntax of a conditional value expression. */
-    static string evaluateConditionalValue(string expression, std::function<bool(string)> isIdentifierTrue);
+    static string evaluateConditionalValue(const string& expression,
+                                           const std::function<bool(string)>& isIdentifierTrue);
 };
 
 ////////////////////////////////////////////////////////////////////

@@ -26,7 +26,7 @@ public:
     /** Returns true if the given string can be successfully converted to a value of the property's
         type. For string properties, the function returns true if the string is nonempty, and false
         if it is empty. */
-    bool isValidValue(string value) const override;
+    bool isValidValue(const string& value) const override;
 
     /** Causes the name manager associated with this handler to insert names into the global and/or
         local name sets corresponding to the current value of the target property. For string
@@ -49,7 +49,7 @@ public:
     string value() const;
 
     /** Sets the value of the handled property in the target item. */
-    void setValue(string value);
+    void setValue(const string& value);
 };
 
 ////////////////////////////////////////////////////////////////////

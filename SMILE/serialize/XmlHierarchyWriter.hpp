@@ -22,7 +22,7 @@ public:
         schema definition to an XML file with the specified file path. The optional last argument
         specifies a producer identification string to be included as an attribute on the root
         element. If an error occurs, this function throws a fatal error. */
-    static void write(Item* item, const SchemaDef* schema, string filePath, string producer = string());
+    static void write(Item* item, const SchemaDef* schema, const string& filePath, const string& producer = string());
 };
 
 ////////////////////////////////////////////////////////////////////

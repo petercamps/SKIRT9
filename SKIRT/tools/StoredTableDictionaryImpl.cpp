@@ -104,7 +104,7 @@ void StoredTableDictionary_Impl::close(const string& filePath)
 
 ////////////////////////////////////////////////////////////////////
 
-bool StoredTableDictionary_Impl::has(const Index& index, string name)
+bool StoredTableDictionary_Impl::has(const Index& index, const string& name)
 {
     return index.count(normalize(name)) != 0;
 }

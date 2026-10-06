@@ -20,7 +20,7 @@ public:
     /** This function sets the \em configured state for the specified property in the specified
         item to the specified integer value. A newly created item has a \em configured state of
         zero. */
-    static void setPropertyConfiguredState(Item* item, string property, int configured);
+    static void setPropertyConfiguredState(Item* item, const string& property, int configured);
 
     /** This function sets the \em configured state of all properties in the specified dataset
         hierarchy to one. The function calls itself recursively to process the children of the
@@ -30,7 +30,7 @@ public:
     /** This function returns the \em configured state for the specified property in the specified
         item. If the \em configured state has never been set for this property and item, the
         function returns zero. */
-    static int propertyConfiguredState(Item* item, string property);
+    static int propertyConfiguredState(Item* item, const string& property);
 
     /** This function sets the \em complete state for the specified item to true. A newly created
         item has a \em complete state of false. */
@@ -52,12 +52,12 @@ public:
     /** This function stores the selected row index for the specified property in the specified
         item to the specified integer value. The function should be called only for item list
         properties, but the current implementation does not enforce this. */
-    static void storeSelectedRow(Item* item, string property, int row);
+    static void storeSelectedRow(Item* item, const string& property, int row);
 
     /** This function returns the stored selected row index for the specified property in the
         specified item. If the selected row index has never been stored for this property and item,
         the function returns zero. */
-    static int retrieveSelectedRow(Item* item, string property);
+    static int retrieveSelectedRow(Item* item, const string& property);
 };
 
 ////////////////////////////////////////////////////////////////////

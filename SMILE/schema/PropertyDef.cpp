@@ -31,7 +31,7 @@ void PropertyDef::setAccessor(const PropertyAccessor* accessor)
 
 ////////////////////////////////////////////////////////////////////
 
-string PropertyDef::enumTitle(string enumName) const
+string PropertyDef::enumTitle(const string& enumName) const
 {
     if (auto it = std::find(_enumNames.cbegin(), _enumNames.cend(), enumName); it != _enumNames.cend())
         return _enumTitles[it - _enumNames.cbegin()];

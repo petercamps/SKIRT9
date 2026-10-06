@@ -33,7 +33,7 @@ namespace
 namespace
 {
     // returns true if the name part of the given specification string matches the given 8-byte item
-    bool matchesName(string specification, const StabItem* nameItem)
+    bool matchesName(const string& specification, const StabItem* nameItem)
     {
         // parse the name part from the specified string
         auto index = specification.find('(');
@@ -46,7 +46,7 @@ namespace
     }
 
     // returns true if the unit part of the given specification string matches the given 8-byte item
-    bool matchesUnit(string specification, const StabItem* unitItem)
+    bool matchesUnit(const string& specification, const StabItem* unitItem)
     {
         // parse the unit part from the specified string
         auto size = specification.size();
@@ -167,9 +167,9 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
-void StoredTable_Impl::open(size_t numAxes, const SimulationItem* item, string filename, bool resource, string axes,
-                            string quantity, string& filePath, const double** axBeg, const double** qtyBeg,
-                            size_t* axLen, size_t* qtyStep, bool* axLog, bool* qtyLog)
+void StoredTable_Impl::open(size_t numAxes, const SimulationItem* item, string filename, bool resource,
+                            const string& axes, const string& quantity, string& filePath, const double** axBeg,
+                            const double** qtyBeg, size_t* axLen, size_t* qtyStep, bool* axLog, bool* qtyLog)
 {
     // add the mandatory filename extension if needed
     if (!StringUtils::endsWith(filename, ".stab")) filename += ".stab";
@@ -195,9 +195,9 @@ void StoredTable_Impl::open(size_t numAxes, const SimulationItem* item, string f
 
 ////////////////////////////////////////////////////////////////////
 
-void StoredTable_Impl::openAt(size_t numAxes, string filePath, size_t byteOffset, string label, string axes,
-                              string quantity, const double** axBeg, const double** qtyBeg, size_t* axLen,
-                              size_t* qtyStep, bool* axLog, bool* qtyLog)
+void StoredTable_Impl::openAt(size_t numAxes, const string& filePath, size_t byteOffset, const string& label,
+                              const string& axes, const string& quantity, const double** axBeg, const double** qtyBeg,
+                              size_t* axLen, size_t* qtyStep, bool* axLog, bool* qtyLog)
 {
     // acquire a memory map for the file; the function returns zeros if the memory map cannot be created
     auto [start, size] = System::acquireMemoryMap(filePath);
@@ -211,7 +211,7 @@ void StoredTable_Impl::openAt(size_t numAxes, string filePath, size_t byteOffset
 
 ////////////////////////////////////////////////////////////////////
 
-void StoredTable_Impl::close(std::string filePath)
+void StoredTable_Impl::close(const std::string& filePath)
 {
     if (!filePath.empty()) System::releaseMemoryMap(filePath);
 }

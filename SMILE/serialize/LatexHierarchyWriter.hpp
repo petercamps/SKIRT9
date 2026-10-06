@@ -26,7 +26,8 @@ public:
         dataset has been loaded. The optional last argument specifies a producer identification
         string to be included as an attribute on the root element. If an error occurs, this
         function throws a fatal error. */
-    static void write(Item* item, const SchemaDef* schema, string filePath, string dataset, string producer = string());
+    static void write(Item* item, const SchemaDef* schema, const string& filePath, const string& dataset,
+                      const string& producer = string());
 };
 
 ////////////////////////////////////////////////////////////////////

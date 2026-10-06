@@ -87,7 +87,7 @@ protected:
 public:
     /** Sets the (absolute or relative) path for input files. An empty string (the default value)
         means the current directory. */
-    void setInputPath(string value);
+    void setInputPath(const string& value);
 
     /** Returns the (absolute or relative) path for input files. */
     string inputPath() const;
@@ -98,7 +98,7 @@ public:
 
     /** Sets the (absolute or relative) path for output files. An empty string (the default value)
         means the current directory. */
-    void setOutputPath(string value);
+    void setOutputPath(const string& value);
 
     /** Returns the (absolute or relative) path for output files. */
     string outputPath() const;
@@ -113,7 +113,7 @@ public:
         name, relative to the output path returned by outputPath(). The prefix returned by
         outputPrefix() is inserted in front of the filename specified here. The prefix and the
         filename are separated by an underscore. */
-    string output(string name) const;
+    string output(const string& name) const;
 
     //======================== Resource files =======================
 
@@ -129,7 +129,7 @@ public:
         filename and filename extension). The function searches the list of available resource
         files as described in the class header. If the specified resource file cannot be located, a
         fatal error is thrown. */
-    static string resource(string name);
+    static string resource(const string& name);
 
     /** This function returns the filename (without directory segments) for a resource file with
         the specified type and with a filename including the specified segments. The function
@@ -140,7 +140,7 @@ public:
         contain each of the specified segments. If no or multiple resources files match these
         requirements, the function throws a fatal error. If a single resource file matches, the
         function returns its filename. */
-    static string resourceName(string type, const vector<string>& segments);
+    static string resourceName(const string& type, const vector<string>& segments);
 
     //======================== Resource packs =======================
 
@@ -152,11 +152,11 @@ public:
 
     /** This function returns the expected version number for the resource pack with the specified
         name, or zero if the name is not in the list of expected packs. */
-    static int expectedPackVersion(string name);
+    static int expectedPackVersion(const string& name);
 
     /** This function returns the version number for the installed resource pack with the specified
         name, or zero if the pack is not installed. */
-    static int installedPackVersion(string name);
+    static int installedPackVersion(const string& name);
 
     //======================== Data Members ========================
 

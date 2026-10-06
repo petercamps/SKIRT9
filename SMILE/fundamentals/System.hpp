@@ -94,27 +94,27 @@ public:
 
     /** This function writes the specified message to the console, adding a time stamp and using a
         color that depends on the specified log level (if the console supports color). */
-    static void log(string message, LogLevel level = LogLevel::Info);
+    static void log(const string& message, LogLevel level = LogLevel::Info);
 
     /** This function prompts for and returns user input on the console using the specified
         message. */
-    static string prompt(string message);
+    static string prompt(const string& message);
 
     // ================== File System ==================
 
     /** This function returns an input file stream opened on the specified file path. On Windows
         the function replaces forward slashes in the file path by backward slashes. */
-    static std::ifstream ifstream(string path);
+    static std::ifstream ifstream(const string& path);
 
     /** This function returns an output file stream opened on the specified file path. If a file
         already exists at the specified path, by default it is overwritten. However, if the \em
         append flag is specified and is true, new output will be appended to the existing file. On
         Windows the function replaces forward slashes in the file path by backward slashes. */
-    static std::ofstream ofstream(string path, bool append = false);
+    static std::ofstream ofstream(const string& path, bool append = false);
 
     /** This function returns true if the specified path refers to an existing regular file. On
         Windows the function replaces forward slashes in the path by backward slashes. */
-    static bool isFile(string path);
+    static bool isFile(const string& path);
 
     /** This function returns true if the specified path refers to an existing directory. The empty
         string is interpreted as the current directory. On Windows the function replaces forward
@@ -126,26 +126,26 @@ public:
         directories. The function returns true if the directory already existed or was successfully
         created; otherwise it returns false. On Windows the function replaces forward slashes in
         the path by backward slashes. */
-    static bool makeDir(string directory);
+    static bool makeDir(const string& directory);
 
     /** This function removes the file with the specified path. It does nothing if the file does
         not exist or can't be removed. On Windows the function replaces forward slashes in the path
         by backward slashes. */
-    static void removeFile(string path);
+    static void removeFile(const string& path);
 
     /** This function returns the names for all regular files residing in the given directory,
         specified as an absolute or relative path without trailing slash, or the empty string for
         the current directory. On Windows the function replaces forward slashes in the path by
         backward slashes. The returned list is sorted alphabetically. If the given directory does
         not exist or can't be accessed, an empty list is returned. */
-    static vector<string> filesInDirectory(string directory);
+    static vector<string> filesInDirectory(const string& directory);
 
     /** This function returns the names for all subdirectories residing in the given directory,
         specified as an absolute or relative path without trailing slash, or the empty string for
         the current directory. On Windows the function replaces forward slashes in the path by
         backward slashes. The returned list is sorted alphabetically. If the given directory does
         not exist or can't be accessed, an empty list is returned. */
-    static vector<string> dirsInDirectory(string directory);
+    static vector<string> dirsInDirectory(const string& directory);
 
     /** If the conversion process succeeds, this function returns a canonical absolute file path
         corresponding to the specified absolute or relative path, after resolving symbolic links

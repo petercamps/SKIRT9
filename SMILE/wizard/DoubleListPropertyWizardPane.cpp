@@ -14,7 +14,7 @@
 namespace
 {
     // returns true if text is a valid double list, and all numbers are within range
-    bool isValidAndInRange(DoubleListPropertyHandler* hdlr, string text)
+    bool isValidAndInRange(DoubleListPropertyHandler* hdlr, const string& text)
     {
         if (text.empty() && !hdlr->isRequired()) return true;
         if (!hdlr->isValidDoubleList(text)) return false;

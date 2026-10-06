@@ -20,16 +20,16 @@ public:
     // ================== Logging ==================
 
     /** Logs an informational message (i.e. at level Info). */
-    static void info(string message);
+    static void info(const string& message);
 
     /** Logs a warning message (i.e. at level Warning). */
-    static void warning(string message);
+    static void warning(const string& message);
 
     /** Logs an informational message (i.e. at level Success). */
-    static void success(string message);
+    static void success(const string& message);
 
     /** Logs an informational message (i.e. at level Error). */
-    static void error(string message);
+    static void error(const string& message);
 
     // ================== Prompting ==================
 
@@ -49,8 +49,8 @@ public:
         returns the user's response. The function returns a zero-based index into the \em choices
         list. If \em allowNoChoice is true, the function returns -1 to indicate that no choice was
         made. */
-    static int promptForChoice(string message, const vector<string>& choices, bool hasDef = false, int defIndex = -1,
-                               bool allowNoChoice = false, string noChoiceMessage = string());
+    static int promptForChoice(const string& message, const vector<string>& choices, bool hasDef = false,
+                               int defIndex = -1, bool allowNoChoice = false, const string& noChoiceMessage = string());
 };
 
 ////////////////////////////////////////////////////////////////////

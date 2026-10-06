@@ -77,7 +77,7 @@ double CastelliKuruczSEDFamily::specificLuminosity(double wavelength, const Arra
 
 ////////////////////////////////////////////////////////////////////
 
-double CastelliKuruczSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, const Range& wavelengthRange,
+double CastelliKuruczSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, Range wavelengthRange,
                                     const Array& parameters) const
 {
     double R = parameters[0];

@@ -45,7 +45,7 @@ double LyaSEDDecorator::specificLuminosity(double wavelength) const
 
 //////////////////////////////////////////////////////////////////////
 
-void LyaSEDDecorator::specificLuminosityArray(Array& lambdav, Array& pv, const Range& wavelengthRange) const
+void LyaSEDDecorator::specificLuminosityArray(Array& lambdav, Array& pv, Range wavelengthRange) const
 {
     // build a wavelength grid in the specified range containing all grid points from both SEDs
     vector<double> newlambdav;
@@ -64,7 +64,7 @@ void LyaSEDDecorator::specificLuminosityArray(Array& lambdav, Array& pv, const R
 
 //////////////////////////////////////////////////////////////////////
 
-double LyaSEDDecorator::integratedLuminosity(const Range& wavelengthRange) const
+double LyaSEDDecorator::integratedLuminosity(Range wavelengthRange) const
 {
     double luminosity = 0;
 

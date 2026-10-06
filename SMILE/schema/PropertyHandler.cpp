@@ -119,7 +119,7 @@ namespace
     // This function is used by rebuildNames() to recursively insert the names
     // starting at the specified item and ending just before the specified target item/property
     bool insertNamesRecursively(Item* item, const SchemaDef* schema, NameManager* nameMgr, Item* targetItem,
-                                string targetProperty)
+                                const string& targetProperty)
     {
         nameMgr->pushLocal();
 

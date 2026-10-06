@@ -66,11 +66,11 @@ public:
         quantity attribute of the handled property; the default unit specification is determined
         from the unit system associated with the simulation hierarchy in which the handled property
         resides. */
-    bool isValidDouble(string value) const;
+    bool isValidDouble(const string& value) const;
 
     /** Returns the double value represented by the specified string, or zero if the string is
         empty or contains an invalid representation. See isValid() for more information. */
-    double toDouble(string value) const;
+    double toDouble(const string& value) const;
 
     /** Returns a string representation of the specified double value, including an appropriate
         unit specification. See isValid() for more information. */
@@ -80,17 +80,17 @@ public:
         each item in the list representing a valid floating point number with an optional unit
         specification, according to the format described for the isValidDouble() function.
         Otherwise returns false. */
-    bool isValidDoubleList(string value) const;
+    bool isValidDoubleList(const string& value) const;
 
     /** Returns the list of double values represented by the specified string. If the string is
         empty, or any of the comma-separated items in the specified string are invalid, the
         function returns an empty list. See isValidDoubleList() for more information. */
-    vector<double> toDoubleList(string value) const;
+    vector<double> toDoubleList(const string& value) const;
 
     /** Returns a string representation of the specified list of double values, each item including
         an appropriate unit specification, and commas seperating the items. See isValidDoubleList()
         for more information. */
-    string toString(vector<double> value) const;
+    string toString(const vector<double>& value) const;
 
     /** Returns the physical quantity name for the handled property, as described in the schema
         definition class, or the empty string if the handled property is a dimensionless quantity.

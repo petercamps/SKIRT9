@@ -49,7 +49,7 @@ private:
 protected:
     /** This function outputs a message to the file. It overrides the pure virtual function in the
         base class. This function is thread-safe. */
-    void output(string message, Level level) override;
+    void output(const string& message, Level level) override;
 
     //======================== Data Members ========================
 

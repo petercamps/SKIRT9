@@ -12,7 +12,7 @@
 
 ////////////////////////////////////////////////////////////////////
 
-bool EnumPropertyHandler::isValidValue(string value) const
+bool EnumPropertyHandler::isValidValue(const string& value) const
 {
     return StringUtils::contains(property()->enumNames(), value);
 }
@@ -69,7 +69,7 @@ string EnumPropertyHandler::titleForValue() const
 
 ////////////////////////////////////////////////////////////////////
 
-void EnumPropertyHandler::setValue(string value)
+void EnumPropertyHandler::setValue(const string& value)
 {
     if (isValidValue(value))
     {

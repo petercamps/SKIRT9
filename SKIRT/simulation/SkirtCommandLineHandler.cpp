@@ -272,7 +272,7 @@ void SkirtCommandLineHandler::addSkiFilesFor(string filepath)
 
 ////////////////////////////////////////////////////////////////////
 
-void SkirtCommandLineHandler::addSkiFilesFor(string dirpath, string name)
+void SkirtCommandLineHandler::addSkiFilesFor(const string& dirpath, const string& name)
 {
     // add matching files at the current directory level
     for (const string& candidate : System::filesInDirectory(dirpath))
@@ -402,7 +402,7 @@ void SkirtCommandLineHandler::doSimulation(size_t index)
 
 ////////////////////////////////////////////////////////////////////
 
-void SkirtCommandLineHandler::logErrorToFile(const vector<string>& message, string skipath)
+void SkirtCommandLineHandler::logErrorToFile(const vector<string>& message, const string& skipath)
 {
     // construct the log file path
     string prefix = StringUtils::filenameBase(skipath);

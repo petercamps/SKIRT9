@@ -84,7 +84,7 @@ TetraMeshSpatialGrid::Tetra::Tetra(const vector<Vec>& vertices, const FourIndice
 
 //////////////////////////////////////////////////////////////////////
 
-int TetraMeshSpatialGrid::Tetra::findEnteringFace(const Vec& pos, const Direction& dir) const
+int TetraMeshSpatialGrid::Tetra::findEnteringFace(Vec pos, Direction dir) const
 {
     int enteringFace = -1;
     // clockwise and cclockwise adjacent faces when checking edge v1->v2
@@ -111,7 +111,7 @@ int TetraMeshSpatialGrid::Tetra::findEnteringFace(const Vec& pos, const Directio
 
 //////////////////////////////////////////////////////////////////////
 
-bool TetraMeshSpatialGrid::Tetra::contains(const Position& bfr) const
+bool TetraMeshSpatialGrid::Tetra::contains(Position bfr) const
 {
     if (!_extent.contains(bfr)) return false;
 

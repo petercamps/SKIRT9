@@ -30,7 +30,7 @@ public:
         name. For example, the option list "-t* -o* -b -opt" means that there are four allowed
         options: -t and -o take a value, while -b and -opt don't. Filepath arguments are not
         specified as they are always allowed before, after, or mixed in with the options. */
-    CommandLineArguments(const vector<string>&, string options);
+    CommandLineArguments(const vector<string>&, const string& options);
 
     /** Returns true if the command line is valid, i.e. if it contains only allowed options and a
         value is provided for options that take a value. */
@@ -42,26 +42,26 @@ public:
 
     /** Returns true if the specified option is present (with or without a value), or false if not.
         If the command line is invalid, this function always returns false. */
-    bool isPresent(string option) const;
+    bool isPresent(const string& option) const;
 
     /** Returns the value of the specified option, or the empty string if the option is not present
         or if the option does not take a value. If the command line is invalid, this function
         always returns an empty string. */
-    string value(string option) const;
+    string value(const string& option) const;
 
     /** Returns the value of the specified option converted to an integer, or -1 if the option is
         not present or if the value can't be converted to an integer. If the command line is
         invalid, this function always returns -1. Since an option value string can't start with a
         dash, it's impossible to represent negative integers, thus an error return value of -1 is
         unambiguous. */
-    int intValue(string option) const;
+    int intValue(const string& option) const;
 
     /** Returns the value of the specified option converted to a double value, or -1 if the option
         is not present or if the value can't be converted to a double. If the command line is
         invalid, this function always returns -1. Since an option value string can't start with a
         dash, it's impossible to represent negative doubles, thus an error return value of -1 is
         unambiguous. */
-    double doubleValue(string option) const;
+    double doubleValue(const string& option) const;
 
     /** Returns true if there is at least one filepath argument, or false if not. If the command
         line is invalid, this function always returns false. */

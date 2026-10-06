@@ -166,7 +166,7 @@ public:
     /** Returns the title corresponding to the specified enumeration name, as defined for this
         property. If the specified enumeration name is not defined for the property, the function
         returns the empty string. */
-    string enumTitle(string enumName) const;
+    string enumTitle(const string& enumName) const;
 
     /** Returns a pointer to the property accessor block for the property definition, or nullptr if
         no accessor block was set; ownership stays with the propery definition. */

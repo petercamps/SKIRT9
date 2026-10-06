@@ -62,7 +62,7 @@ namespace
     const char* _messageBegin[] = {"   ", " ! ", " - ", " * "};
 }
 
-void FileLog::output(string message, Log::Level level)
+void FileLog::output(const string& message, Log::Level level)
 {
     std::unique_lock<std::mutex> lock(_mutex);
 

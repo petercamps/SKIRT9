@@ -95,7 +95,7 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
-bool BooleanExpression::evaluateBoolean(string expression, std::function<bool(string)> isIdentifierTrue)
+bool BooleanExpression::evaluateBoolean(const string& expression, const std::function<bool(string)>& isIdentifierTrue)
 {
     if (expression.empty()) return true;
     BooleanExpressionParser parser(expression, isIdentifierTrue);
@@ -104,7 +104,8 @@ bool BooleanExpression::evaluateBoolean(string expression, std::function<bool(st
 
 ////////////////////////////////////////////////////////////////////
 
-string BooleanExpression::evaluateConditionalValue(string expression, std::function<bool(string)> isIdentifierTrue)
+string BooleanExpression::evaluateConditionalValue(const string& expression,
+                                                   const std::function<bool(string)>& isIdentifierTrue)
 {
     // loop over all pairs in the expression
     for (string pair : StringUtils::split(expression, ";"))

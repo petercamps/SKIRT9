@@ -49,7 +49,7 @@ double LyaGaussianSEDFamily::specificLuminosity(double wavelength, const Array& 
 
 ////////////////////////////////////////////////////////////////////
 
-double LyaGaussianSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, const Range& wavelengthRange,
+double LyaGaussianSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, Range wavelengthRange,
                                  const Array& parameters) const
 {
     double L = parameters[0];

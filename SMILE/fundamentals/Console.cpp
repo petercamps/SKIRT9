@@ -10,28 +10,28 @@
 
 ////////////////////////////////////////////////////////////////////
 
-void Console::info(string message)
+void Console::info(const string& message)
 {
     System::log(message, System::LogLevel::Info);
 }
 
 ////////////////////////////////////////////////////////////////////
 
-void Console::warning(string message)
+void Console::warning(const string& message)
 {
     System::log(message, System::LogLevel::Warning);
 }
 
 ////////////////////////////////////////////////////////////////////
 
-void Console::success(string message)
+void Console::success(const string& message)
 {
     System::log(message, System::LogLevel::Success);
 }
 
 ////////////////////////////////////////////////////////////////////
 
-void Console::error(string message)
+void Console::error(const string& message)
 {
     System::log(message, System::LogLevel::Error);
 }
@@ -128,8 +128,8 @@ string Console::promptForString(string message, bool hasDef, string def)
 
 ////////////////////////////////////////////////////////////////////
 
-int Console::promptForChoice(string message, const vector<string>& choices, bool hasDef, int defIndex,
-                             bool allowNoChoice, string noChoiceMessage)
+int Console::promptForChoice(const string& message, const vector<string>& choices, bool hasDef, int defIndex,
+                             bool allowNoChoice, const string& noChoiceMessage)
 {
     if (choices.empty() && !allowNoChoice) throw FATALERROR("There are no choices to prompt for");
     if (defIndex < 0) hasDef = false;

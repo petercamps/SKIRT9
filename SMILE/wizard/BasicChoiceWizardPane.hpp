@@ -88,7 +88,7 @@ private:
 
 signals:
     /** This signal is emitted after the basic choice was changed. */
-    void basicChoiceWasChanged(bool openExisting, string libraryPath, string schemaName);
+    void basicChoiceWasChanged(bool openExisting, const string& libraryPath, const string& schemaName);
 
     // ==================== Data members ======================
 

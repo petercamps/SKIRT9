@@ -28,7 +28,7 @@ public:
     /** The constructor invokes the base class constructor to create an output file with the
         specified name and sets the appropriate precision for the numerical values in the text
         file. */
-    SpatialGridPlotFile(const SimulationItem* item, string filename);
+    SpatialGridPlotFile(const SimulationItem* item, const string& filename);
 
     // ----------- 2D functions ----------
 

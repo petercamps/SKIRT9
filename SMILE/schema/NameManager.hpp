@@ -82,7 +82,7 @@ public:
         name set(s). The conditional value expression is evaluated as described for the
         evaluateConditionalValue() function. The result is interpreted as a comma-separated list of
         names. Each of these names is inserted as described for the insert() function. */
-    void insertFromConditionalValue(string nameExpression);
+    void insertFromConditionalValue(const string& nameExpression);
 
     /** Adds the names provided in the specified conditional value expressions to the appropriate
         name set(s) as described for the insertFromConditionalValue(string) function. */
@@ -95,14 +95,14 @@ public:
         identifier is replaced by true if the corresponding name is in the global or the local set,
         and by false if it is not. The function throws an error if the expression string does not
         conform to the syntax of a Boolean expression. */
-    bool evaluateBoolean(string expression) const;
+    bool evaluateBoolean(const string& expression) const;
 
     /** This function evaluates the specified string as a conditional value expression in the
         format decribed in the class header, and returns the result. When evaluating the
         expression, each identifier is replaced by true if the corresponding name is in the global
         or the local set, and by false if it is not. The function throws an error if the expression
         string does not conform to the syntax of a conditional value expression. */
-    string evaluateConditionalValue(string expression) const;
+    string evaluateConditionalValue(const string& expression) const;
 
     // ================== Data members ==================
 

@@ -25,7 +25,7 @@ Snapshot::~Snapshot()
 
 ////////////////////////////////////////////////////////////////////
 
-void Snapshot::open(const SimulationItem* item, string filename, string description)
+void Snapshot::open(const SimulationItem* item, const string& filename, const string& description)
 {
     _infile = new TextInFile(item, filename, description);
     setContext(item);
@@ -57,7 +57,7 @@ void Snapshot::setContext(const SimulationItem* item)
 
 ////////////////////////////////////////////////////////////////////
 
-void Snapshot::useColumns(string columns)
+void Snapshot::useColumns(const string& columns)
 {
     _infile->useColumns(columns);
 }

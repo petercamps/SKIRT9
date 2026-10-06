@@ -84,7 +84,7 @@ public:
         messages of the root processes are actually logged. If verbose mode is enabled, however,
         all processes log and the process name is attached to the info message. This function is
         thread-safe. */
-    void info(string message);
+    void info(const string& message);
 
     /** Resets the interval timer for progress messages issued through the infoIfElapsed()
         function. The first argument specifies the total number of tasks to be performed, which
@@ -115,7 +115,7 @@ public:
         success messages of the root processes are actually logged. If verbose mode is enabled,
         however, all processes log and the process name is attached to the success message. This
         function is thread-safe. */
-    void success(string message);
+    void success(const string& message);
 
     /** Logs an informational message (i.e. at level Error). Each error message is logged,
         irrespective of which process invokes this function. The error message is prefixed with the
@@ -130,7 +130,7 @@ protected:
         message does not yet contain a time stamp. The second argument specifies the logging level
         for the message (info, warning, success, error). The level is guaranteed to be at or above
         the current lowest level. */
-    virtual void output(string message, Level level) = 0;
+    virtual void output(const string& message, Level level) = 0;
 
     /** This function returns a string identifying this process of the form "Pnnn",
         where nnn is the rank of the process. In singleprocessing mode, this string is empty. */

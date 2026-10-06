@@ -59,8 +59,7 @@ double FSPSSEDFamily::specificLuminosity(double wavelength, const Array& paramet
 
 ////////////////////////////////////////////////////////////////////
 
-double FSPSSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, const Range& wavelengthRange,
-                          const Array& parameters) const
+double FSPSSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, Range wavelengthRange, const Array& parameters) const
 {
     double M = parameters[0] / Constants::Msun();
     double Z = parameters[1];

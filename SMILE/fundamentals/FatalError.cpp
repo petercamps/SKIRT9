@@ -9,7 +9,7 @@
 
 ////////////////////////////////////////////////////////////////////
 
-FatalError::FatalError(string message, const char* file, int line, const char* function)
+FatalError::FatalError(const string& message, const char* file, int line, const char* function)
 {
     // split the message in lines if needed, and store the result
     std::stringstream ss(message);

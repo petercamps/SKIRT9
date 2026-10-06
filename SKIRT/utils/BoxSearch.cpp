@@ -70,7 +70,7 @@ BoxSearch::BoxSearch() {}
 ////////////////////////////////////////////////////////////////////
 
 void BoxSearch::loadEntities(int numEntities, std::function<Box(int)> bounds,
-                             std::function<bool(int, const Box&)> intersects)
+                             const std::function<bool(int, const Box&)>& intersects)
 {
     // abort if there are no entities
     if (numEntities <= 0)

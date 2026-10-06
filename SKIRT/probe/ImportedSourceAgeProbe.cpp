@@ -10,8 +10,9 @@
 
 ////////////////////////////////////////////////////////////////////
 
-void ImportedSourceAgeProbe::probeImportedSourceWeighted(string sweight, const vector<const Snapshot*>& snapshots,
-                                                         std::function<double(const Snapshot* snapshot, int m)> weight)
+void ImportedSourceAgeProbe::probeImportedSourceWeighted(
+    const string& sweight, const vector<const Snapshot*>& snapshots,
+    const std::function<double(const Snapshot* snapshot, int m)>& weight)
 {
     // verify that all snapshots offer the age property
     bool haveAge = true;

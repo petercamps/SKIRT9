@@ -110,7 +110,7 @@ private:
     /** This function adds the ski filenames corresponding to the specified name pattern inside the
         specified directory to the internal list. If so requested by the -r option, this function
         implements recursive descent by calling itself recursively for each subdirectory. */
-    void addSkiFilesFor(string dirpath, string name);
+    void addSkiFilesFor(const string& dirpath, const string& name);
 
     /** This function actually performs a single simulation constructed from the ski file at the
         specified index in the internal list. */
@@ -118,7 +118,7 @@ private:
 
     /** This function logs a simulation construction error to an appropriate emergency log file
         with a name and location corresponding to the regular simulation log file. */
-    void logErrorToFile(const vector<string>& message, string skipath);
+    void logErrorToFile(const vector<string>& message, const string& skipath);
 
     /** This function prints a brief help message to the console. */
     void printHelp();

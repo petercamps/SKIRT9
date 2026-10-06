@@ -69,7 +69,7 @@ bool ItemListPropertyHandler::addValue(Item* value)
 
 ////////////////////////////////////////////////////////////////////
 
-bool ItemListPropertyHandler::addNewItemOfType(string type)
+bool ItemListPropertyHandler::addNewItemOfType(const string& type)
 {
     if (isValidValue(type))
     {
@@ -95,7 +95,7 @@ bool ItemListPropertyHandler::insertValue(int index, Item* value)
 
 ////////////////////////////////////////////////////////////////////
 
-bool ItemListPropertyHandler::insertNewItemOfType(int index, string type)
+bool ItemListPropertyHandler::insertNewItemOfType(int index, const string& type)
 {
     if (isValidValue(type))
     {

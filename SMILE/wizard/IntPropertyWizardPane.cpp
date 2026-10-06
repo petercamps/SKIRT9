@@ -15,7 +15,7 @@
 namespace
 {
     // returns true if text is a valid integer, and the value is within range
-    bool isValidAndInRange(IntPropertyHandler* hdlr, string text)
+    bool isValidAndInRange(IntPropertyHandler* hdlr, const string& text)
     {
         if (!StringUtils::isValidInt(text)) return false;
         int value = StringUtils::toInt(text);

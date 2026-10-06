@@ -123,7 +123,7 @@ public:
     /** Returns true if the given string can be successfully converted to a value of the property's
         type. For an empty string, the function always returns false. This function must be
         overridden by property handler subclasses. */
-    virtual bool isValidValue(string value) const = 0;
+    virtual bool isValidValue(const string& value) const = 0;
 
     /** Returns true if the handled property type is compound in the sense that the property may
         hold (in other words, aggregate) other items that are part of the item hierarchy. The

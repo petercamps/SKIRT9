@@ -66,7 +66,7 @@ double LyaGaussianSED::specificLuminosity(double wavelength) const
 
 //////////////////////////////////////////////////////////////////////
 
-void LyaGaussianSED::specificLuminosityArray(Array& lambdav, Array& pv, const Range& wavelengthRange) const
+void LyaGaussianSED::specificLuminosityArray(Array& lambdav, Array& pv, Range wavelengthRange) const
 {
     // calculate the intersection between the given range and our intrinsic range
     Range intersection = _wavelengthRange;
@@ -95,7 +95,7 @@ void LyaGaussianSED::specificLuminosityArray(Array& lambdav, Array& pv, const Ra
 
 //////////////////////////////////////////////////////////////////////
 
-double LyaGaussianSED::integratedLuminosity(const Range& wavelengthRange) const
+double LyaGaussianSED::integratedLuminosity(Range wavelengthRange) const
 {
     // if the given range includes the complete intrinsic range, the result is trivial
     if (wavelengthRange.contains(_wavelengthRange)) return 1.;

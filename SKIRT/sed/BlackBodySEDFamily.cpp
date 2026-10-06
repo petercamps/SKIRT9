@@ -33,7 +33,7 @@ double BlackBodySEDFamily::specificLuminosity(double wavelength, const Array& pa
 
 ////////////////////////////////////////////////////////////////////
 
-double BlackBodySEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, const Range& wavelengthRange,
+double BlackBodySEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, Range wavelengthRange,
                                const Array& parameters) const
 {
     double R = parameters[0];

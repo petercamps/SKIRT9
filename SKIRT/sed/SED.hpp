@@ -67,7 +67,7 @@ public:
     /** This function returns the normalized integrated luminosity \f$L\f$ (i.e. radiative power)
         over the specified wavelength range, or zero if the range is fully outside of the %SED's
         intrinsic wavelength range. */
-    virtual double integratedLuminosity(const Range& wavelengthRange) const = 0;
+    virtual double integratedLuminosity(Range wavelengthRange) const = 0;
 
     /** This function returns a random wavelength drawn from the normalized spectral energy
         distribution limited to the normalization wavelength range. */

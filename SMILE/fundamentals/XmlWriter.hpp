@@ -48,7 +48,7 @@ public:
 
     /** Writes the specified text as XML comment. The text must not contain the forbidden sequence
         "--" or end with "-". Note that XML does not provide any way to escape "-" in a comment. */
-    void writeComment(string text);
+    void writeComment(const string& text);
 
     /** Writes a start element with the specified name. Subsequent calls to writeAttribute() will
         add attributes to this element. */
@@ -56,7 +56,7 @@ public:
 
     /** Writes an attribute with the specified name and value. This function can only be called
         after writeStartElement() before any further content is written. */
-    void writeAttribute(string name, string value);
+    void writeAttribute(const string& name, const string& value);
 
     /** Closes the previous matching start element. For a particular XML document, the number of
         invocations of this function must exactly match the number of invocations of the

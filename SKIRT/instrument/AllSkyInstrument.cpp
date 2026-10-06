@@ -90,7 +90,7 @@ void AllSkyInstrument::determineSameObserverAsPreceding(const Instrument* preced
 
 ////////////////////////////////////////////////////////////////////
 
-Direction AllSkyInstrument::bfkobs(const Position& bfr) const
+Direction AllSkyInstrument::bfkobs(Position bfr) const
 {
     // vector and distance from launch to observer
     Vec k = Vec(_Ox, _Oy, _Oz) - bfr;
@@ -105,7 +105,7 @@ Direction AllSkyInstrument::bfkobs(const Position& bfr) const
 
 ////////////////////////////////////////////////////////////////////
 
-Direction AllSkyInstrument::bfky(const Position& bfr) const
+Direction AllSkyInstrument::bfky(Position bfr) const
 {
     // vector and distance from launch to observer
     Vec k = Vec(_Ox, _Oy, _Oz) - bfr;

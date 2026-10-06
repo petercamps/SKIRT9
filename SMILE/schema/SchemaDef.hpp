@@ -26,14 +26,14 @@ class SchemaDef final
 public:
     /** This static function returns the value of the 'title' attribute on the Schema element in
         the SMILE XML file with the specified file path, or the empty string if an error occurs. */
-    static string getSchemaTitle(string filePath);
+    static string getSchemaTitle(const string& filePath);
 
     /** This static function determines whether the SMILE dataset with the specified file path is
         compatible with the SMILE schema defined in the SMILE XML file with the specified file
         path, by examining the root and top-level elements in both XML files. The function returns
         true if the dataset is compatible with the schema, and false if not or if an error occurs.
         */
-    static bool isCompatible(string schemaFilePath, string dataFilePath);
+    static bool isCompatible(const string& schemaFilePath, const string& dataFilePath);
 
     // ================== Loading and saving a schema ==================
 
@@ -41,7 +41,7 @@ public:
     /** This constructor loads a particular SMILE schema from the SMILE XML file with the specified
         path. When an error occurs while opening, parsing or interpreting the XML data stream, the
         constructor throws a FatalError with an appropriate error message. */
-    SchemaDef(string filePath);
+    SchemaDef(const string& filePath);
 
     /** This constructor creates an empty SMILE schema with the specified basic properties. The
         type, property and and unit information for the schema must be added by calling the
@@ -69,7 +69,8 @@ public:
         This function throws a fatal error if the schema definition already contains a type with
         the specified name (to keep the function from being abused to retrieve a writable reference
         to an existing type definition). */
-    TypeDef& addTypeDef(string name, string base, string title, TypeDef::Instantiator instantiator = nullptr);
+    TypeDef& addTypeDef(string name, const string& base, const string& title,
+                        TypeDef::Instantiator instantiator = nullptr);
 
     /** This function copies the contents of the specified unit definition into the schema
         definition. Any pre-existing unit and unit system information is discarded. */
@@ -79,7 +80,7 @@ public:
         optional last argument specifies a producer identification string to be included as an
         attribute on the root element. When an error occurs while opening the file or while writing
         the XML data stream, the function throws a FatalError with an appropriate error message. */
-    void save(string filePath, string producer = string()) const;
+    void save(const string& filePath, const string& producer = string()) const;
 
     // ================== Copying and moving ==================
 
@@ -127,7 +128,7 @@ public:
 
     /** Returns the title (used for display to a user) associated with the specified type. The
         function throws an error if the specified type is not defined in the schema. */
-    string title(string type) const;
+    string title(const string& type) const;
 
     /** Returns the titles (used for display to a user) associated with the specified types, in the
         same order. */
@@ -135,7 +136,7 @@ public:
 
     /** Returns true if the first type inherits the second. The function throws an error if the
         first type (the child type) is not defined in the schema. */
-    bool inherits(string childType, string parentType) const;
+    bool inherits(const string& childType, const string& parentType) const;
 
     /** Returns a list of the types from which the specified type inherits, directly or indirectly,
         starting with the type itself up to and including the root type of the hierarchy. The list
@@ -146,7 +147,7 @@ public:
     /** Returns a list of concrete types that inherit the specified type, in the order listed in
         the schema definition. The function throws an error if the specified type is not defined in
         the schema. */
-    vector<string> descendants(string type) const;
+    vector<string> descendants(const string& type) const;
 
     /** Returns the names of all properties for the specified type, including inherited properties
         for all direct and indirect base types. By default, base type properties are listed first,
@@ -158,12 +159,12 @@ public:
     /** Returns the name of the particular (base) type in which the specified property is defined
         for the specified (concrete) type. If the specified property is not defined in the
         specified type or in one of its base types, the function throws a fatal error. */
-    string definingType(string type, string property) const;
+    string definingType(string type, const string& property) const;
 
     /** Returns the title (used for display to a user) associated with the specified property of
         the specified type. The function throws an error if the specified property and type
         combination is not defined in the schema. */
-    string propertyTitle(string type, string property) const;
+    string propertyTitle(const string& type, const string& property) const;
 
     // -------------------------------------
 
@@ -208,14 +209,15 @@ public:
         Because it is guarded by a unique pointer, the handler is automatically deleted when the
         return value goes out of scope. This function throws an error if the specified item does
         not have a property with the specified name. */
-    std::unique_ptr<PropertyHandler> createPropertyHandler(Item* item, string property, NameManager* nameMgr) const;
+    std::unique_ptr<PropertyHandler> createPropertyHandler(Item* item, const string& property,
+                                                           NameManager* nameMgr) const;
 
     // -------------------------------------
 
     /** This function returns returns true if the specified physical quantity is provided in the
         schema definition, and false if it is not. The name of the physical quantity is case
         sensitive and should not contain any spaces. */
-    bool has(string qty) const;
+    bool has(const string& qty) const;
 
     /** This function returns true if the specified combination of physical quantity and unit or
         unit system is provided in the schema definition, and false if not. The name of the
@@ -224,19 +226,19 @@ public:
         the default units for the specified quantity in the specified unit system. All names
         (physical quantity, unit system, and units) are case sensitive and should not contain any
         spaces. */
-    bool has(string qty, string unit) const;
+    bool has(const string& qty, const string& unit) const;
 
     /** This function converts a physical value from the specified units to internal program units.
         Refer to the has() function for a description of how to specify the physical quantity and
         unit. If the specified combination is not provided in the schema definition, the function
         throws an exception. */
-    double in(string qty, string unit, double value) const;
+    double in(const string& qty, const string& unit, double value) const;
 
     /** This function converts a physical value from internal program units to the specified units.
         Refer to the has() function for a description of how to specify the physical quantity and
         unit. If the specified combination is not provided in the schema definition, the function
         throws an exception. */
-    double out(string qty, string unit, double value) const;
+    double out(const string& qty, const string& unit, double value) const;
 
     /** This function returns the name of the default unit listed in the schema definition for the
         specified physical quantity in the specified unit system. If the specified unit style is
@@ -247,7 +249,7 @@ public:
         The physical quantity, unit system, and unit style name are case sensitive and should not
         contain any spaces. If the specified combination of physical quantity (embellished or not)
         and unit system is not present in the unit definition, the function throws an exception. */
-    string unit(string qty, string unitSystem, string unitStyle) const;
+    string unit(const string& qty, const string& unitSystem, const string& unitStyle) const;
 
     /** This function returns true if two or more unit systems are provided in the schema
         definition. Otherwise it returns false. */
@@ -267,12 +269,12 @@ public:
 private:
     /** Returns a reference to the type definition for the specified type, or throws an
         error if the specified type is not defined in the schema. */
-    const TypeDef& typeDef(string type) const;
+    const TypeDef& typeDef(const string& type) const;
 
     /** Returns a reference to the property definition for the specified type and property, or
         throws an error if the specified type and property combination is not defined in the
         schema. */
-    const PropertyDef& propertyDef(string type, string property) const;
+    const PropertyDef& propertyDef(string type, const string& property) const;
 
     // ================== Data members ==================
 

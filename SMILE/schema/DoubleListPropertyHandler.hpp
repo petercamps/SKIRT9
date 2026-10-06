@@ -28,7 +28,7 @@ public:
         type. For double list properties, the function returns true if the string conforms to the syntax
         recognized by the AbstractDoublePropertyHandler::isValidDoubleList() function, and false
         otherwise. */
-    bool isValidValue(string value) const override;
+    bool isValidValue(const string& value) const override;
 
     /** Causes the name manager associated with this handler to insert names into the global and/or
         local name sets corresponding to the current value of the target property. For double list
@@ -52,7 +52,7 @@ public:
     vector<double> value() const;
 
     /** Sets the value of the handled property in the target item. */
-    void setValue(vector<double> value);
+    void setValue(const vector<double>& value);
 };
 
 ////////////////////////////////////////////////////////////////////

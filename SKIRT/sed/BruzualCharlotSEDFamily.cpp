@@ -57,7 +57,7 @@ double BruzualCharlotSEDFamily::specificLuminosity(double wavelength, const Arra
 
 ////////////////////////////////////////////////////////////////////
 
-double BruzualCharlotSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, const Range& wavelengthRange,
+double BruzualCharlotSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, Range wavelengthRange,
                                     const Array& parameters) const
 {
     double M = parameters[0] / Constants::Msun();

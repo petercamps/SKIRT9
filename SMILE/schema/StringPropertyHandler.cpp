@@ -12,7 +12,7 @@
 
 ////////////////////////////////////////////////////////////////////
 
-bool StringPropertyHandler::isValidValue(string value) const
+bool StringPropertyHandler::isValidValue(const string& value) const
 {
     return !value.empty();
 }
@@ -48,7 +48,7 @@ string StringPropertyHandler::value() const
 
 ////////////////////////////////////////////////////////////////////
 
-void StringPropertyHandler::setValue(string value)
+void StringPropertyHandler::setValue(const string& value)
 {
     target()->setStringProperty(property(), value);
     setChanged();

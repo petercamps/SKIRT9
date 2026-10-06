@@ -84,7 +84,7 @@ public:
     /** Returns the value of the current element's attribute with the specified name. If there is
         no current element or if the current element has no attribute with the given name, an empty
         string is returned. */
-    string attributeValue(string name) const;
+    string attributeValue(const string& name) const;
 
     // ================== Error handling ==================
 
@@ -116,7 +116,7 @@ private:
 
     /** Skips anything up to and including the given string, while counting lines. The given string
         should not be empty and should not contain newline characters. */
-    void skipUpTo(string match);
+    void skipUpTo(const string& match);
 
     /** Gets and returns a name token starting with a letter and further consisting of letters and
         digits. The name token can be terminated by whitespace or by the '=' sign; the terminating

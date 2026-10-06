@@ -12,14 +12,14 @@ UnitDef::UnitDef() {}
 
 ////////////////////////////////////////////////////////////////////
 
-void UnitDef::addUnit(string quantity, string unit, double factor, double power, double offset)
+void UnitDef::addUnit(const string& quantity, const string& unit, double factor, double power, double offset)
 {
     _quantities[quantity][unit] = std::make_tuple(factor, power, offset);
 }
 
 ////////////////////////////////////////////////////////////////////
 
-void UnitDef::addDefaultUnit(string unitSystem, string quantity, string unit)
+void UnitDef::addDefaultUnit(const string& unitSystem, const string& quantity, string unit)
 {
     _unitSystems[unitSystem][quantity] = unit;
 }
@@ -33,7 +33,7 @@ bool UnitDef::has(string qty) const
 
 ////////////////////////////////////////////////////////////////////
 
-bool UnitDef::has(string qty, string unit) const
+bool UnitDef::has(const string& qty, string unit) const
 {
     // if the unit argument represents a unit system, replace it by the default unit for the quantity
     if (_unitSystems.count(unit) && _unitSystems.at(unit).count(qty)) unit = _unitSystems.at(unit).at(qty);
@@ -44,7 +44,7 @@ bool UnitDef::has(string qty, string unit) const
 
 ////////////////////////////////////////////////////////////////////
 
-std::tuple<double, double, double> UnitDef::def(string qty, string unit) const
+std::tuple<double, double, double> UnitDef::def(const string& qty, string unit) const
 {
     // if the unit argument represents a unit system, replace it by the default unit for the quantity
     if (_unitSystems.count(unit) && _unitSystems.at(unit).count(qty)) unit = _unitSystems.at(unit).at(qty);
@@ -61,7 +61,7 @@ std::tuple<double, double, double> UnitDef::def(string qty, string unit) const
 
 ////////////////////////////////////////////////////////////////////
 
-double UnitDef::in(string qty, string unit, double value) const
+double UnitDef::in(const string& qty, string unit, double value) const
 {
     // if the unit argument represents a unit system, replace it by the default unit for the quantity
     if (_unitSystems.count(unit) && _unitSystems.at(unit).count(qty)) unit = _unitSystems.at(unit).at(qty);
@@ -80,7 +80,7 @@ double UnitDef::in(string qty, string unit, double value) const
 
 ////////////////////////////////////////////////////////////////////
 
-double UnitDef::out(string qty, string unit, double value) const
+double UnitDef::out(const string& qty, string unit, double value) const
 {
     // if the unit argument represents a unit system, replace it by the default unit for the quantity
     if (_unitSystems.count(unit) && _unitSystems.at(unit).count(qty)) unit = _unitSystems.at(unit).at(qty);
@@ -100,7 +100,7 @@ double UnitDef::out(string qty, string unit, double value) const
 
 ////////////////////////////////////////////////////////////////////
 
-string UnitDef::unit(string qty, string unitSystem, string unitStyle) const
+string UnitDef::unit(string qty, string unitSystem, const string& unitStyle) const
 {
     if (_unitSystems.count(unitSystem))
     {

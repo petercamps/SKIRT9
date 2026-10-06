@@ -19,7 +19,7 @@ ConsoleLog::ConsoleLog(SimulationItem* parent)
 
 ////////////////////////////////////////////////////////////////////
 
-void ConsoleLog::output(string message, Log::Level level)
+void ConsoleLog::output(const string& message, Log::Level level)
 {
     // !! This cast assumes that the items in both enums are in the same order !!
     System::log(message, static_cast<System::LogLevel>(level));

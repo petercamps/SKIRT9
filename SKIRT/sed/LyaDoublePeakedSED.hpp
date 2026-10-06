@@ -69,11 +69,11 @@ public:
         power per unit of wavelength) at a number of wavelength points within the specified
         wavelength range. The intrinsic wavelength range \f$\pm 3.6s\f$ of the %SED is covered by
         720 wavelength points on a regular linear grid. */
-    void specificLuminosityArray(Array& lambdav, Array& pv, const Range& wavelengthRange) const override;
+    void specificLuminosityArray(Array& lambdav, Array& pv, Range wavelengthRange) const override;
 
     /** This function returns the normalized integrated luminosity \f$L\f$ (i.e. radiative power)
         over the specified wavelength range. */
-    double integratedLuminosity(const Range& wavelengthRange) const override;
+    double integratedLuminosity(Range wavelengthRange) const override;
 
     /** This function draws a random wavelength from the normalized spectral energy distribution.
         */

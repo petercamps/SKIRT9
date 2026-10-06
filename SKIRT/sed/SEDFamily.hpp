@@ -49,8 +49,7 @@ public:
         The resulting wavelength grid is constructed into \em lambdav, the corresponding pdf into
         \em pv, and the corresponding cdf into \em Yv. The function returns the normalization
         factor, i.e. the value of Pv[n] before normalization. */
-    virtual double cdf(Array& lambdav, Array& pv, Array& Pv, const Range& wavelengthRange,
-                       const Array& parameters) const = 0;
+    virtual double cdf(Array& lambdav, Array& pv, Array& Pv, Range wavelengthRange, const Array& parameters) const = 0;
 };
 
 ////////////////////////////////////////////////////////////////////

@@ -8,21 +8,21 @@
 
 ////////////////////////////////////////////////////////////////////
 
-bool StringUtils::startsWith(string text, string find)
+bool StringUtils::startsWith(const string& text, const string& find)
 {
     return text.length() >= find.length() && text.compare(0, find.length(), find) == 0;
 }
 
 ////////////////////////////////////////////////////////////////////
 
-bool StringUtils::endsWith(string text, string find)
+bool StringUtils::endsWith(const string& text, const string& find)
 {
     return text.length() >= find.length() && text.compare(text.length() - find.length(), find.length(), find) == 0;
 }
 
 ////////////////////////////////////////////////////////////////////
 
-bool StringUtils::contains(string text, string find)
+bool StringUtils::contains(const string& text, string find)
 {
     return text.find(find) != string::npos;
 }
@@ -58,21 +58,21 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
-bool StringUtils::matches(string text, string pattern)
+bool StringUtils::matches(const string& text, const string& pattern)
 {
     return match(pattern.c_str(), text.c_str());
 }
 
 ////////////////////////////////////////////////////////////////////
 
-bool StringUtils::contains(const vector<string>& list, string find)
+bool StringUtils::contains(const vector<string>& list, const string& find)
 {
     return std::find(list.cbegin(), list.cend(), find) != list.cend();
 }
 
 ////////////////////////////////////////////////////////////////////
 
-int StringUtils::indexOf(const vector<string>& list, string find)
+int StringUtils::indexOf(const vector<string>& list, const string& find)
 {
     if (auto it = std::find(list.cbegin(), list.cend(), find); it != list.cend())
         return static_cast<int>(it - list.cbegin());
@@ -82,7 +82,7 @@ int StringUtils::indexOf(const vector<string>& list, string find)
 
 ////////////////////////////////////////////////////////////////////
 
-string StringUtils::replace(string text, string find, string replace)
+string StringUtils::replace(string text, const string& find, const string& replace)
 {
     for (string::size_type i = 0; (i = text.find(find, i)) != string::npos; i += replace.length())
     {
@@ -186,7 +186,7 @@ string StringUtils::toUpperFirst(string text)
 
 ////////////////////////////////////////////////////////////////////
 
-vector<string> StringUtils::split(string text, string separator)
+vector<string> StringUtils::split(string text, const string& separator)
 {
     vector<string> result;
 
@@ -211,7 +211,7 @@ vector<string> StringUtils::split(string text, string separator)
 
 ////////////////////////////////////////////////////////////////////
 
-string StringUtils::join(const vector<string>& list, string separator)
+string StringUtils::join(const vector<string>& list, const string& separator)
 {
     string result;
     for (const string& segment : list)
@@ -239,7 +239,7 @@ string StringUtils::joinPaths(string segment1, string segment2)
 
 ////////////////////////////////////////////////////////////////////
 
-bool StringUtils::isAbsolutePath(string filepath)
+bool StringUtils::isAbsolutePath(const string& filepath)
 {
     return startsWith(filepath, "/") || startsWith(filepath, "\\") || contains(filepath, ":");
 }
@@ -292,7 +292,7 @@ string StringUtils::dirPath(string filepath)
 
 ////////////////////////////////////////////////////////////////////
 
-string StringUtils::addExtension(string filename, string extension)
+string StringUtils::addExtension(string filename, const string& extension)
 {
     if (!filename.empty() && !endsWith(StringUtils::toLower(filename), "." + toLower(extension)))
     {
@@ -343,7 +343,7 @@ bool StringUtils::isValidInt(string value)
 
 ////////////////////////////////////////////////////////////////////
 
-int StringUtils::toInt(string value)
+int StringUtils::toInt(const string& value)
 {
     return isValidInt(value) ? std::stoi(value) : 0;
 }
@@ -357,7 +357,7 @@ string StringUtils::toString(int value)
 
 ////////////////////////////////////////////////////////////////////
 
-bool StringUtils::isValidDouble(string value)
+bool StringUtils::isValidDouble(const string& value)
 {
     bool ok;
     toDouble(value, &ok);

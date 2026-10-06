@@ -40,7 +40,7 @@ namespace
     // recursively searches the given directory and its subdirectories for any files,
     // adds the corresponding canonical paths to the resource dictionary,
     // and processes any "version.txt" files encountered
-    void findResourcesIn(string directory)
+    void findResourcesIn(const string& directory)
     {
         // search the current level
         for (const string& filename : System::filesInDirectory(directory))
@@ -138,7 +138,7 @@ namespace
 
     // returns true if the resource filename matches the requirements, false otherwise;
     // see documentation of the resourceName() function for more details
-    bool matches(string resource, string type, const vector<string>& segments)
+    bool matches(const string& resource, const string& type, const vector<string>& segments)
     {
         if (!StringUtils::endsWith(resource, type)) return false;
         for (const string& segment : segments)
@@ -150,7 +150,7 @@ namespace
 
     // returns a human-readable message describing the specified requirements;
     // see documentation of the resourceName() function for more details
-    string message(string type, const vector<string>& segments)
+    string message(const string& type, const vector<string>& segments)
     {
         string msg = "type '" + type + "'";
         if (!segments.empty())
@@ -180,7 +180,7 @@ void FilePaths::setupSelfBefore()
 
 ////////////////////////////////////////////////////////////////////
 
-void FilePaths::setInputPath(string value)
+void FilePaths::setInputPath(const string& value)
 {
     if (!System::isDir(value)) throw FATALERROR("Input path does not exist or is not a directory: " + value);
     _inputPath = System::canonicalPath(value) + "/";
@@ -203,7 +203,7 @@ string FilePaths::input(string name) const
 
 ////////////////////////////////////////////////////////////////////
 
-void FilePaths::setOutputPath(string value)
+void FilePaths::setOutputPath(const string& value)
 {
     if (!System::isDir(value)) throw FATALERROR("Output path does not exist or is not a directory: " + value);
     _outputPath = System::canonicalPath(value) + "/";
@@ -232,7 +232,7 @@ string FilePaths::outputPrefix() const
 
 ////////////////////////////////////////////////////////////////////
 
-string FilePaths::output(string name) const
+string FilePaths::output(const string& name) const
 {
     return _outputPath + _outputPrefix + "_" + name;
 }
@@ -248,7 +248,7 @@ bool FilePaths::hasResource(string name)
 
 ////////////////////////////////////////////////////////////////////
 
-string FilePaths::resource(string name)
+string FilePaths::resource(const string& name)
 {
     std::call_once(_initialized, findResources);
 
@@ -264,7 +264,7 @@ string FilePaths::resource(string name)
 
 ////////////////////////////////////////////////////////////////////
 
-string FilePaths::resourceName(string type, const vector<string>& segments)
+string FilePaths::resourceName(const string& type, const vector<string>& segments)
 {
     std::call_once(_initialized, findResources);
 
@@ -295,7 +295,7 @@ vector<string> FilePaths::expectedPacks()
 
 ////////////////////////////////////////////////////////////////////
 
-int FilePaths::expectedPackVersion(string name)
+int FilePaths::expectedPackVersion(const string& name)
 {
     std::call_once(_initialized, findResources);
 
@@ -304,7 +304,7 @@ int FilePaths::expectedPackVersion(string name)
 
 ////////////////////////////////////////////////////////////////////
 
-int FilePaths::installedPackVersion(string name)
+int FilePaths::installedPackVersion(const string& name)
 {
     std::call_once(_initialized, findResources);
 

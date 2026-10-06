@@ -139,11 +139,11 @@ private:
 
         /** This function finds a face that is not the leaving face which can act as the entering
             face in the traversal algorithm. */
-        int findEnteringFace(const Vec& pos, const Direction& dir) const;
+        int findEnteringFace(Vec pos, Direction dir) const;
 
         /** This function checks if the given position is contained inside the tetrahedron.
             It first checks if the position is inside the bounding box of the tetrahedron. */
-        bool contains(const Position& bfr) const;
+        bool contains(Position bfr) const;
 
         /** This function generates three random barycentric coordinates for uniformly sampling
             inside this tetrahedron. The fourth coordinate is calculated by ensuring their sum

@@ -18,30 +18,30 @@ public:
 
     /** Returns true if the text string starts with the find string, or if the find string is
         empty. Otherwise returns false. */
-    static bool startsWith(string text, string find);
+    static bool startsWith(const string& text, const string& find);
 
     /** Returns true if the text string ends with the find string, or if the find string is
         empty. Otherwise returns false. */
-    static bool endsWith(string text, string find);
+    static bool endsWith(const string& text, const string& find);
 
     /** Returns true if the text string contains the find string. */
-    static bool contains(string text, string find);
+    static bool contains(const string& text, string find);
 
     /** Returns true if the text string matches the pattern string, which may include * and ? characters. */
-    static bool matches(string text, string pattern);
+    static bool matches(const string& text, const string& pattern);
 
     /** Returns true if the string list contains the find string. */
-    static bool contains(const vector<string>& list, string find);
+    static bool contains(const vector<string>& list, const string& find);
 
     /** Returns the zero-based index of the find string in the string list, or -1 if the string
         list does not contain the find string. */
-    static int indexOf(const vector<string>& list, string find);
+    static int indexOf(const vector<string>& list, const string& find);
 
     // ================== Transforms ==================
 
     /** Replaces all occurences in the text string of 'find' by 'replace', and returns the result.
         */
-    static string replace(string text, string find, string replace);
+    static string replace(string text, const string& find, const string& replace);
 
     /** Compresses consecutive white space (space, tab and newline characters) in the text string
         to a single space, removes any white space at the start and at the end, and returns the
@@ -73,11 +73,11 @@ public:
     /** Splits the text string into substrings wherever the separator string occurs, and returns
         the list of those strings. If the separator does not match anywhere, or if the separator is
         empty, the function returns a single-element list containing the complete text string. */
-    static vector<string> split(string text, string separator);
+    static vector<string> split(string text, const string& separator);
 
     /** Joins the list of strings by inserting the separator between consecutive non-empty strings,
         and returns the resulting single string. */
-    static string join(const vector<string>& list, string separator);
+    static string join(const vector<string>& list, const string& separator);
 
     // ================== Filename/path related functions ==================
 
@@ -89,7 +89,7 @@ public:
 
     /** Returns true if the specified path string represents an absolute path; false if it
         represents a relative path. */
-    static bool isAbsolutePath(string filepath);
+    static bool isAbsolutePath(const string& filepath);
 
     /** Returns the rightmost path segment in the specified path (after removing a trailing slash or
         backslash). */
@@ -106,7 +106,7 @@ public:
 
     /** Adds the specified filename extension to the specified filename (or file path), unless the
         filename already ends with the extension. */
-    static string addExtension(string filename, string extension);
+    static string addExtension(string filename, const string& extension);
 
     // ================== Conversions ==================
 
@@ -131,7 +131,7 @@ public:
     /** Returns the integer value represented by the specified string, or zero if the string is
         empty or contains an invalid representation. See isValidInt() for the valid
         representations. */
-    static int toInt(string value);
+    static int toInt(const string& value);
 
     /** Returns a string representation of the specified integer value. */
     static string toString(int value);
@@ -139,7 +139,7 @@ public:
     /** Returns true if the specified string is non-empty and contains a valid string
         representation of a floating point number that can be represented as a double. Otherwise
         returns false. */
-    static bool isValidDouble(string value);
+    static bool isValidDouble(const string& value);
 
     /** Returns the floating point value represented by the specified string, or zero if the string
         is empty or contains an invalid representation. If the optional argument \em ok is provided

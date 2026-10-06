@@ -39,7 +39,7 @@ public:
 
     /** This constructor creates an empty path with the specified initial position and propagation
         direction. */
-    SpatialGridPath(const Position& bfr, const Direction& bfk);
+    SpatialGridPath(Position bfr, Direction bfk);
 
     /** This constructor creates an empty path with the initial position and propagation direction
         initialized to null values. After using this constructor, invoke the setPosition() and
@@ -47,10 +47,10 @@ public:
     SpatialGridPath();
 
     /** This function sets the initial position of the path to a new value. */
-    void setPosition(const Position& bfr) { _bfr = bfr; }
+    void setPosition(Position bfr) { _bfr = bfr; }
 
     /** This function sets the propagation direction along the path to a new value. */
-    void setDirection(const Direction& bfk) { _bfk = bfk; }
+    void setDirection(Direction bfk) { _bfk = bfk; }
 
     /** This function propagates the initial position of the path over a distance \f$s\f$. In other
         words, it updates the position from \f${\bf{r}}\f$ to \f${\bf{r}}+s\,{\bf{k}}\f$. */

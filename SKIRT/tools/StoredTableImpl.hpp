@@ -24,7 +24,7 @@ namespace StoredTable_Impl
         stored table instance, in addition to the input parameters of the open() function. */
     void open(size_t numAxes, const SimulationItem* item,   // input parameters
               string filename, bool resource,               //   "
-              string axes, string quantity,                 //   "
+              const string& axes, const string& quantity,   //   "
               string& filePath,                             // output parameter by reference
               const double** axBeg, const double** qtyBeg,  // output parameters via pointers
               size_t* axLen, size_t* qtyStep,               //   "
@@ -47,9 +47,9 @@ namespace StoredTable_Impl
         matches all requirements, and stores relevant information in the given output parameters,
         throwing a fatal error if any of these steps fail. */
     void openAt(size_t numAxes,                               // input parameters
-                string filePath, size_t byteOffset,           //   "
-                string label,                                 //   "
-                string axes, string quantity,                 //   "
+                const string& filePath, size_t byteOffset,    //   "
+                const string& label,                          //   "
+                const string& axes, const string& quantity,   //   "
                 const double** axBeg, const double** qtyBeg,  // output parameters via pointers
                 size_t* axLen, size_t* qtyStep,               //   "
                 bool* axLog, bool* qtyLog);                   //   "
@@ -57,7 +57,7 @@ namespace StoredTable_Impl
     /** This function performs the close() operation as described for the destructor of the
         StoredTable class template. It receives the canonical path to the associated resource file,
         or the empty string if no association exists. */
-    void close(string filePath);
+    void close(const string& filePath);
 }
 
 ////////////////////////////////////////////////////////////////////

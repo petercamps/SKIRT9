@@ -56,7 +56,7 @@ Range LineSED::intrinsicWavelengthRange() const
 
 ////////////////////////////////////////////////////////////////////
 
-double LineSED::integratedLuminosity(const Range& wavelengthRange) const
+double LineSED::integratedLuminosity(Range wavelengthRange) const
 {
     double sum = 0.;
     size_t numLines = _inlambdav.size();

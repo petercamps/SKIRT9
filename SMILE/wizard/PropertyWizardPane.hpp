@@ -77,7 +77,7 @@ protected:
 
     /** This function creates a QLabel widget with the given text and with a status tip that is
         appropriate for the property being handled by this property wizard pane. */
-    QLabel* createHeader(string text);
+    QLabel* createHeader(const string& text);
 
     // ================== Data Members ====================
 

@@ -8,7 +8,7 @@
 
 ////////////////////////////////////////////////////////////////////
 
-CommandLineArguments::CommandLineArguments(const vector<string>& cmdlineargs, string options)
+CommandLineArguments::CommandLineArguments(const vector<string>& cmdlineargs, const string& options)
 {
     // parse the option list into a dictionary with a value of true if the option takes a value
     std::unordered_map<string, bool> takesValue;
@@ -70,21 +70,21 @@ bool CommandLineArguments::hasOptions() const
 
 ////////////////////////////////////////////////////////////////////
 
-bool CommandLineArguments::isPresent(string option) const
+bool CommandLineArguments::isPresent(const string& option) const
 {
     return _valid && _options.count(option);
 }
 
 ////////////////////////////////////////////////////////////////////
 
-string CommandLineArguments::value(string option) const
+string CommandLineArguments::value(const string& option) const
 {
     return _valid && _options.count(option) ? _options.at(option) : "";
 }
 
 ////////////////////////////////////////////////////////////////////
 
-int CommandLineArguments::intValue(string option) const
+int CommandLineArguments::intValue(const string& option) const
 {
     string stringvalue = value(option);
     return StringUtils::isValidInt(stringvalue) ? StringUtils::toInt(stringvalue) : -1;
@@ -92,7 +92,7 @@ int CommandLineArguments::intValue(string option) const
 
 ////////////////////////////////////////////////////////////////////
 
-double CommandLineArguments::doubleValue(string option) const
+double CommandLineArguments::doubleValue(const string& option) const
 {
     string stringvalue = value(option);
     return StringUtils::isValidDouble(stringvalue) ? StringUtils::toDouble(stringvalue) : -1;

@@ -106,7 +106,7 @@ void PerspectiveInstrument::determineSameObserverAsPreceding(const Instrument* p
 
 ////////////////////////////////////////////////////////////////////
 
-Direction PerspectiveInstrument::bfkobs(const Position& bfr) const
+Direction PerspectiveInstrument::bfkobs(Position bfr) const
 {
     // distance from launch to eye
     double Px, Py, Pz;
@@ -122,7 +122,7 @@ Direction PerspectiveInstrument::bfkobs(const Position& bfr) const
 
 ////////////////////////////////////////////////////////////////////
 
-Direction PerspectiveInstrument::bfky(const Position& /*bfr*/) const
+Direction PerspectiveInstrument::bfky(Position /*bfr*/) const
 {
     return _bfky;
 }

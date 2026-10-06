@@ -10,7 +10,7 @@
 
 ////////////////////////////////////////////////////////////////////
 
-void ItemUtils::setPropertyConfiguredState(Item* item, string property, int configured)
+void ItemUtils::setPropertyConfiguredState(Item* item, const string& property, int configured)
 {
     item->setUtilityProperty(property + "@configured", configured);
 }
@@ -28,7 +28,7 @@ void ItemUtils::setHierarchyConfigured(const SchemaDef* schema, Item* root)
 
 ////////////////////////////////////////////////////////////////////
 
-int ItemUtils::propertyConfiguredState(Item* item, string property)
+int ItemUtils::propertyConfiguredState(Item* item, const string& property)
 {
     try
     {
@@ -83,14 +83,14 @@ bool ItemUtils::isItemComplete(Item* item)
 
 ////////////////////////////////////////////////////////////////////
 
-void ItemUtils::storeSelectedRow(Item* item, string property, int row)
+void ItemUtils::storeSelectedRow(Item* item, const string& property, int row)
 {
     item->setUtilityProperty(property + "@row", row);
 }
 
 ////////////////////////////////////////////////////////////////////
 
-int ItemUtils::retrieveSelectedRow(Item* item, string property)
+int ItemUtils::retrieveSelectedRow(Item* item, const string& property)
 {
     try
     {

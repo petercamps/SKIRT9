@@ -40,7 +40,7 @@ public slots:
 
 signals:
     /** This signal is emitted when the user selects a new root type. */
-    void rootTypeChanged(string newRootType);
+    void rootTypeChanged(const string& newRootType);
 };
 
 ////////////////////////////////////////////////////////////////////

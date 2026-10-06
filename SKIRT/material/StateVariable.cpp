@@ -56,7 +56,7 @@ StateVariable StateVariable::temperature()
 
 //////////////////////////////////////////////////////////////////////
 
-StateVariable StateVariable::custom(int customIndex, string description, string quantity, char format)
+StateVariable StateVariable::custom(int customIndex, const string& description, const string& quantity, char format)
 {
     return StateVariable(Identifier::Custom, customIndex, description, quantity, format);
 }

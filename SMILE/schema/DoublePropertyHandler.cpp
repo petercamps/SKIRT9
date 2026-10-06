@@ -11,7 +11,7 @@
 
 ////////////////////////////////////////////////////////////////////
 
-bool DoublePropertyHandler::isValidValue(string value) const
+bool DoublePropertyHandler::isValidValue(const string& value) const
 {
     return isValidDouble(value);
 }

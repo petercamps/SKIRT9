@@ -104,7 +104,7 @@ bool AbstractDoublePropertyHandler::isInRange(const vector<double>& value) const
 
 ////////////////////////////////////////////////////////////////////
 
-bool AbstractDoublePropertyHandler::isValidDouble(string value) const
+bool AbstractDoublePropertyHandler::isValidDouble(const string& value) const
 {
     // split into segments; must have exactly one or two segments
     vector<string> segments = StringUtils::split(StringUtils::squeeze(value), " ");
@@ -133,7 +133,7 @@ bool AbstractDoublePropertyHandler::isValidDouble(string value) const
 
 ////////////////////////////////////////////////////////////////////
 
-double AbstractDoublePropertyHandler::toDouble(string value) const
+double AbstractDoublePropertyHandler::toDouble(const string& value) const
 {
     // ensure that the string is a valid representation
     if (!isValidDouble(value)) return 0.;
@@ -188,7 +188,7 @@ string AbstractDoublePropertyHandler::toString(double value) const
 
 ////////////////////////////////////////////////////////////////////
 
-bool AbstractDoublePropertyHandler::isValidDoubleList(string value) const
+bool AbstractDoublePropertyHandler::isValidDoubleList(const string& value) const
 {
     // split into comma-seperated segments and ensure there is at least one segment
     vector<string> segments = StringUtils::split(value, ",");
@@ -202,7 +202,7 @@ bool AbstractDoublePropertyHandler::isValidDoubleList(string value) const
 
 ////////////////////////////////////////////////////////////////////
 
-vector<double> AbstractDoublePropertyHandler::toDoubleList(string value) const
+vector<double> AbstractDoublePropertyHandler::toDoubleList(const string& value) const
 {
     vector<double> result;
     if (isValidDoubleList(value))
@@ -214,7 +214,7 @@ vector<double> AbstractDoublePropertyHandler::toDoubleList(string value) const
 
 ////////////////////////////////////////////////////////////////////
 
-string AbstractDoublePropertyHandler::toString(vector<double> value) const
+string AbstractDoublePropertyHandler::toString(const vector<double>& value) const
 {
     string result;
     string separator;

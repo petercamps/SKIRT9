@@ -23,7 +23,7 @@
 
 ////////////////////////////////////////////////////////////////////
 
-string SchemaDef::getSchemaTitle(string filePath)
+string SchemaDef::getSchemaTitle(const string& filePath)
 {
     try
     {
@@ -47,7 +47,7 @@ string SchemaDef::getSchemaTitle(string filePath)
 
 ////////////////////////////////////////////////////////////////////
 
-bool SchemaDef::isCompatible(string schemaFilePath, string dataFilePath)
+bool SchemaDef::isCompatible(const string& schemaFilePath, const string& dataFilePath)
 {
     try
     {
@@ -93,7 +93,7 @@ bool SchemaDef::isCompatible(string schemaFilePath, string dataFilePath)
 
 ////////////////////////////////////////////////////////////////////
 
-SchemaDef::SchemaDef(string filePath)
+SchemaDef::SchemaDef(const string& filePath)
 {
     XmlReader reader(filePath);
 
@@ -271,7 +271,7 @@ SchemaDef::SchemaDef(string name, string title, string version, string extension
 
 ////////////////////////////////////////////////////////////////////
 
-TypeDef& SchemaDef::addTypeDef(string name, string base, string title, TypeDef::Instantiator instantiator)
+TypeDef& SchemaDef::addTypeDef(string name, const string& base, const string& title, TypeDef::Instantiator instantiator)
 {
     // verify that the type is not already there
     if (_allTypes.count(name)) throw FATALERROR("Type '" + name + "' is already defined in the schema");
@@ -378,7 +378,7 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
-void SchemaDef::save(string filePath, string producer) const
+void SchemaDef::save(const string& filePath, const string& producer) const
 {
     XmlWriter writer(filePath);
 
@@ -577,7 +577,7 @@ string SchemaDef::schemaUrl() const
 
 ////////////////////////////////////////////////////////////////////
 
-string SchemaDef::title(string type) const
+string SchemaDef::title(const string& type) const
 {
     return typeDef(type).title();
 }
@@ -596,7 +596,7 @@ vector<string> SchemaDef::titles(const vector<string>& types) const
 
 ////////////////////////////////////////////////////////////////////
 
-bool SchemaDef::inherits(string childType, string parentType) const
+bool SchemaDef::inherits(const string& childType, const string& parentType) const
 {
     string type = childType;
     while (!type.empty())
@@ -622,7 +622,7 @@ vector<string> SchemaDef::ascendants(string type) const
 
 ////////////////////////////////////////////////////////////////////
 
-vector<string> SchemaDef::descendants(string type) const
+vector<string> SchemaDef::descendants(const string& type) const
 {
     vector<string> result;
     for (const string& candidate : _concreteTypes)
@@ -663,7 +663,7 @@ vector<string> SchemaDef::properties(string type) const
 
 ////////////////////////////////////////////////////////////////////
 
-string SchemaDef::definingType(string type, string property) const
+string SchemaDef::definingType(string type, const string& property) const
 {
     while (!type.empty())
     {
@@ -679,7 +679,7 @@ string SchemaDef::definingType(string type, string property) const
 
 ////////////////////////////////////////////////////////////////////
 
-string SchemaDef::propertyTitle(string type, string property) const
+string SchemaDef::propertyTitle(const string& type, const string& property) const
 {
     return propertyDef(type, property).title();
 }
@@ -689,7 +689,7 @@ string SchemaDef::propertyTitle(string type, string property) const
 namespace
 {
     // combine two Boolean expressions into a single one with the "and" operator
-    void addAndSegment(string& condition, string segment)
+    void addAndSegment(string& condition, const string& segment)
     {
         if (!segment.empty())
         {
@@ -764,7 +764,7 @@ std::unique_ptr<Item> SchemaDef::createItem(string type) const
 
 ////////////////////////////////////////////////////////////////////
 
-std::unique_ptr<PropertyHandler> SchemaDef::createPropertyHandler(Item* item, string property,
+std::unique_ptr<PropertyHandler> SchemaDef::createPropertyHandler(Item* item, const string& property,
                                                                   NameManager* nameMgr) const
 {
     // get the property definition (throws if not found)
@@ -785,35 +785,35 @@ std::unique_ptr<PropertyHandler> SchemaDef::createPropertyHandler(Item* item, st
 
 ////////////////////////////////////////////////////////////////////
 
-bool SchemaDef::has(string qty) const
+bool SchemaDef::has(const string& qty) const
 {
     return _unitDef.has(qty);
 }
 
 ////////////////////////////////////////////////////////////////////
 
-bool SchemaDef::has(string qty, string unit) const
+bool SchemaDef::has(const string& qty, const string& unit) const
 {
     return _unitDef.has(qty, unit);
 }
 
 ////////////////////////////////////////////////////////////////////
 
-double SchemaDef::in(string qty, string unit, double value) const
+double SchemaDef::in(const string& qty, const string& unit, double value) const
 {
     return _unitDef.in(qty, unit, value);
 }
 
 ////////////////////////////////////////////////////////////////////
 
-double SchemaDef::out(string qty, string unit, double value) const
+double SchemaDef::out(const string& qty, const string& unit, double value) const
 {
     return _unitDef.out(qty, unit, value);
 }
 
 ////////////////////////////////////////////////////////////////////
 
-string SchemaDef::unit(string qty, string unitSystem, string unitStyle) const
+string SchemaDef::unit(const string& qty, const string& unitSystem, const string& unitStyle) const
 {
     return _unitDef.unit(qty, unitSystem, unitStyle);
 }
@@ -862,7 +862,7 @@ string SchemaDef::unitSystemBase() const
 
 ////////////////////////////////////////////////////////////////////
 
-const TypeDef& SchemaDef::typeDef(string type) const
+const TypeDef& SchemaDef::typeDef(const string& type) const
 {
     if (auto pair = _allTypes.find(type); pair != _allTypes.cend()) return pair->second;
     throw FATALERROR("Type '" + type + "' is not defined in the schema");
@@ -870,7 +870,7 @@ const TypeDef& SchemaDef::typeDef(string type) const
 
 ////////////////////////////////////////////////////////////////////
 
-const PropertyDef& SchemaDef::propertyDef(string type, string property) const
+const PropertyDef& SchemaDef::propertyDef(string type, const string& property) const
 {
     while (!type.empty())
     {

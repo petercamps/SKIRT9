@@ -300,8 +300,7 @@ public:
 
     /** This function constructs the normalized probability density function (pdf) and cumulative
         distribution function (cdf) for the %SED with the specified parameters. */
-    double cdf(Array& lambdav, Array& pv, Array& Pv, const Range& wavelengthRange,
-               const Array& parameters) const override;
+    double cdf(Array& lambdav, Array& pv, Array& Pv, Range wavelengthRange, const Array& parameters) const override;
 
     //======================== Data Members =======================
 

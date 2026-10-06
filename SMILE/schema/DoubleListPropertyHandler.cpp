@@ -11,7 +11,7 @@
 
 ////////////////////////////////////////////////////////////////////
 
-bool DoubleListPropertyHandler::isValidValue(string value) const
+bool DoubleListPropertyHandler::isValidValue(const string& value) const
 {
     return isValidDoubleList(value);
 }
@@ -47,7 +47,7 @@ vector<double> DoubleListPropertyHandler::value() const
 
 ////////////////////////////////////////////////////////////////////
 
-void DoubleListPropertyHandler::setValue(vector<double> value)
+void DoubleListPropertyHandler::setValue(const vector<double>& value)
 {
     target()->setDoubleListProperty(property(), value);
     setChanged();

@@ -174,8 +174,8 @@ public:
         guarantee within or across processes other than that consuming data can happen only after
         it has been produced. This freedom allows a future implementation to use non-blocking
         communication primitives. */
-    static void broadcastAllToAll(std::function<void(vector<double>& data)> producer,
-                                  std::function<void(const vector<double>& data)> consumer);
+    static void broadcastAllToAll(const std::function<void(vector<double>& data)>& producer,
+                                  const std::function<void(const vector<double>& data)>& consumer);
 
     //======== Data members  ===========
 

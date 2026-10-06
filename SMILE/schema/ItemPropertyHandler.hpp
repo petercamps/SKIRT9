@@ -63,7 +63,7 @@ public:
         property in the target item so that it points to this new instance. The target item assumes
         ownership of the new instance. The function returns false if the property couldn't be set
         (e.g. because the specified item type is inappropriate). */
-    bool setToNewItemOfType(string type);
+    bool setToNewItemOfType(const string& type);
 
     /** Sets the value of the handled property in the target item to a null pointer, removing any
         previously owned item instance. */

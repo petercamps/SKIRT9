@@ -144,12 +144,12 @@ public:
 
     /** Returns the direction towards the observer from the given photon packet launching
         position, expressed in model coordinates. */
-    Direction bfkobs(const Position& bfr) const override;
+    Direction bfkobs(Position bfr) const override;
 
     /** Returns the direction along the positive y-axis in a plane normal to the vector towards the
         observer from the given photon packet launching position, expressed in model coordinates.
         */
-    Direction bfky(const Position& bfr) const override;
+    Direction bfky(Position bfr) const override;
 
 protected:
     /** This function simulates the detection of a photon packet by the instrument. */

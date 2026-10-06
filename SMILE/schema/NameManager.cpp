@@ -86,7 +86,7 @@ void NameManager::insert(const vector<std::string>& names)
 
 ////////////////////////////////////////////////////////////////////
 
-void NameManager::insertFromConditionalValue(string nameExpression)
+void NameManager::insertFromConditionalValue(const string& nameExpression)
 {
     string names = evaluateConditionalValue(nameExpression);
     if (!names.empty()) insert(StringUtils::split(names, ","));
@@ -101,7 +101,7 @@ void NameManager::insertFromConditionalValue(const vector<string>& nameExpressio
 
 ////////////////////////////////////////////////////////////////////
 
-bool NameManager::evaluateBoolean(string expression) const
+bool NameManager::evaluateBoolean(const string& expression) const
 {
     return BooleanExpression::evaluateBoolean(
         expression, [this](string name) { return _globalSet.count(name) > 0 || _localSetStack.top().count(name) > 0; });
@@ -109,7 +109,7 @@ bool NameManager::evaluateBoolean(string expression) const
 
 ////////////////////////////////////////////////////////////////////
 
-string NameManager::evaluateConditionalValue(string expression) const
+string NameManager::evaluateConditionalValue(const string& expression) const
 {
     return BooleanExpression::evaluateConditionalValue(
         expression, [this](string name) { return _globalSet.count(name) > 0 || _localSetStack.top().count(name) > 0; });

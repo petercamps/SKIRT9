@@ -31,7 +31,7 @@ namespace
     }
 
     // writes two output lines with input and gridded values, respectively
-    void writeValues(TextOutFile& out, double t, double g, double factor, string unit)
+    void writeValues(TextOutFile& out, double t, double g, double factor, const string& unit)
     {
         string tail;
         if (!unit.empty()) tail += " " + unit;
@@ -42,7 +42,7 @@ namespace
 
     // outputs the convergence info for the given material type
     void writeConvergenceForMaterialType(TextOutFile& out, MediumSystem* ms, double lambda,
-                                         MaterialMix::MaterialType type, string name)
+                                         MaterialMix::MaterialType type, const string& name)
     {
         Units* units = ms->find<Units>();
         int numMedia = ms->numMedia();

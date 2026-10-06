@@ -581,7 +581,7 @@ void WizardEngine::emitStateChanged()
 
 ////////////////////////////////////////////////////////////////////
 
-void WizardEngine::setBasicChoice(bool openExisting, string libraryPath, string schemaName)
+void WizardEngine::setBasicChoice(bool openExisting, const string& libraryPath, string schemaName)
 {
     if (_openExisting != openExisting || _schemaName != schemaName)
     {
@@ -602,7 +602,7 @@ void WizardEngine::setBasicChoice(bool openExisting, string libraryPath, string 
 
 ////////////////////////////////////////////////////////////////////
 
-void WizardEngine::setRootType(string newRootType)
+void WizardEngine::setRootType(const string& newRootType)
 {
     if (_root && _root->type() == newRootType) return;
     _root = _schema->createItem(newRootType);

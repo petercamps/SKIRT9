@@ -22,7 +22,7 @@ namespace
 {
     // generates an image with the specified output path for the parameter file with the specified input path;
     // returns true if successful, false otherwise
-    bool doGenerateImage(string inPath, string outPath)
+    bool doGenerateImage(const string& inPath, const string& outPath)
     {
         Console::info("Reading shapes parameter file '" + inPath + "' ...");
         Console::info("Generating shapes image file '" + outPath + "' ...");
@@ -35,7 +35,7 @@ namespace
 
     // generates a SMILE schema file with the specified file path;
     // returns true if successful, false otherwise
-    bool doGenerateSchemaFile(string outPath)
+    bool doGenerateSchemaFile(const string& outPath)
     {
         Console::info("Generating SMILE schema file '" + outPath + "' ...");
 

@@ -49,7 +49,7 @@ double LyaDoublePeakedSEDFamily::specificLuminosity(double wavelength, const Arr
 
 ////////////////////////////////////////////////////////////////////
 
-double LyaDoublePeakedSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, const Range& wavelengthRange,
+double LyaDoublePeakedSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, Range wavelengthRange,
                                      const Array& parameters) const
 {
     double L = parameters[0];

@@ -85,8 +85,8 @@ protected:
         representation of the weighting scheme. The last argument is a call-back function that
         returns the weight for the entity with the given index in the snapshot, again according to
         the user configuration. */
-    virtual void probeImportedSourceWeighted(string sweight, const vector<const Snapshot*>& snapshots,
-                                             std::function<double(const Snapshot* snapshot, int m)> weight) = 0;
+    virtual void probeImportedSourceWeighted(const string& sweight, const vector<const Snapshot*>& snapshots,
+                                             const std::function<double(const Snapshot* snapshot, int m)>& weight) = 0;
 };
 
 ////////////////////////////////////////////////////////////////////

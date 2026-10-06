@@ -17,21 +17,21 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
-bool Units::has(string qty, string unit) const
+bool Units::has(const string& qty, const string& unit) const
 {
     return _unitDef.has(qty, unit);
 }
 
 ////////////////////////////////////////////////////////////////////
 
-std::tuple<double, double, double> Units::def(string qty, string unit) const
+std::tuple<double, double, double> Units::def(const string& qty, const string& unit) const
 {
     return _unitDef.def(qty, unit);
 }
 
 ////////////////////////////////////////////////////////////////////
 
-double Units::in(string qty, std::string unit, double value) const
+double Units::in(const string& qty, const std::string& unit, double value) const
 {
     return _unitDef.in(qty, unit, value);
 }
@@ -66,14 +66,14 @@ Array Units::fromFluxStyle(const Array& lambdav, const Array& Lv, FluxOutputStyl
 
 ////////////////////////////////////////////////////////////////////
 
-string Units::unit(string qty) const
+string Units::unit(const string& qty) const
 {
     return _unitDef.unit(qty, type());
 }
 
 ////////////////////////////////////////////////////////////////////
 
-double Units::out(string qty, double value) const
+double Units::out(const string& qty, double value) const
 {
     return _unitDef.out(qty, type(), value);
 }

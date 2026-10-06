@@ -264,7 +264,7 @@ std::unique_ptr<Item> ConsoleHierarchyCreator::create(const SchemaDef* schema)
 
 ////////////////////////////////////////////////////////////////////
 
-double ConsoleHierarchyCreator::promptForDouble(string prefix, const DoublePropertyHandler* handler)
+double ConsoleHierarchyCreator::promptForDouble(const string& prefix, const DoublePropertyHandler* handler)
 {
     // get default and min/max values and verify that default is in range
     bool hasDef = handler->hasDefaultValue();
@@ -306,7 +306,8 @@ double ConsoleHierarchyCreator::promptForDouble(string prefix, const DoublePrope
 
 ////////////////////////////////////////////////////////////////////
 
-vector<double> ConsoleHierarchyCreator::promptForDoubleList(string prefix, const DoubleListPropertyHandler* handler)
+vector<double> ConsoleHierarchyCreator::promptForDoubleList(const string& prefix,
+                                                            const DoubleListPropertyHandler* handler)
 {
     // get default and min/max values and verify that default is in range
     bool hasDef = handler->hasDefaultValue() || !handler->isRequired();

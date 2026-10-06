@@ -14,7 +14,7 @@
 namespace
 {
     // returns true if text is a valid double, and the value is within range
-    bool isValidAndInRange(DoublePropertyHandler* hdlr, string text)
+    bool isValidAndInRange(DoublePropertyHandler* hdlr, const string& text)
     {
         if (!hdlr->isValidDouble(text)) return false;
         return hdlr->isInRange(hdlr->toDouble(text));

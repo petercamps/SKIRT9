@@ -11,7 +11,7 @@
 
 ////////////////////////////////////////////////////////////////////
 
-void ImportedMediumMetallicityProbe::probeImportedMedium(string sh, const ImportedMedium* medium,
+void ImportedMediumMetallicityProbe::probeImportedMedium(const string& sh, const ImportedMedium* medium,
                                                          const Snapshot* snapshot)
 {
     if (snapshot->hasMetallicity())

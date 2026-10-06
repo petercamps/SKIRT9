@@ -63,7 +63,7 @@ double LyaSEDFamilyDecorator::specificLuminosity(double wavelength, const Array&
 
 //////////////////////////////////////////////////////////////////////
 
-double LyaSEDFamilyDecorator::cdf(Array& lambdav, Array& pv, Array& Pv, const Range& wavelengthRange,
+double LyaSEDFamilyDecorator::cdf(Array& lambdav, Array& pv, Array& Pv, Range wavelengthRange,
                                   const Array& parameters) const
 {
     // determine the ionizing luminosity; the argument arrays lambdav, pv, Pv are used for temporary storage

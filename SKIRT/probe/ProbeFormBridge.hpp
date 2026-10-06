@@ -238,28 +238,28 @@ public:
         quantity that needs to be accumulated along a path, according to the provided information.
         It should be called only from spatial grid probes. Refer to the class header for more
         information on the arguments. */
-    void writeQuantity(string fileid, string projectedFileid, string quantity, string projectedQuantity,
+    void writeQuantity(string fileid, string projectedFileid, const string& quantity, const string& projectedQuantity,
                        string description, string projectedDescription, ScalarValueInCell valueInCell);
 
     /** This function causes the form associated with this bridge to output a file for a scalar
         quantity that needs to be averaged along a path, according to the provided information. It
         should be called only from spatial grid probes. Refer to the class header for more
         information on the arguments. */
-    void writeQuantity(string fileid, string quantity, string description, string projectedDescription,
+    void writeQuantity(string fileid, const string& quantity, string description, string projectedDescription,
                        ScalarValueInCell valueInCell, WeightInCell weightInCell);
 
     /** This function causes the form associated with this bridge to output a file for a vector
         quantity (which is always averaged along a path) according to the provided information. It
         should be called only from spatial grid probes. Refer to the class header for more
         information on the arguments. */
-    void writeQuantity(string fileid, string quantity, string description, string projectedDescription,
+    void writeQuantity(string fileid, const string& quantity, string description, string projectedDescription,
                        VectorValueInCell valueInCell, WeightInCell weightInCell);
 
     /** This function causes the form associated with this bridge to output a file for a compound
         quantity that needs to be accumulated along a path according to the provided information.
         It should be called only from spatial grid probes. Refer to the class header for more
         information on the arguments. */
-    void writeQuantity(string fileid, string projectedFileid, string quantity, string projectedQuantity,
+    void writeQuantity(string fileid, string projectedFileid, const string& quantity, const string& projectedQuantity,
                        string description, string projectedDescription, const Array& axis, string axisUnit,
                        AddColumnDefinitions addColumnDefinitions, CompoundValueInCell valueInCell);
 
@@ -284,14 +284,14 @@ public:
     /** This function causes the form associated with this bridge to output a file for a scalar
         quantity according to provided the information. It should be called only from input model
         probes. Refer to the class header for more information on the arguments. */
-    void writeQuantity(string fileid, string projectedFileid, string quantity, string projectedQuantity,
+    void writeQuantity(string fileid, string projectedFileid, const string& quantity, const string& projectedQuantity,
                        string description, string projectedDescription, ScalarValueAtPosition valueAtPosition,
                        ScalarValueAlongPath valueAlongPath);
 
     /** This function causes the form associated with this bridge to output a file for a vector
         quantity according to provided the information. It should be called only from input model
         probes. Refer to the class header for more information on the arguments. */
-    void writeQuantity(string fileid, string projectedFileid, string quantity, string projectedQuantity,
+    void writeQuantity(string fileid, string projectedFileid, const string& quantity, const string& projectedQuantity,
                        string description, string projectedDescription, VectorValueAtPosition valueAtPosition,
                        VectorValueAlongPath valueAlongPath);
 
@@ -309,25 +309,25 @@ public:
         quantity that needs to be accumulated along a path, according to the provided information.
         It should be called only from input model probes for imported source or media components.
         Refer to the class header for more information on the arguments. */
-    void writeQuantity(string fileid, string projectedFileid, string quantity, string projectedQuantity,
-                       string description, string projectedDescription, const vector<const Snapshot*>& snapshots,
-                       ScalarValueInEntity valueInEntity);
+    void writeQuantity(const string& fileid, const string& projectedFileid, const string& quantity,
+                       const string& projectedQuantity, const string& description, const string& projectedDescription,
+                       const vector<const Snapshot*>& snapshots, ScalarValueInEntity valueInEntity);
 
     /** This function causes the form associated with this bridge to output a file for a scalar
         quantity that needs to be averaged along a path, according to the provided information. It
         should be called only from input model probes for imported source or media components.
         Refer to the class header for more information on the arguments. */
-    void writeQuantity(string fileid, string quantity, string description, string projectedDescription,
-                       const vector<const Snapshot*>& snapshots, ScalarValueInEntity valueInEntity,
-                       WeightInEntity weightInEntity);
+    void writeQuantity(const string& fileid, const string& quantity, const string& description,
+                       const string& projectedDescription, const vector<const Snapshot*>& snapshots,
+                       ScalarValueInEntity valueInEntity, WeightInEntity weightInEntity);
 
     /** This function causes the form associated with this bridge to output a file for a vector
         quantity that needs to be averaged along a path, according to the provided information. It
         should be called only from input model probes for imported source or media components.
         Refer to the class header for more information on the arguments. */
-    void writeQuantity(string fileid, string quantity, string description, string projectedDescription,
-                       const vector<const Snapshot*>& snapshots, VectorValueInEntity valueInEntity,
-                       WeightInEntity weightInEntity);
+    void writeQuantity(const string& fileid, const string& quantity, const string& description,
+                       const string& projectedDescription, const vector<const Snapshot*>& snapshots,
+                       VectorValueInEntity valueInEntity, WeightInEntity weightInEntity);
 
     //======== Querying: for use by all form types  =======
 

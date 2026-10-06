@@ -35,7 +35,7 @@ public:
         is the root process; (2) \em filename specifies the name of the file, excluding path,
         simulation prefix and filename extension; (3) \em description describes the contents of the
         file for use in the log message issued after the file is successfully closed. */
-    TextOutFile(const SimulationItem* item, string filename, string description);
+    TextOutFile(const SimulationItem* item, const string& filename, const string& description);
 
     /** In the root process, this function closes the file and logs an informational message, if
         the file was not already closed. It is important to call close() or allow the object to go
@@ -53,7 +53,7 @@ public:
 public:
     /** This function writes the specified string to the file as a new line. If the calling process
         is not the root, this function will have no effect. */
-    void writeLine(string line);
+    void writeLine(const string& line);
 
     /** This function (virtually) adds a new column to the text file, characterized by a certain
         description and formatting. The format is 'd' for integer values, 'e' for scientific notation, 'f'
@@ -62,7 +62,8 @@ public:
         point. For the 'g' format, the precision represents the maximum number of significant
         digits (trailing zeroes are omitted). The description of each column is added to the header of
         the text file, along with the column number. */
-    void addColumn(string quantityDescription, string unitDescription = string(), char format = 'e', int precision = 9);
+    void addColumn(const string& quantityDescription, string unitDescription = string(), char format = 'e',
+                   int precision = 9);
 
     /** This function writes the specified list of (double) values to the text file, on a single row
         where adjacent values are seperated by a space. The values are formatted according to the

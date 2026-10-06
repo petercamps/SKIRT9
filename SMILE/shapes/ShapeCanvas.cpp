@@ -50,12 +50,12 @@ public:
         _cgs.w = w;
     }
     void drawLine(double x1, double y1, double x2, double y2) { _canvas.drawLine(x1, y1, x2, y2); }
-    void saveToTiff(string outPath) { _canvas.saveToTiff(outPath); }
+    void saveToTiff(const string& outPath) { _canvas.saveToTiff(outPath); }
 };
 
 ////////////////////////////////////////////////////////////////////
 
-void ShapeCanvas::paintAndSave(string outPath)
+void ShapeCanvas::paintAndSave(const string& outPath)
 {
     try
     {

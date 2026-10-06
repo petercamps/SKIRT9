@@ -130,8 +130,8 @@ public:
     /** This alternate constructor constructs a stored table instance and immediately associates a
         given stored table resource file with it by calling the open() function. Refer to the
         open() function for a description of the arguments and of its operation. */
-    StoredTable(const SimulationItem* item, string filename, string axes, string quantity, bool clampFirstAxis = true,
-                bool resource = true)
+    StoredTable(const SimulationItem* item, const string& filename, const string& axes, const string& quantity,
+                bool clampFirstAxis = true, bool resource = true)
     {
         open(item, filename, axes, quantity, clampFirstAxis, resource);
     }
@@ -217,8 +217,8 @@ public:
         acquires a memory map on the file, (3) verifies that the stored table matches all
         requirements, and (4) stores relevant information in data members. If any of these steps
         fail, the function throws a fatal error. */
-    void open(const SimulationItem* item, string filename, string axes, string quantity, bool clampFirstAxis = true,
-              bool resource = true)
+    void open(const SimulationItem* item, const string& filename, const string& axes, const string& quantity,
+              bool clampFirstAxis = true, bool resource = true)
     {
         StoredTable_Impl::open(N, item, filename, resource, axes, quantity, _filePath, &_axBeg[0], &_qtyBeg, &_axLen[0],
                                &_qtyStep, &_axLog[0], &_qtyLog);

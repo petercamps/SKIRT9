@@ -233,7 +233,7 @@ public:
     /** Sets the specified utility property to the specified value. Utility properties can be used
         by the program to store extra information unrelated to the SMILE schema, for example during
         interactive editing of a SMILE dataset. */
-    void setUtilityProperty(string name, int value);
+    void setUtilityProperty(const string& name, int value);
 
     /** Returns the value of the specified utility property. If the property does not exist, the
         function throws an error. */

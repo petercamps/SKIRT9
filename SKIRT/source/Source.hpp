@@ -89,7 +89,7 @@ protected:
     /** This function logs a warning message if the given range is smaller than the configured
         source wavelength range. The second argument specifies the type of the simulation item to
         be included in the message. This function can be called from subclasses. */
-    void informAvailableWavelengthRange(Range available, string itemType);
+    void informAvailableWavelengthRange(Range available, const string& itemType);
 
     //======================== Other Functions =======================
 

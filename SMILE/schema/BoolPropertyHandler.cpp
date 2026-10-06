@@ -12,7 +12,7 @@
 
 ////////////////////////////////////////////////////////////////////
 
-bool BoolPropertyHandler::isValidValue(string value) const
+bool BoolPropertyHandler::isValidValue(const string& value) const
 {
     return StringUtils::isValidBool(value);
 }

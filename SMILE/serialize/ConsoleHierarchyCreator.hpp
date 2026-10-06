@@ -28,11 +28,11 @@ public:
 
     /** Prompts the console user for a double value, using the given message prefix and the
         information provided by the specified property handler. */
-    static double promptForDouble(string prefix, const DoublePropertyHandler* handler);
+    static double promptForDouble(const string& prefix, const DoublePropertyHandler* handler);
 
     /** Prompts the console user for a comma-separated list of double values, using the given
         message prefix and the information provided by the specified property handler. */
-    static vector<double> promptForDoubleList(string prefix, const DoubleListPropertyHandler* handler);
+    static vector<double> promptForDoubleList(const string& prefix, const DoubleListPropertyHandler* handler);
 };
 
 ////////////////////////////////////////////////////////////////////

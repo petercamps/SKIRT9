@@ -22,7 +22,7 @@ public:
         the root item of the hierarchy (handing over ownership for the complete hierarchy to the
         caller). If the hierarchy can't be created due to some error condition the function throws
         a fatal error. */
-    static std::unique_ptr<Item> readFile(const SchemaDef* schema, string filepath);
+    static std::unique_ptr<Item> readFile(const SchemaDef* schema, const string& filepath);
 
     /** Creates a fresh memory representation of a SMILE dataset for the specified schema
         definition reflecting the XML serialization in the specified \em contents string, and
@@ -30,7 +30,7 @@ public:
         complete hierarchy to the caller). The \em description argument provides a human readable
         string to identify the contents string in error messages. If the hierarchy can't be created
         due to some error condition the function throws a fatal error. */
-    static std::unique_ptr<Item> readString(const SchemaDef* schema, string contents, string description);
+    static std::unique_ptr<Item> readString(const SchemaDef* schema, const string& contents, const string& description);
 };
 
 ////////////////////////////////////////////////////////////////////

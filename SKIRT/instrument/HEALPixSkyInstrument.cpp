@@ -99,7 +99,7 @@ void HEALPixSkyInstrument::determineSameObserverAsPreceding(const Instrument* pr
 
 ////////////////////////////////////////////////////////////////////
 
-Direction HEALPixSkyInstrument::bfkobs(const Position& bfr) const
+Direction HEALPixSkyInstrument::bfkobs(Position bfr) const
 {
     // vector and distance from launch to observer
     Vec k = Vec(_Ox, _Oy, _Oz) - bfr;
@@ -114,7 +114,7 @@ Direction HEALPixSkyInstrument::bfkobs(const Position& bfr) const
 
 ////////////////////////////////////////////////////////////////////
 
-Direction HEALPixSkyInstrument::bfky(const Position& bfr) const
+Direction HEALPixSkyInstrument::bfky(Position bfr) const
 {
     // vector and distance from launch to observer
     Vec k = Vec(_Ox, _Oy, _Oz) - bfr;

@@ -33,7 +33,7 @@ double FamilySED::specificLuminosity(double wavelength) const
 
 //////////////////////////////////////////////////////////////////////
 
-void FamilySED::specificLuminosityArray(Array& lambdav, Array& pv, const Range& wavelengthRange) const
+void FamilySED::specificLuminosityArray(Array& lambdav, Array& pv, Range wavelengthRange) const
 {
     Array Pv;  // the contents of this array is not used, so this could be optimized if needed
     double Ltot = _family->cdf(lambdav, pv, Pv, wavelengthRange, _parameters);
@@ -42,7 +42,7 @@ void FamilySED::specificLuminosityArray(Array& lambdav, Array& pv, const Range& 
 
 //////////////////////////////////////////////////////////////////////
 
-double FamilySED::integratedLuminosity(const Range& wavelengthRange) const
+double FamilySED::integratedLuminosity(Range wavelengthRange) const
 {
     Array lambdav, pv, Pv;  // the contents of these arrays is not used, so this could be optimized if needed
     return _family->cdf(lambdav, pv, Pv, wavelengthRange, _parameters) / _Ltot;

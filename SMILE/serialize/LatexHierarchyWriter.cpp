@@ -115,7 +115,7 @@ namespace
     private:
         // returns pair (number of characters to be removed from start of input string, replacement string)
         // input string should be non-empty!!
-        std::pair<size_t, string> nextReplace(string str) const
+        std::pair<size_t, string> nextReplace(const string& str) const
         {
             for (const auto& [from, to] : _replText)
             {
@@ -143,7 +143,7 @@ namespace
         }
 
         // texify regular text after making first character uppercase
-        string fromTextUpp(string str) const { return fromText(StringUtils::toUpperFirst(str)); }
+        string fromTextUpp(const string& str) const { return fromText(StringUtils::toUpperFirst(str)); }
 
         // texify string representing a floating point value in SMILE format
         string fromDouble(string str) const
@@ -192,7 +192,7 @@ namespace
         }
 
         // texify string representing a list of floating point values in SMILE format
-        string fromDoubleList(string str) const
+        string fromDoubleList(const string& str) const
         {
             vector<string> result;
             for (const string& item : StringUtils::split(str, ",")) result.push_back(fromDouble(item));
@@ -214,7 +214,7 @@ namespace
         const Texify tex{};
 
     public:
-        LatexWriter(Item* item, const SchemaDef* schema, string filePath, string dataset, string producer)
+        LatexWriter(Item* item, const SchemaDef* schema, string filePath, const string& dataset, const string& producer)
             // remember schema and open output stream
             : _schema(schema), _out(System::ofstream(filePath))
         {
@@ -347,7 +347,8 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
-void LatexHierarchyWriter::write(Item* item, const SchemaDef* schema, string filePath, string dataset, string producer)
+void LatexHierarchyWriter::write(Item* item, const SchemaDef* schema, const string& filePath, const string& dataset,
+                                 const string& producer)
 {
     LatexWriter writer(item, schema, filePath, dataset, producer);
 }

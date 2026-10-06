@@ -14,7 +14,7 @@
 
 ////////////////////////////////////////////////////////////////////
 
-void FITSInOut::read(const SimulationItem* item, string filename, Array& data, int& nx, int& ny, int& nz)
+void FITSInOut::read(const SimulationItem* item, const string& filename, Array& data, int& nx, int& ny, int& nz)
 {
     // Determine the path of the input FITS file
     string filepath = item->find<FilePaths>()->input(filename);
@@ -31,9 +31,9 @@ void FITSInOut::read(const SimulationItem* item, string filename, Array& data, i
 
 ////////////////////////////////////////////////////////////////////
 
-void FITSInOut::write(const SimulationItem* item, string description, string filename, const Array& data,
-                      string dataUnits, int nx, int ny, double incx, double incy, double xc, double yc, string xyUnits,
-                      const Array& z, string zUnits, const ObserverInfo* obsInfo)
+void FITSInOut::write(const SimulationItem* item, const string& description, const string& filename, const Array& data,
+                      const string& dataUnits, int nx, int ny, double incx, double incy, double xc, double yc,
+                      const string& xyUnits, const Array& z, const string& zUnits, const ObserverInfo* obsInfo)
 {
     // Only write the FITS file if this process is the root
     if (ProcessManager::isRoot())
@@ -51,9 +51,9 @@ void FITSInOut::write(const SimulationItem* item, string description, string fil
 
 ////////////////////////////////////////////////////////////////////
 
-void FITSInOut::writeMap(const SimulationItem* item, string description, string filename, const Array& data,
-                         string dataUnits, const Array& x, const Array& y, string xUnits, string yUnits,
-                         const ObserverInfo* obsInfo)
+void FITSInOut::writeMap(const SimulationItem* item, const string& description, const string& filename,
+                         const Array& data, const string& dataUnits, const Array& x, const Array& y,
+                         const string& xUnits, const string& yUnits, const ObserverInfo* obsInfo)
 {
     // Only write the FITS file if this process is the root
     if (ProcessManager::isRoot())
@@ -77,7 +77,7 @@ namespace
     std::mutex _mutex;
 
     // function to report cfitsio errors
-    void report_error(string filepath, string action, int status)
+    void report_error(string filepath, const string& action, int status)
     {
         char message[FLEN_STATUS];
         ffgerr(status, message);
@@ -87,7 +87,7 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
-void FITSInOut::read(string filepath, Array& data, int& nx, int& ny, int& nz)
+void FITSInOut::read(const string& filepath, Array& data, int& nx, int& ny, int& nz)
 {
     // Acquire a global lock since the cfitsio library is not guaranteed to be reentrant
     std::unique_lock<std::mutex> lock(_mutex);
@@ -124,8 +124,9 @@ void FITSInOut::read(string filepath, Array& data, int& nx, int& ny, int& nz)
 
 ////////////////////////////////////////////////////////////////////
 
-void FITSInOut::write(string filepath, const Array& data, string dataUnits, int nx, int ny, double incx, double incy,
-                      double xc, double yc, string xyUnits, const Array& z, string zUnits, const ObserverInfo* obsInfo)
+void FITSInOut::write(const string& filepath, const Array& data, const string& dataUnits, int nx, int ny, double incx,
+                      double incy, double xc, double yc, const string& xyUnits, const Array& z, const string& zUnits,
+                      const ObserverInfo* obsInfo)
 {
     // Get the z-axis size
     //   0:  a single frame that is not part of a datacube
@@ -217,8 +218,8 @@ void FITSInOut::write(string filepath, const Array& data, string dataUnits, int 
 
 ////////////////////////////////////////////////////////////////////
 
-void FITSInOut::writeMap(string filepath, const Array& data, string dataUnits, const Array& x, const Array& y,
-                         string xUnits, string yUnits, const ObserverInfo* obsInfo)
+void FITSInOut::writeMap(const string& filepath, const Array& data, const string& dataUnits, const Array& x,
+                         const Array& y, const string& xUnits, const string& yUnits, const ObserverInfo* obsInfo)
 {
     // Get the axis sizes
     long nx = x.size();
@@ -312,7 +313,7 @@ void FITSInOut::writeMap(string filepath, const Array& data, string dataUnits, c
 
 ////////////////////////////////////////////////////////////////////
 
-void FITSInOut::readColumn(string filepath, Array& data, int n)
+void FITSInOut::readColumn(const string& filepath, Array& data, int n)
 {
     // Acquire a global lock since the cfitsio library is not guaranteed to be reentrant
     std::unique_lock<std::mutex> lock(_mutex);

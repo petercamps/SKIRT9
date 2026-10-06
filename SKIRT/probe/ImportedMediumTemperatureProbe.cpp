@@ -11,7 +11,7 @@
 
 ////////////////////////////////////////////////////////////////////
 
-void ImportedMediumTemperatureProbe::probeImportedMedium(string sh, const ImportedMedium* medium,
+void ImportedMediumTemperatureProbe::probeImportedMedium(const string& sh, const ImportedMedium* medium,
                                                          const Snapshot* snapshot)
 {
     if (snapshot->hasTemperature())

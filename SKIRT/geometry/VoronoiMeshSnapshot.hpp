@@ -152,7 +152,7 @@ public:
         discarded. The \em filename argument specifies the name of the input file, including
         filename extension but excluding path and simulation prefix. If the \em relax argument is
         true, the function performs a single relaxation step on the site positions. */
-    VoronoiMeshSnapshot(const SimulationItem* item, const Box& extent, string filename, bool relax);
+    VoronoiMeshSnapshot(const SimulationItem* item, const Box& extent, const string& filename, bool relax);
 
     /** This constructor obtains the site positions from a SiteListInterface instance. The
         constructor completes the configuration for the object (but without importing mass density

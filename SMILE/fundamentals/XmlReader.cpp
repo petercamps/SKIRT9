@@ -166,7 +166,7 @@ vector<string> XmlReader::attributeNames() const
 
 ////////////////////////////////////////////////////////////////////
 
-string XmlReader::attributeValue(string name) const
+string XmlReader::attributeValue(const string& name) const
 {
     if (!_elementStack.empty())
     {
@@ -258,7 +258,7 @@ void XmlReader::skipWhiteSpace()
 
 ////////////////////////////////////////////////////////////////////
 
-void XmlReader::skipUpTo(string match)
+void XmlReader::skipUpTo(const string& match)
 {
     // We assume that when entering this function, the stream is not positioned
     // between a carriage return and a line feed

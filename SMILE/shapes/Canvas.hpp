@@ -72,7 +72,7 @@ public:
     /** Saves the current contents of the canvas as a TIFF file with the specified file path. The
         file path should already include the appropriate filename extension. If the operation was
         successful, the function returns true; otherwise it returns false. */
-    bool saveToTiff(string filepath) const;
+    bool saveToTiff(const string& filepath) const;
 
     // ================== Private utilities ==================
 

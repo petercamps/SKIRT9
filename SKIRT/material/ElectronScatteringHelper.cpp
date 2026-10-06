@@ -155,7 +155,7 @@ namespace
 
     // load data from resource file with N columns into a vector of N arrays, and return that vector;
     // each of the arrays is resized to remove trailing NaN values, if applicable
-    vector<Array> loadColumns(int N, const SimulationItem* item, string filename, string description)
+    vector<Array> loadColumns(int N, const SimulationItem* item, const string& filename, const string& description)
     {
         TextInFile infile(item, filename, description, true);
         for (int i = 0; i != N; ++i) infile.addColumn(string());

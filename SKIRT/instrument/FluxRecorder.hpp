@@ -312,7 +312,7 @@ private:
     {
     public:
         Contribution(size_t index, double w) : _index(index), _w(w) {}
-        bool operator<(const Contribution& c) const { return _index < c._index; }
+        bool operator<(Contribution c) const { return _index < c._index; }
         size_t index() const { return _index; }
         double w() const { return _w; }
 

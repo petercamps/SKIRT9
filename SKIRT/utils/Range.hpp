@@ -49,7 +49,7 @@ public:
     bool contains(double x) const { return x >= _min && x <= _max; }
 
     /** This function returns true if the given range is inside the receiving range, and false otherwise. */
-    bool contains(const Range& range) const { return range.min() >= _min && range.max() <= _max; }
+    bool contains(Range range) const { return range.min() >= _min && range.max() <= _max; }
 
     /** This function returns true if the given value is inside the range, with the given fuzzyness
         factor, and false otherwise. */
@@ -62,7 +62,7 @@ public:
     /** This function updates the range so that it represents the intersection of the original
         range with the other range given as an argument. If the two ranges do not overlap, the
         resulting range will have a minimum larger than or equal to its maximum. */
-    Range& intersect(const Range& range)
+    Range& intersect(Range range)
     {
         if (_min < range._min) _min = range._min;
         if (_max > range._max) _max = range._max;
@@ -72,7 +72,7 @@ public:
     /** This function updates the range so that it represents the union of the original
         range with the other range given as an argument. If the two ranges do not overlap, the
         resulting range will include the interval between the input ranges. */
-    Range& extend(const Range& range)
+    Range& extend(Range range)
     {
         if (range._min < _min) _min = range._min;
         if (range._max > _max) _max = range._max;

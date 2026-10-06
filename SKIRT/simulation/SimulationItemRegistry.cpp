@@ -316,7 +316,7 @@
 
 ////////////////////////////////////////////////////////////////////
 
-SimulationItemRegistry::SimulationItemRegistry(string version, string format)
+SimulationItemRegistry::SimulationItemRegistry(const string& version, const string& format)
 {
     // start a new schema
     ItemRegistry::beginSchema("SKIRT", "a SKIRT parameter file", version, "ski", "skirt-simulation-hierarchy",

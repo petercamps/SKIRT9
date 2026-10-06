@@ -36,7 +36,7 @@ public:
         wavelengths in the specified range may or may not be included in the returned result if
         they fall outside of the %SED's intrinsic wavelength range. In that case, the specific
         luminosities outside the returned range should be assumed to be zero. */
-    virtual void specificLuminosityArray(Array& lambdav, Array& pv, const Range& wavelengthRange) const = 0;
+    virtual void specificLuminosityArray(Array& lambdav, Array& pv, Range wavelengthRange) const = 0;
 };
 
 ////////////////////////////////////////////////////////////////////

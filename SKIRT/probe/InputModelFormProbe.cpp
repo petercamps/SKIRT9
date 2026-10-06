@@ -57,7 +57,7 @@ void InputModelFormProbe::probeImportedSources(const vector<const ImportedSource
 
 ////////////////////////////////////////////////////////////////////
 
-void InputModelFormProbe::probeImportedMedium(string /*sh*/, const ImportedMedium* /*medium*/,
+void InputModelFormProbe::probeImportedMedium(const string& /*sh*/, const ImportedMedium* /*medium*/,
                                               const Snapshot* /*snapshot*/)
 {}
 

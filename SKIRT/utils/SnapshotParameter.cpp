@@ -48,7 +48,8 @@ SnapshotParameter SnapshotParameter::temperature()
 
 //////////////////////////////////////////////////////////////////////
 
-SnapshotParameter SnapshotParameter::custom(string description, string quantity, string defaultUnit)
+SnapshotParameter SnapshotParameter::custom(const string& description, const string& quantity,
+                                            const string& defaultUnit)
 {
     return SnapshotParameter(Identifier::Custom, description, quantity, defaultUnit);
 }

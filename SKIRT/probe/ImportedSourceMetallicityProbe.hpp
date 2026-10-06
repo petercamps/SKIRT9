@@ -32,8 +32,8 @@ class ImportedSourceMetallicityProbe : public ImportedSourceWeightedProbe
 protected:
     /** This function probes the imported source components with the specified snapshots and weight
         function. */
-    void probeImportedSourceWeighted(string sweight, const vector<const Snapshot*>& snapshots,
-                                     std::function<double(const Snapshot* snapshot, int m)> weight) override;
+    void probeImportedSourceWeighted(const string& sweight, const vector<const Snapshot*>& snapshots,
+                                     const std::function<double(const Snapshot* snapshot, int m)>& weight) override;
 };
 
 ////////////////////////////////////////////////////////////////////

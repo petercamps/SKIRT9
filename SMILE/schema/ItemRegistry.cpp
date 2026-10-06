@@ -200,7 +200,7 @@ void ItemRegistry::setBase(const char* type)
 
 ////////////////////////////////////////////////////////////////////
 
-const SchemaDef* ItemRegistry::getSchemaDef(string name)
+const SchemaDef* ItemRegistry::getSchemaDef(const string& name)
 {
     if (_schemas.count(name))
         return &_schemas.at(name);

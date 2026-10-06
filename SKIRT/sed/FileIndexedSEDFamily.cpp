@@ -46,7 +46,7 @@ double FileIndexedSEDFamily::specificLuminosity(double wavelength, const Array& 
 
 ////////////////////////////////////////////////////////////////////
 
-double FileIndexedSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, const Range& wavelengthRange,
+double FileIndexedSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, Range wavelengthRange,
                                  const Array& parameters) const
 {
     double index = parameters[0];

@@ -100,7 +100,7 @@ void Canvas::drawLine(double x1, double y1, double x2, double y2)
 
 ////////////////////////////////////////////////////////////////////
 
-bool Canvas::saveToTiff(string filepath) const
+bool Canvas::saveToTiff(const string& filepath) const
 {
     // open the output file
     auto file = System::ofstream(filepath);

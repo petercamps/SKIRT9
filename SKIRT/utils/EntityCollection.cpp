@@ -34,7 +34,7 @@ void EntityCollection::addSingle(int m)
 
 ////////////////////////////////////////////////////////////////////
 
-double EntityCollection::accumulate(std::function<double(int)> value)
+double EntityCollection::accumulate(const std::function<double(int)>& value)
 {
     double sumvw = 0.;
     for (const auto& [m, w] : _entities)
@@ -46,8 +46,8 @@ double EntityCollection::accumulate(std::function<double(int)> value)
 
 ////////////////////////////////////////////////////////////////////
 
-std::pair<double, double> EntityCollection::average(std::function<double(int m)> value,
-                                                    std::function<double(int m)> weight)
+std::pair<double, double> EntityCollection::average(const std::function<double(int m)>& value,
+                                                    const std::function<double(int m)>& weight)
 {
     double sumvw = 0.;
     double sumw = 0.;
@@ -63,7 +63,7 @@ std::pair<double, double> EntityCollection::average(std::function<double(int m)>
 
 ////////////////////////////////////////////////////////////////////
 
-double EntityCollection::averageValue(std::function<double(int)> value, std::function<double(int)> weight)
+double EntityCollection::averageValue(std::function<double(int)> value, const std::function<double(int)>& weight)
 {
     auto numEntities = _entities.size();
     if (numEntities == 0) return 0.;
@@ -75,7 +75,8 @@ double EntityCollection::averageValue(std::function<double(int)> value, std::fun
 
 ////////////////////////////////////////////////////////////////////
 
-std::pair<Vec, double> EntityCollection::average(std::function<Vec(int m)> value, std::function<double(int m)> weight)
+std::pair<Vec, double> EntityCollection::average(const std::function<Vec(int m)>& value,
+                                                 const std::function<double(int m)>& weight)
 {
     Vec sumvw;
     double sumw = 0.;
@@ -91,7 +92,7 @@ std::pair<Vec, double> EntityCollection::average(std::function<Vec(int m)> value
 
 ////////////////////////////////////////////////////////////////////
 
-Vec EntityCollection::averageValue(std::function<Vec(int)> value, std::function<double(int)> weight)
+Vec EntityCollection::averageValue(std::function<Vec(int)> value, const std::function<double(int)>& weight)
 {
     auto numEntities = _entities.size();
     if (numEntities == 0) return Vec();

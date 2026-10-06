@@ -58,7 +58,7 @@ double MappingsSEDFamily::specificLuminosity(double wavelength, const Array& par
 
 ////////////////////////////////////////////////////////////////////
 
-double MappingsSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, const Range& wavelengthRange,
+double MappingsSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, Range wavelengthRange,
                               const Array& parameters) const
 {
     double SFR = parameters[0] / Constants::Msun() * Constants::year();

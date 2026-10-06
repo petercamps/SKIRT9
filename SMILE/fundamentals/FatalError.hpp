@@ -26,7 +26,7 @@ public:
         throw FATALERROR("Theta should be between 0 and pi.");
         \endcode
     */
-    FatalError(string message, const char* file, int line, const char* function);
+    FatalError(const string& message, const char* file, int line, const char* function);
 
     /** Returns the multi-line error message for this fatal error as a list of strings. Each string
         contains a single line, i.e. the strings contain no newline characters. The actual error

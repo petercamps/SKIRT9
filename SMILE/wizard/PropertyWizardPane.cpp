@@ -38,7 +38,7 @@ void PropertyWizardPane::showEvent(QShowEvent* event)
 
 ////////////////////////////////////////////////////////////////////
 
-QLabel* PropertyWizardPane::createHeader(string text)
+QLabel* PropertyWizardPane::createHeader(const string& text)
 {
     auto label = new QLabel(QString::fromStdString(text));
     label->setStatusTip(QString::fromStdString(_handler->type() + " : " + _handler->name()));

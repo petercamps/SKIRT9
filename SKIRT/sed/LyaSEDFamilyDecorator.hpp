@@ -79,8 +79,7 @@ public:
         normalization factor. The number and type of parameters must match the information returned
         by the parameterInfo() function (which match those of the original %SED family); if not the
         behavior is undefined. */
-    double cdf(Array& lambdav, Array& pv, Array& Pv, const Range& wavelengthRange,
-               const Array& parameters) const override;
+    double cdf(Array& lambdav, Array& pv, Array& Pv, Range wavelengthRange, const Array& parameters) const override;
 
     //======================== Data Members ========================
 

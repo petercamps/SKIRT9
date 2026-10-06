@@ -69,7 +69,7 @@ public:
         filename specifies the name of the file, including filename extension but excluding path
         and simulation prefix; (3) \em description describes the contents of the file for use in
         the log message issued after the file is successfully opened. */
-    void open(const SimulationItem* item, string filename, string description);
+    void open(const SimulationItem* item, const string& filename, const string& description);
 
     /** This function closes the file and deletes the corresponding file object. */
     void close();
@@ -116,7 +116,7 @@ public:
         snapshot, and such invocation should occur \em before the first invocation of any other
         configuration function. Calling this function with an empty \em columns string is
         equivalent to not calling it at all. */
-    void useColumns(string columns);
+    void useColumns(const string& columns);
 
     /** This enum has a constant for each of the supported coordinate systems. */
     enum class CoordinateSystem { CARTESIAN, CYLINDRICAL, SPHERICAL };

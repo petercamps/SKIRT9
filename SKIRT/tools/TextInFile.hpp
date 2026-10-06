@@ -105,7 +105,7 @@ public:
         If the specified file has the \c .scol filename extension, the implementation automatically
         switches to reading the binary SKIRT column file format instead of the regular column text
         format. For more information, see the class header. */
-    TextInFile(const SimulationItem* item, string filename, string description, bool resource = false,
+    TextInFile(const SimulationItem* item, const string& filename, const string& description, bool resource = false,
                bool silent = false);
 
     /** This function closes the file if it was not already closed. It is best to call close() or
@@ -201,7 +201,7 @@ public:
         The function looks for and, if present, reads the header information line corresponding to
         this column. The unit information from the header is stored with the information provided
         by the function arguments for later use. */
-    void addColumn(string description, string quantity = string(), string defaultUnit = string());
+    void addColumn(const string& description, const string& quantity = string(), string defaultUnit = string());
 
     /** This function reads the next row from a column text file and stores the resulting values in
         the array passed to the function by reference. The function first skips empty lines and
@@ -288,7 +288,7 @@ private:
     /** This function returns the zero-based index of the column that has a file info description
         equal to the given name, or an error value if there is no such column or if there are
         multiple such columns. */
-    size_t indexForName(string name) const;
+    size_t indexForName(const string& name) const;
 
     /** This function returns the logical index of the first logical column that is described as
         "wavelength" and that both logically and physically precedes the current column, or the

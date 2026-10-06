@@ -10,7 +10,7 @@
 
 ////////////////////////////////////////////////////////////////////
 
-void ImportedMediumDensityProbe::probeImportedMedium(string sh, const ImportedMedium* /*medium*/,
+void ImportedMediumDensityProbe::probeImportedMedium(const string& sh, const ImportedMedium* /*medium*/,
                                                      const Snapshot* snapshot)
 {
     // construct a bridge and produce output

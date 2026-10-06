@@ -180,7 +180,7 @@ double ToddlersSEDFamily::specificLuminosity(double wavelength, const Array& par
 
 ////////////////////////////////////////////////////////////////////
 
-double ToddlersSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, const Range& wavelengthRange,
+double ToddlersSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, Range wavelengthRange,
                               const Array& parameters) const
 {
     if (_sedMode == SedMode::Cloud)

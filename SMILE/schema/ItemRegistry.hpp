@@ -195,7 +195,7 @@ public:
     /** This function returns a pointer to the schema definition with the specified name. Ownership
         remains with the registry. If there is no schema definition with the specified name, the
         function throws an error. */
-    static const SchemaDef* getSchemaDef(string name);
+    static const SchemaDef* getSchemaDef(const string& name);
 };
 
 ////////////////////////////////////////////////////////////////////

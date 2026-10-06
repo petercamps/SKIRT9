@@ -66,7 +66,7 @@ double LyaDoublePeakedSED::specificLuminosity(double wavelength) const
 
 //////////////////////////////////////////////////////////////////////
 
-void LyaDoublePeakedSED::specificLuminosityArray(Array& lambdav, Array& pv, const Range& wavelengthRange) const
+void LyaDoublePeakedSED::specificLuminosityArray(Array& lambdav, Array& pv, Range wavelengthRange) const
 {
     // calculate the intersection between the given range and our intrinsic range
     Range intersection = _wavelengthRange;
@@ -95,7 +95,7 @@ void LyaDoublePeakedSED::specificLuminosityArray(Array& lambdav, Array& pv, cons
 
 //////////////////////////////////////////////////////////////////////
 
-double LyaDoublePeakedSED::integratedLuminosity(const Range& wavelengthRange) const
+double LyaDoublePeakedSED::integratedLuminosity(Range wavelengthRange) const
 {
     // if the given range includes the complete intrinsic range, the result is trivial
     if (wavelengthRange.contains(_wavelengthRange)) return 1.;

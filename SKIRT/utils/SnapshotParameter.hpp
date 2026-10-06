@@ -62,7 +62,8 @@ public:
         TextInFile::addColumn() function. The \em defaultUnit argument specifies the default unit
         string, which is used in case the input file does not contain unit information for the
         parameter. */
-    static SnapshotParameter custom(string description, string quantity = string(), string defaultUnit = string());
+    static SnapshotParameter custom(const string& description, const string& quantity = string(),
+                                    const string& defaultUnit = string());
 
     // ================== Querying ==================
 

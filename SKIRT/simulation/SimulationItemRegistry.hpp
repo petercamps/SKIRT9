@@ -26,7 +26,7 @@ public:
         argument \em format specifies the version of the described data format (listed on the root
         element). The constructor is \em not thread-safe and may be called only during program
         startup from a single thread. */
-    SimulationItemRegistry(string version, string format);
+    SimulationItemRegistry(const string& version, const string& format);
 
     /** This static function returns a pointer to the 'SKIRT' schema definition. Ownership remains
         with the registry. This function is thread-safe and may called at any time after

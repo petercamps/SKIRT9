@@ -66,12 +66,12 @@ public:
         power per unit of wavelength) at a number of wavelength points within the specified
         wavelength range. It determines the appropriate values from the user-configured SEDs as
         described in the class header. */
-    void specificLuminosityArray(Array& lambdav, Array& pv, const Range& wavelengthRange) const override;
+    void specificLuminosityArray(Array& lambdav, Array& pv, Range wavelengthRange) const override;
 
     /** This function returns the normalized integrated luminosity \f$L\f$ (i.e. radiative power)
         over the specified wavelength range. It determines the appropriate value from the
         user-configured SEDs as described in the class header. */
-    double integratedLuminosity(const Range& wavelengthRange) const override;
+    double integratedLuminosity(Range wavelengthRange) const override;
 
     /** This function draws a random wavelength from the normalized spectral energy distribution.
         It generates a wavelength from one of the user-configured SEDs as described in the class

@@ -29,7 +29,7 @@ public:
     /** This function paints the shape hierarchy held by the receiving item onto its canvas, and
         then saves the result to the specified output file. Call the paintAndSave() function of a
         shape canvas rather than the paint() function inherited from the Shape class. */
-    void paintAndSave(string outPath);
+    void paintAndSave(const string& outPath);
 
 protected:
     /** This function pushes the graphics state of the canvas on the graphics state stack. */

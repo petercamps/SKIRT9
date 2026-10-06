@@ -24,7 +24,7 @@ public:
         the simulation's input path. The input filename should include the filename extension. The
         remaining arguments of this function are the same as those described for the basic read()
         function in this class. */
-    static void read(const SimulationItem* item, string filename, Array& data, int& nx, int& ny, int& nz);
+    static void read(const SimulationItem* item, const string& filename, Array& data, int& nx, int& ny, int& nz);
 
     /** This basic data structure holds information on the observer associated with a data cube
         being written. These fields are included in the FITS header as a convenience to the user.
@@ -47,9 +47,10 @@ public:
         extension nor the simulation prefix. The remaining arguments of this function are the same
         as those described for the basic write() function in this class. Note that the arguments
         describing the z-axis and observer info may be omitted when writing a 2D data frame. */
-    static void write(const SimulationItem* item, string description, string filename, const Array& data,
-                      string dataUnits, int nx, int ny, double incx, double incy, double xc, double yc, string xyUnits,
-                      const Array& z = Array(), string zUnits = string(), const ObserverInfo* obsInfo = nullptr);
+    static void write(const SimulationItem* item, const string& description, const string& filename, const Array& data,
+                      const string& dataUnits, int nx, int ny, double incx, double incy, double xc, double yc,
+                      const string& xyUnits, const Array& z = Array(), const string& zUnits = string(),
+                      const ObserverInfo* obsInfo = nullptr);
 
     /** This function writes a 2D map to a FITS file in the context of the simulation item
         hierarchy specified through the first argument. This allows the function to issue log
@@ -59,9 +60,9 @@ public:
         output path. The output filename should \em not include the filename extension nor the
         simulation prefix. The remaining arguments of this function are the same as those described
         for the basic writeMap() function in this class. */
-    static void writeMap(const SimulationItem* item, string description, string filename, const Array& data,
-                         string dataUnits, const Array& x, const Array& y, string xUnits, string yUnits,
-                         const ObserverInfo* obsInfo = nullptr);
+    static void writeMap(const SimulationItem* item, const string& description, const string& filename,
+                         const Array& data, const string& dataUnits, const Array& x, const Array& y,
+                         const string& xUnits, const string& yUnits, const ObserverInfo* obsInfo = nullptr);
 
     // ================== Basic read/write ==================
 
@@ -81,7 +82,7 @@ private:
         values in the \em data array are ordered such that the index along the x-axis varies most
         rapidly, the index along the y-axis varies less rapidly, and the index along the z-axis (if
         present) varies least rapidly. */
-    static void read(string filepath, Array& data, int& nx, int& ny, int& nz);
+    static void read(const string& filepath, Array& data, int& nx, int& ny, int& nz);
 
     /** This function reads a single table column from a FITS file containing a two-dimensional
         table. The first argument specifies a relative or absolute file path; a file with that name
@@ -94,7 +95,7 @@ private:
 
         The \em data argument serves to store the column data read from the file, and \em n
         specifies the number of values (i.e. rows) to be read. */
-    static void readColumn(string filepath, Array& data, int n);
+    static void readColumn(const string& filepath, Array& data, int n);
 
     /** This function writes a 2D data frame or a 3D data cube to the primary data unit of a FITS
         file. The x and y axes are assumed to discretize spatial extent on a regular, linear grid.
@@ -114,8 +115,9 @@ private:
         increments. \em z contains the z-axis grid points (often wavelengths), and \em zUnits
         describes the units of these grid points. Finally, \em obsInfo is a pointer to an optional
         data structure holding observer information (or the null pointer). */
-    static void write(string filepath, const Array& data, string dataUnits, int nx, int ny, double incx, double incy,
-                      double xc, double yc, string xyUnits, const Array& z, string zUnits, const ObserverInfo* obsInfo);
+    static void write(const string& filepath, const Array& data, const string& dataUnits, int nx, int ny, double incx,
+                      double incy, double xc, double yc, const string& xyUnits, const Array& z, const string& zUnits,
+                      const ObserverInfo* obsInfo);
 
     /** This function writes a 2D map to the primary data unit of a FITS file. The x and y axis
         each discretizes some arbitrary quantity, for example wavelength and time lag for a
@@ -130,8 +132,8 @@ private:
         \em y specify the grid points in each direction, and \em xUnits and \em yUnits describe the
         units of these grid points. Finally, \em obsInfo is a pointer to an optional data structure
         holding observer information (or the null pointer). */
-    static void writeMap(string filepath, const Array& data, string dataUnits, const Array& x, const Array& y,
-                         string xUnits, string yUnits, const ObserverInfo* obsInfo);
+    static void writeMap(const string& filepath, const Array& data, const string& dataUnits, const Array& x,
+                         const Array& y, const string& xUnits, const string& yUnits, const ObserverInfo* obsInfo);
 };
 
 ////////////////////////////////////////////////////////////////////

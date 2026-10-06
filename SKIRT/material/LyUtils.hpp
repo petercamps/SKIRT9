@@ -151,7 +151,7 @@ namespace LyUtils
         resonant scattering event, given the incoming wavelength in the gas bulk rest frame, the
         velocity of the interacting ion, and the incoming and outgoing photon packet directions.
         */
-    double shiftWavelength(double lambda, const Vec& vatom, const Direction& kin, const Direction& kout);
+    double shiftWavelength(double lambda, Vec vatom, Direction kin, Direction kout);
 }
 
 ////////////////////////////////////////////////////////////////////

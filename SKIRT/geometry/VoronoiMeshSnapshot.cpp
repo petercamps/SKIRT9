@@ -39,7 +39,10 @@ namespace
         SerializedWrite(vector<double>& data) : _data(data) { _data.clear(); }
         void write(double v) { _data.push_back(v); }
         void write(Vec v) { _data.insert(_data.end(), {v.x(), v.y(), v.z()}); }
-        void write(Box v) { _data.insert(_data.end(), {v.xmin(), v.ymin(), v.zmin(), v.xmax(), v.ymax(), v.zmax()}); }
+        void write(const Box& v)
+        {
+            _data.insert(_data.end(), {v.xmin(), v.ymin(), v.zmin(), v.xmax(), v.ymax(), v.zmax()});
+        }
         void write(const vector<int>& v)
         {
             _data.push_back(v.size());
@@ -405,7 +408,8 @@ void VoronoiMeshSnapshot::foregoVoronoiMesh()
 
 ////////////////////////////////////////////////////////////////////
 
-VoronoiMeshSnapshot::VoronoiMeshSnapshot(const SimulationItem* item, const Box& extent, string filename, bool relax)
+VoronoiMeshSnapshot::VoronoiMeshSnapshot(const SimulationItem* item, const Box& extent, const string& filename,
+                                         bool relax)
 {
     // read the input file
     TextInFile in(item, filename, "Voronoi sites");

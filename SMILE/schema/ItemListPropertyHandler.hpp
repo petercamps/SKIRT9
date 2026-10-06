@@ -64,7 +64,7 @@ public:
         handled property in the target item. The target item assumes ownership of the new instance.
         The function returns false if a new item couldn't be added (e.g. because the specified type
         is inappropriate). */
-    bool addNewItemOfType(string type);
+    bool addNewItemOfType(const string& type);
 
     /** Inserts the specified item at the specified index into the list held by the handled
         property in the target item. The target item assumes ownership of the specified instance.
@@ -76,7 +76,7 @@ public:
         the list held by the handled property in the target item. The target item assumes ownership
         of the new instance. The function returns false if a new item couldn't be added (e.g.
         because the specified item type is inappropriate). */
-    bool insertNewItemOfType(int index, string type);
+    bool insertNewItemOfType(int index, const string& type);
 
     /** Removes the item with the specified zero-based index from the list held by the handled
         property in the target item. The removed item is deleted. The function returns false if the

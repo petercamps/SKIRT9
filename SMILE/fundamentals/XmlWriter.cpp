@@ -47,13 +47,13 @@ namespace
     }
 
     // a valid element/attribute name starts with a letter and contains letters, digits and dashes
-    bool isValidName(string name)
+    bool isValidName(const string& name)
     {
         return !name.empty() && isLetter(name[0]) && std::all_of(name.cbegin() + 1, name.cend(), isLetterOrDigitOrDash);
     }
 
     // a valid attribute value does not contain control characters
-    bool isValidValue(string value)
+    bool isValidValue(const string& value)
     {
         return std::none_of(value.cbegin(), value.cend(), isControlCharacter);
     }
@@ -87,7 +87,7 @@ void XmlWriter::writeStartDocument()
 
 ////////////////////////////////////////////////////////////////////
 
-void XmlWriter::writeComment(string text)
+void XmlWriter::writeComment(const string& text)
 {
     // if there is an open start element tag, close it
     if (_starting)
@@ -127,7 +127,7 @@ void XmlWriter::writeStartElement(string name)
 
 ////////////////////////////////////////////////////////////////////
 
-void XmlWriter::writeAttribute(string name, string value)
+void XmlWriter::writeAttribute(const string& name, const string& value)
 {
     if (!_starting)
         throw FATALERROR("Can't write attribute when no element tag is open for XML output stream: " + _streamName);

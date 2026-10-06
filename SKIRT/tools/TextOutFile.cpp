@@ -15,7 +15,7 @@
 
 ////////////////////////////////////////////////////////////////////
 
-TextOutFile::TextOutFile(const SimulationItem* item, string filename, string description)
+TextOutFile::TextOutFile(const SimulationItem* item, const string& filename, const string& description)
 {
     // Only open the output file if this is the root process
     if (ProcessManager::isRoot())
@@ -57,7 +57,7 @@ TextOutFile::~TextOutFile()
 
 ////////////////////////////////////////////////////////////////////
 
-void TextOutFile::addColumn(string quantityDescription, string unitDescription, char format, int precision)
+void TextOutFile::addColumn(const string& quantityDescription, string unitDescription, char format, int precision)
 {
     _formats.push_back(format);
     _precisions.push_back(precision);
@@ -68,7 +68,7 @@ void TextOutFile::addColumn(string quantityDescription, string unitDescription, 
 
 ////////////////////////////////////////////////////////////////////
 
-void TextOutFile::writeLine(string line)
+void TextOutFile::writeLine(const string& line)
 {
     if (_out.is_open())
     {

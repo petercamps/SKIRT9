@@ -27,7 +27,7 @@ void InstrumentWavelengthGridProbe::probe()
 ////////////////////////////////////////////////////////////////////
 
 void InstrumentWavelengthGridProbe::writeWavelengthGrid(Probe* item, const WavelengthGrid* wavelengthGrid,
-                                                        string filename, string description)
+                                                        const string& filename, const string& description)
 {
     auto units = item->find<Units>();
 

@@ -59,7 +59,8 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
-TextInFile::TextInFile(const SimulationItem* item, string filename, string description, bool resource, bool silent)
+TextInFile::TextInFile(const SimulationItem* item, const string& filename, const string& description, bool resource,
+                       bool silent)
 {
     // remember the units system and the logger
     _units = item->find<Units>();
@@ -161,7 +162,7 @@ namespace
     // This function returns the wavelength exponent needed to convert a per wavelength/frequency/energy
     // quantity to internal (per wavelength) style, given the input units, or the error value if the
     // given units are not supported by any of the relevant quantities.
-    int waveExponentForSpecificQuantity(Units* unitSystem, string unitString)
+    int waveExponentForSpecificQuantity(Units* unitSystem, const string& unitString)
     {
         // a list of known per wavelength / per frequency quantities and the corresponding exponents
         static const vector<string> specificQuantities(
@@ -182,7 +183,7 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
-size_t TextInFile::indexForName(std::string name) const
+size_t TextInFile::indexForName(const std::string& name) const
 {
     size_t result = ERROR_NO_INDEX;
     size_t index = 0;
@@ -270,7 +271,7 @@ void TextInFile::useColumns(string columns)
 
 ////////////////////////////////////////////////////////////////////
 
-void TextInFile::addColumn(string description, string quantity, string defaultUnit)
+void TextInFile::addColumn(const string& description, const string& quantity, string defaultUnit)
 {
     _hasProgInfo = true;
 

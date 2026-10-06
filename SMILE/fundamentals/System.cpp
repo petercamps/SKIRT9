@@ -385,7 +385,7 @@ namespace
     // This function outputs the specified message at the given log level index, adding all decorations
     // The function is NOT threadsafe, because the system console I/O is not threadsafe.
     // Thus: call this function only within the critical section setup for the console I/O.
-    void outputMessage(string message, size_t level)
+    void outputMessage(const string& message, size_t level)
     {
 #ifdef _WIN64
         SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), _colorBegin[level]);
@@ -404,7 +404,7 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
-void System::log(string message, LogLevel level)
+void System::log(const string& message, LogLevel level)
 {
     std::unique_lock<std::mutex> lock(_consoleMutex);
     outputMessage(message, static_cast<size_t>(level));  // dirty cast
@@ -412,7 +412,7 @@ void System::log(string message, LogLevel level)
 
 ////////////////////////////////////////////////////////////////////
 
-string System::prompt(string message)
+string System::prompt(const string& message)
 {
     std::unique_lock<std::mutex> lock(_consoleMutex);
     outputMessage(message, static_cast<size_t>(LogLevel::Error) + 1);  // dirty cast
@@ -435,7 +435,7 @@ string System::prompt(string message)
 
 ////////////////////////////////////////////////////////////////////
 
-std::ifstream System::ifstream(string path)
+std::ifstream System::ifstream(const string& path)
 {
 #ifdef _WIN64
     return std::ifstream(toUTF16(path).get());
@@ -446,7 +446,7 @@ std::ifstream System::ifstream(string path)
 
 ////////////////////////////////////////////////////////////////////
 
-std::ofstream System::ofstream(string path, bool append)
+std::ofstream System::ofstream(const string& path, bool append)
 {
 #ifdef _WIN64
     return std::ofstream(toUTF16(path).get(), append ? std::ios_base::app : std::ios_base::out);
@@ -457,7 +457,7 @@ std::ofstream System::ofstream(string path, bool append)
 
 ////////////////////////////////////////////////////////////////////
 
-bool System::isFile(string path)
+bool System::isFile(const string& path)
 {
 #ifdef _WIN64
     DWORD attrs = GetFileAttributesW(toUTF16(path).get());
@@ -488,7 +488,7 @@ bool System::isDir(string path)
 
 ////////////////////////////////////////////////////////////////////
 
-bool System::makeDir(string directory)
+bool System::makeDir(const string& directory)
 {
     if (isDir(directory)) return true;
 
@@ -501,7 +501,7 @@ bool System::makeDir(string directory)
 
 ////////////////////////////////////////////////////////////////////
 
-void System::removeFile(string path)
+void System::removeFile(const string& path)
 {
     // guard against removing something that is not a regular file, such as a directory
     if (!isFile(path)) return;
@@ -581,7 +581,7 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
-vector<string> System::filesInDirectory(string directory)
+vector<string> System::filesInDirectory(const string& directory)
 {
     vector<string> result;
     itemsInDirectory(result, directory, true);
@@ -590,7 +590,7 @@ vector<string> System::filesInDirectory(string directory)
 
 ////////////////////////////////////////////////////////////////////
 
-vector<string> System::dirsInDirectory(string directory)
+vector<string> System::dirsInDirectory(const string& directory)
 {
     vector<string> result;
     itemsInDirectory(result, directory, false);

@@ -46,7 +46,7 @@ namespace StoredTableDictionary_Impl
 
     /** This function returns true if \em index has an entry for \em name (with the mandatory
         ".stab" filename extension added if needed), or false if not. */
-    bool has(const Index& index, string name);
+    bool has(const Index& index, const string& name);
 
     /** This function returns the byte offset recorded in \em index for \em name (with the mandatory
         ".stab" filename extension added if needed). The \em filePath argument is used only to

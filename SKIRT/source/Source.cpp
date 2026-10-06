@@ -21,7 +21,7 @@ void Source::setupSelfBefore()
 
 //////////////////////////////////////////////////////////////////////
 
-void Source::informAvailableWavelengthRange(Range available, string itemType)
+void Source::informAvailableWavelengthRange(Range available, const string& itemType)
 {
     auto configured = find<Configuration>()->sourceWavelengthRange();
     const double fuzzy = 0.01;  // 1%

@@ -239,7 +239,7 @@ vector<Item*> Item::getItemListProperty(const PropertyDef* property) const
 
 ////////////////////////////////////////////////////////////////////
 
-void Item::setUtilityProperty(string name, int value)
+void Item::setUtilityProperty(const string& name, int value)
 {
     if (!_utility) _utility = new Item::UtilityData;
     (*_utility)[name] = value;

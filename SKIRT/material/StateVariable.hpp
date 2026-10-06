@@ -74,7 +74,7 @@ public:
         i.e. 'd' for integer notation (even if the value is stored as a double), 'f' for fixed
         point notation, 'e' for scientific notation, and 'g' for the most concise 'f' or 'e'. The
         default format specifier is 'e'. */
-    static StateVariable custom(int customIndex, string description, string quantity, char format = 'e');
+    static StateVariable custom(int customIndex, const string& description, const string& quantity, char format = 'e');
 
     // ================== Querying ==================
 

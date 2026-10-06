@@ -50,7 +50,7 @@ double TabulatedSED::specificLuminosity(double wavelength) const
 
 //////////////////////////////////////////////////////////////////////
 
-void TabulatedSED::specificLuminosityArray(Array& lambdav, Array& pv, const Range& wavelengthRange) const
+void TabulatedSED::specificLuminosityArray(Array& lambdav, Array& pv, Range wavelengthRange) const
 {
     Array Pv;  // the contents of this array is not used, so this could be optimized if needed
     NR::cdf<NR::interpolateLogLog>(lambdav, pv, Pv, _inlambdav, _inpv, wavelengthRange);
@@ -58,7 +58,7 @@ void TabulatedSED::specificLuminosityArray(Array& lambdav, Array& pv, const Rang
 
 //////////////////////////////////////////////////////////////////////
 
-double TabulatedSED::integratedLuminosity(const Range& wavelengthRange) const
+double TabulatedSED::integratedLuminosity(Range wavelengthRange) const
 {
     Array lambdav, pv, Pv;  // the contents of these arrays is not used, so this could be optimized if needed
     return NR::cdf<NR::interpolateLogLog>(lambdav, pv, Pv, _inlambdav, _inpv, wavelengthRange);

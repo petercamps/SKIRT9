@@ -54,7 +54,7 @@ public:
         \f$M-1\f$, in arbitrary order. For given values of their argument(s), the callback
         functions must always return the same value. */
     void loadEntities(int numEntities, std::function<Box(int m)> bounds,
-                      std::function<bool(int m, const Box& box)> intersects);
+                      const std::function<bool(int m, const Box& box)>& intersects);
 
     // ------- Getting properties and statistics -------
 
