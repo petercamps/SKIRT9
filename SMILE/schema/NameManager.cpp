@@ -81,7 +81,7 @@ void NameManager::insert(string name)
 
 void NameManager::insert(const vector<std::string>& names)
 {
-    for (auto name : names) insert(name);
+    for (const string& name : names) insert(name);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -96,7 +96,7 @@ void NameManager::insertFromConditionalValue(string nameExpression)
 
 void NameManager::insertFromConditionalValue(const vector<string>& nameExpressions)
 {
-    for (auto nameExpression : nameExpressions) insertFromConditionalValue(nameExpression);
+    for (const string& nameExpression : nameExpressions) insertFromConditionalValue(nameExpression);
 }
 
 ////////////////////////////////////////////////////////////////////

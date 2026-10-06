@@ -294,7 +294,7 @@ void XRayIonicGasMix::setupSelfBefore()
     // store all unique N and ions
     std::set<int> usedN;
     std::unordered_set<int> ionSet;
-    for (const auto& ion : _ionParamv)
+    for (auto ion : _ionParamv)
     {
         usedN.insert(ion.N);
         ionSet.insert(AtomUtils::ionIndex(ion.Z, ion.N));

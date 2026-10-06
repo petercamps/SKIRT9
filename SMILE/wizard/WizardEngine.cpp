@@ -98,7 +98,7 @@ int WizardEngine::propertyIndexForChild(Item* child)
     int index = 0;
     Item* parent = child->parent();
     if (parent)
-        for (auto property : _schema->properties(parent->type()))
+        for (const string& property : _schema->properties(parent->type()))
         {
             auto handler = _schema->createPropertyHandler(parent, property, &_nameMgr);
 

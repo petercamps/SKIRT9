@@ -49,7 +49,7 @@ void XRayIonicGasMixFamily::setupSelfBefore()
 vector<SnapshotParameter> XRayIonicGasMixFamily::parameterInfo() const
 {
     vector<SnapshotParameter> descriptors;
-    for (string ionName : _ionNames) descriptors.push_back(SnapshotParameter::custom(ionName));
+    for (const string& ionName : _ionNames) descriptors.push_back(SnapshotParameter::custom(ionName));
     return descriptors;
 }
 

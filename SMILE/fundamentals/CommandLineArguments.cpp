@@ -12,7 +12,7 @@ CommandLineArguments::CommandLineArguments(const vector<string>& cmdlineargs, st
 {
     // parse the option list into a dictionary with a value of true if the option takes a value
     std::unordered_map<string, bool> takesValue;
-    for (string option : StringUtils::split(StringUtils::squeeze(options), " "))
+    for (const string& option : StringUtils::split(StringUtils::squeeze(options), " "))
     {
         // ignore options that don't start with a dash
         if (StringUtils::startsWith(option, "-"))

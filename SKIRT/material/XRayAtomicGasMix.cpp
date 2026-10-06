@@ -201,7 +201,7 @@ void XRayAtomicGasMix::setupSelfBefore()
     // (Rayleigh scattering for each atom, Compton scattering for each atom, fluorescence for each transition)
     _vthermscav.reserve(2 * numAtoms + fluorescenceParams.size());
     for (int i = 0; i != 2; ++i)
-        for (const auto& atom : atomv) _vthermscav.push_back(vtherm(temperature(), atom.mass));
+        for (auto atom : atomv) _vthermscav.push_back(vtherm(temperature(), atom.mass));
     for (const auto& params : fluorescenceParams)
         _vthermscav.push_back(vtherm(temperature(), atomv[params.Z - 1].mass));
 

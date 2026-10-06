@@ -203,7 +203,7 @@ void BasicChoiceWizardPane::loadSchemaInfo()
     _schemaTitles.clear();
 
     // list schema files in library directory
-    for (string name : System::filesInDirectory(_libraryPath))
+    for (const string& name : System::filesInDirectory(_libraryPath))
     {
         if (StringUtils::endsWith(name, ".smile"))
         {

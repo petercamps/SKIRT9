@@ -141,7 +141,7 @@ namespace
     bool matches(string resource, string type, const vector<string>& segments)
     {
         if (!StringUtils::endsWith(resource, type)) return false;
-        for (string segment : segments)
+        for (const string& segment : segments)
         {
             if (!StringUtils::contains(resource, segment)) return false;
         }
@@ -156,7 +156,7 @@ namespace
         if (!segments.empty())
         {
             msg += " with filename containing";
-            for (string segment : segments) msg += " '" + segment + "',";
+            for (const string& segment : segments) msg += " '" + segment + "',";
             msg.erase(msg.size() - 1, 1);
         }
         return msg;

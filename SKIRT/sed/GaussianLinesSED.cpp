@@ -66,7 +66,7 @@ void GaussianLinesSED::getWavelengthsAndLuminosities(Array& lambdav, Array& pv) 
     // (performed by the TabulatedSED base class) does not silently fail
     auto sourceRange = find<Configuration>()->sourceWavelengthRange();
     bool hasLineInRange = false;
-    for (const auto& line : linev)
+    for (auto line : linev)
         if (sourceRange.containsFuzzy(line.lambda)) hasLineInRange = true;
     if (!hasLineInRange)
         throw FATALERROR("Gaussian lines SED must have at least one line in the source wavelength range");
@@ -74,7 +74,7 @@ void GaussianLinesSED::getWavelengthsAndLuminosities(Array& lambdav, Array& pv) 
     // for each line, build a private linear grid limited to its own intrinsic range,
     // and pool all grid points together
     vector<double> pooledv;
-    for (const auto& line : linev)
+    for (auto line : linev)
     {
         double lo = line.lambda - intrinsicRange * line.sigma;
         double hi = line.lambda + intrinsicRange * line.sigma;
@@ -100,7 +100,7 @@ void GaussianLinesSED::getWavelengthsAndLuminosities(Array& lambdav, Array& pv) 
     {
         double lambda = lambdav[k];
         double sum = 0.;
-        for (const auto& line : linev) sum += line.L * unitGaussian((lambda - line.lambda) / line.sigma) / line.sigma;
+        for (auto line : linev) sum += line.L * unitGaussian((lambda - line.lambda) / line.sigma) / line.sigma;
         pv[k] = sum;
     }
 }

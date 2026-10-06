@@ -317,13 +317,13 @@ namespace
             {"XII", 12},  {"XI", 11},    {"X", 10},    {"IX", 9},     {"VIII", 8},  {"VII", 7},  {"VI", 6},
             {"V", 5},     {"IV", 4},     {"III", 3},   {"II", 2},     {"I", 1}};
 
-        for (auto& e : elems)
+        for (auto e : elems)
         {
             size_t slen = std::strlen(e.sym);
             if (name.substr(0, slen) == e.sym)
             {
                 string roman = name.substr(slen);
-                for (auto& r : romans)
+                for (auto r : romans)
                 {
                     if (roman == r.str)
                     {

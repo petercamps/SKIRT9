@@ -155,10 +155,10 @@ void ClumpySphericalSpatialGrid::setupSelfAfter()
         numOverlappingCellsPerClump[ci] = numOverlappingCells;
         if (numOverlappingCells > 1) numStraddling++;
 
-        for (const auto& hit : hits)
+        for (auto [cell, count] : hits)
         {
-            double fraction = static_cast<double>(hit.second) / totalSamples;
-            _cellVolume[hit.first] -= clumpVolume * fraction;
+            double fraction = static_cast<double>(count) / totalSamples;
+            _cellVolume[cell] -= clumpVolume * fraction;
 
             // if this cell is entirely inside the clump, its true remaining volume is exactly
             // zero regardless of what the Monte Carlo estimate above suggests; overriding it here
@@ -166,10 +166,10 @@ void ClumpySphericalSpatialGrid::setupSelfAfter()
             // and -- more importantly -- guarantees the exact zero that randomPositionInCell()
             // relies on to avoid an unbounded rejection loop
             double rmin, thetamin, phimin, rmax, thetamax, phimax;
-            getCoords(hit.first, rmin, thetamin, phimin, rmax, thetamax, phimax);
+            getCoords(cell, rmin, thetamin, phimin, rmax, thetamax, phimax);
             if (Quadrics::isSphericalCellInSphere(rmin, rmax, thetamin, thetamax, phimin, phimax, clump.center(),
                                                   clump.radius()))
-                _cellVolume[hit.first] = 0.;
+                _cellVolume[cell] = 0.;
         }
     }
 

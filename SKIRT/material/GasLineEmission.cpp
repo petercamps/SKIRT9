@@ -1037,12 +1037,12 @@ void GasLineEmission::initializeRecombinationTables()
 
     // point each built-in recombination line at its cube line: H I and He II by quantum number,
     // He I by nearest wavelength (its source table carries no quantum numbers)
-    for (const auto& entry : recombLineFiles())
+    for (auto entry : recombLineFiles())
     {
         int found = -1;
         if (entry.upper > 0)
         {
-            for (const auto& row : _recombRegistry.map[entry.cubeId])
+            for (auto row : _recombRegistry.map[entry.cubeId])
                 if (row.upper == entry.upper && row.lower == entry.lower)
                 {
                     found = row.index;
@@ -1052,7 +1052,7 @@ void GasLineEmission::initializeRecombinationTables()
         else
         {
             double best = std::numeric_limits<double>::max();
-            for (const auto& row : _recombRegistry.map[entry.cubeId])
+            for (auto row : _recombRegistry.map[entry.cubeId])
             {
                 double dist = std::abs(row.wav_m - lineWavelengths[entry.lineIdx]);
                 if (dist < best)
@@ -1143,7 +1143,7 @@ void GasLineEmission::initializeExtendedLineRegistry(const vector<SpeciesSpec>& 
 
     // (cube, line index) pairs already claimed by the built-in recombination lines
     std::set<std::pair<int, int>> claimedCubeLines;
-    for (const auto& entry : recombLineFiles())
+    for (auto entry : recombLineFiles())
         claimedCubeLines.insert(
             {_recombRegistry.table[entry.lineIdx].cubeId, _recombRegistry.table[entry.lineIdx].lineIdx});
 
@@ -1157,9 +1157,9 @@ void GasLineEmission::initializeExtendedLineRegistry(const vector<SpeciesSpec>& 
     int numModelsLoaded = 0;
 
     // recombination inventory: every line in each species' cube, enumerated from its index map
-    for (const auto& set : _recombSets)
+    for (auto set : _recombSets)
     {
-        for (const auto& row : _recombRegistry.map[set.cubeId])
+        for (auto row : _recombRegistry.map[set.cubeId])
         {
             if (!claimedCubeLines.insert({set.cubeId, row.index}).second) continue;
 

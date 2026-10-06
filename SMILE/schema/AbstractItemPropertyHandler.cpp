@@ -44,7 +44,7 @@ string AbstractItemPropertyHandler::defaultType() const
 vector<string> AbstractItemPropertyHandler::allowedAndDisplayedDescendants()
 {
     vector<string> descendants;
-    for (auto candidate : schema()->descendants(property()->base()))
+    for (const string& candidate : schema()->descendants(property()->base()))
     {
         if (nameManager()->evaluateBoolean(schema()->allowedAndDisplayed(candidate))) descendants.push_back(candidate);
     }

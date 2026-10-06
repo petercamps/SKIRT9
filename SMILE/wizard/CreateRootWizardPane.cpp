@@ -34,7 +34,7 @@ CreateRootWizardPane::CreateRootWizardPane(const SchemaDef* schema, string initi
 
     // add the radio buttons reflecting the possible choices, putting them into a button group as well
     auto buttonGroup = new QButtonGroup;
-    for (auto choiceType : schema->descendants(schema->schemaType()))
+    for (const string& choiceType : schema->descendants(schema->schemaType()))
     {
         QString choiceTitle = QString::fromStdString(schema->title(choiceType));
         if (!choiceTitle.isEmpty()) choiceTitle.replace(0, 1, choiceTitle[0].toUpper());

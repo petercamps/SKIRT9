@@ -195,7 +195,7 @@ namespace
         string fromDoubleList(string str) const
         {
             vector<string> result;
-            for (string item : StringUtils::split(str, ",")) result.push_back(fromDouble(item));
+            for (const string& item : StringUtils::split(str, ",")) result.push_back(fromDouble(item));
             return StringUtils::join(result, ", ");
         }
     };

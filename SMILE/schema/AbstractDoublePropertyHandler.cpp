@@ -195,7 +195,7 @@ bool AbstractDoublePropertyHandler::isValidDoubleList(string value) const
     if (segments.empty()) return false;
 
     // validate each segment
-    for (string segment : segments)
+    for (const string& segment : segments)
         if (!isValidDouble(segment)) return false;
     return true;
 }
@@ -207,7 +207,7 @@ vector<double> AbstractDoublePropertyHandler::toDoubleList(string value) const
     vector<double> result;
     if (isValidDoubleList(value))
     {
-        for (string segment : StringUtils::split(value, ",")) result.push_back(toDouble(segment));
+        for (const string& segment : StringUtils::split(value, ",")) result.push_back(toDouble(segment));
     }
     return result;
 }

@@ -587,7 +587,7 @@ string SchemaDef::title(string type) const
 vector<string> SchemaDef::titles(const vector<string>& types) const
 {
     vector<string> result;
-    for (string type : types)
+    for (const string& type : types)
     {
         result.push_back(title(type));
     }
@@ -625,7 +625,7 @@ vector<string> SchemaDef::ascendants(string type) const
 vector<string> SchemaDef::descendants(string type) const
 {
     vector<string> result;
-    for (string candidate : _concreteTypes)
+    for (const string& candidate : _concreteTypes)
     {
         if (inherits(candidate, type)) result.push_back(candidate);
     }
@@ -647,7 +647,7 @@ vector<string> SchemaDef::properties(string type) const
 
         // insert the base properties at the front or at the end depending on the above index
         int currentIndex = 0;
-        for (auto& propDef : def.propertyDefs())
+        for (const auto& propDef : def.propertyDefs())
         {
             if (currentIndex < insertIndex)
                 result.insert(result.cbegin() + currentIndex, propDef.name());
@@ -668,7 +668,7 @@ string SchemaDef::definingType(string type, string property) const
     while (!type.empty())
     {
         auto& def = typeDef(type);
-        for (auto& propDef : def.propertyDefs())
+        for (const auto& propDef : def.propertyDefs())
         {
             if (propDef.name() == property) return type;
         }
@@ -875,7 +875,7 @@ const PropertyDef& SchemaDef::propertyDef(string type, string property) const
     while (!type.empty())
     {
         auto& def = typeDef(type);
-        for (auto& propDef : def.propertyDefs())
+        for (const auto& propDef : def.propertyDefs())
         {
             if (propDef.name() == property) return propDef;
         }

@@ -42,7 +42,7 @@ int SmileToolCommandLineHandler::perform()
         string libraryPath = args.value("-l");
         vector<string> schemaNames;
         vector<string> schemaTitles;
-        for (string name : System::filesInDirectory(libraryPath))
+        for (const string& name : System::filesInDirectory(libraryPath))
         {
             if (StringUtils::endsWith(name, ".smile"))
             {
@@ -177,7 +177,7 @@ int SmileToolCommandLineHandler::perform()
     }
     catch (const FatalError& error)
     {
-        for (auto line : error.message()) Console::error(line);
+        for (const string& line : error.message()) Console::error(line);
     }
     catch (const std::exception& except)
     {

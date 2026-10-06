@@ -63,7 +63,7 @@ int SkirtCommandLineHandler::perform()
     }
     catch (FatalError& error)
     {
-        for (string line : error.message()) _console.error(line, false);
+        for (const string& line : error.message()) _console.error(line, false);
     }
     catch (const std::exception& except)
     {
@@ -90,7 +90,7 @@ namespace
         }
 
         if (!haveIssue)
-            for (string packname : FilePaths::expectedPacks())
+            for (const string& packname : FilePaths::expectedPacks())
             {
                 int expected = FilePaths::expectedPackVersion(packname);
                 int installed = FilePaths::installedPackVersion(packname);
@@ -168,7 +168,7 @@ int SkirtCommandLineHandler::doBatch()
     // build a list of filenames for existing ski files
     _skifiles.clear();
     _hasError = false;
-    for (string filepath : _args.filepaths()) addSkiFilesFor(filepath);
+    for (const string& filepath : _args.filepaths()) addSkiFilesFor(filepath);
 
     // exit if there were any problems with the file paths
     if (_hasError)
@@ -217,7 +217,7 @@ int SkirtCommandLineHandler::doBatch()
     reportPeakMemory(&_console);
 
     // report stopwatch results, if any
-    for (string line : StopWatch::report()) _console.warning(line, false);
+    for (const string& line : StopWatch::report()) _console.warning(line, false);
     return EXIT_SUCCESS;
 }
 
@@ -275,7 +275,7 @@ void SkirtCommandLineHandler::addSkiFilesFor(string filepath)
 void SkirtCommandLineHandler::addSkiFilesFor(string dirpath, string name)
 {
     // add matching files at the current directory level
-    for (string candidate : System::filesInDirectory(dirpath))
+    for (const string& candidate : System::filesInDirectory(dirpath))
     {
         if (StringUtils::matches(candidate, name)) _skifiles.push_back(StringUtils::joinPaths(dirpath, candidate));
     }
@@ -283,7 +283,7 @@ void SkirtCommandLineHandler::addSkiFilesFor(string dirpath, string name)
     // if recursion is requested, call ourselves for all directories at this level
     if (_args.isPresent("-r"))
     {
-        for (string subdir : System::dirsInDirectory(dirpath))
+        for (const string& subdir : System::dirsInDirectory(dirpath))
         {
             addSkiFilesFor(StringUtils::joinPaths(dirpath, subdir), name);
         }
@@ -373,7 +373,7 @@ void SkirtCommandLineHandler::doSimulation(size_t index)
         }
         catch (FatalError& error)
         {
-            for (string line : error.message()) log->error(line, false);
+            for (const string& line : error.message()) log->error(line, false);
             throw error;
         }
         catch (const std::exception& except)
@@ -419,7 +419,7 @@ void SkirtCommandLineHandler::logErrorToFile(const vector<string>& message, stri
     string stamp2 = System::timestamp() + " * *** Error: ";
     logfile << stamp2 << "A fatal error occurred while constructing a simulation" << std::endl;
     logfile << stamp2 << "From ski file " + System::canonicalPath(skipath) << std::endl;
-    for (string line : message) logfile << stamp2 << line << std::endl;
+    for (const string& line : message) logfile << stamp2 << line << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////

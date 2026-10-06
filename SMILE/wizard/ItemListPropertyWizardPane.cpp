@@ -127,7 +127,7 @@ void ItemListPropertyWizardPane::addItem()
     if (hdlr->hasDefaultValue())
     {
         auto defaultType = hdlr->defaultType();
-        for (auto choiceType : choiceList)
+        for (const string& choiceType : choiceList)
         {
             if (hdlr->schema()->inherits(choiceType, defaultType))
             {

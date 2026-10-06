@@ -119,7 +119,7 @@ int ShapesCommandLineHandler::perform()
     }
     catch (const FatalError& error)
     {
-        for (auto line : error.message()) Console::error(line);
+        for (const string& line : error.message()) Console::error(line);
     }
     catch (const std::exception& except)
     {

@@ -239,7 +239,7 @@ void TextInFile::useColumns(string columns)
 
     // establish the logical column info list
     vector<ColumnInfo> newcolv;
-    for (string name : StringUtils::split(columns, ","))
+    for (const string& name : StringUtils::split(columns, ","))
     {
         string sname = StringUtils::squeeze(name);
 

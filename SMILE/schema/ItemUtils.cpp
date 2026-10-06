@@ -20,7 +20,7 @@ void ItemUtils::setPropertyConfiguredState(Item* item, string property, int conf
 void ItemUtils::setHierarchyConfigured(const SchemaDef* schema, Item* root)
 {
     // process all immediate properties of the specified root item
-    for (auto property : schema->properties(root->type())) setPropertyConfiguredState(root, property, 1);
+    for (const string& property : schema->properties(root->type())) setPropertyConfiguredState(root, property, 1);
 
     // process all children of the specified root item
     for (auto child : root->children()) setHierarchyConfigured(schema, child);

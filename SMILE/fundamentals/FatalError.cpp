@@ -27,7 +27,7 @@ FatalError::FatalError(string message, const char* file, int line, const char* f
     _message.push_back("In function " + string(function));
 
     // add a simple stack trace
-    for (auto msgline : System::stacktrace()) _message.push_back(msgline);
+    for (const string& msgline : System::stacktrace()) _message.push_back(msgline);
 }
 
 ////////////////////////////////////////////////////////////////////

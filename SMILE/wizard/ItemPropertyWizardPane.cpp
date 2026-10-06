@@ -81,7 +81,7 @@ ItemPropertyWizardPane::ItemPropertyWizardPane(std::unique_ptr<PropertyHandler> 
     }
 
     // add the regular choices
-    for (auto choiceType : choiceList)
+    for (const string& choiceType : choiceList)
     {
         string choiceTitle = StringUtils::toUpperFirst(hdlr->schema()->title(choiceType));
         if (choiceType == defaultType) choiceTitle += "  [default]";

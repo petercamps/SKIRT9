@@ -37,7 +37,7 @@ int main(int argc, char** argv)
     }
     catch (FatalError& error)
     {
-        for (auto line : error.message()) System::log(line, System::LogLevel::Error);
+        for (const string& line : error.message()) System::log(line, System::LogLevel::Error);
     }
     catch (const std::exception& except)
     {
