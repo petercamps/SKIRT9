@@ -32,7 +32,17 @@
 #endif
 
 #if defined(__APPLE__) && defined(__MACH__)
+#    if defined(__GNUC__) && !defined(__clang__)
+// GCC (unlike Clang) issues -Welaborated-enum-base warnings for the Apple SDK headers; ignoring -Wpragmas first
+// avoids a warning about an unknown option for GCC versions that do not know this one
+#        pragma GCC diagnostic push
+#        pragma GCC diagnostic ignored "-Wpragmas"
+#        pragma GCC diagnostic ignored "-Welaborated-enum-base"
+#    endif
 #    include <CoreFoundation/CoreFoundation.h>
+#    if defined(__GNUC__) && !defined(__clang__)
+#        pragma GCC diagnostic pop
+#    endif
 #endif
 
 ////////////////////////////////////////////////////////////////////

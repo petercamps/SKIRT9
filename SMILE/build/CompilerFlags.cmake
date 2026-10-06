@@ -35,9 +35,11 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Intel")  # this catches the deprecated In
         target_compile_options(${TARGET} PRIVATE -Wno-deprecated)
     endif()
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    # since CMake 3.15 (policy CMP0092), the default MSVC flags no longer include a warning level
+    target_compile_options(${TARGET} PRIVATE /W3)
     target_compile_options(${TARGET} PRIVATE /wd4267 /wd4244)  # ignore size_t to/from int conversions
     if (NO_EXTRA_WARNINGS)
-        target_compile_options(${TARGET} PRIVATE /wd2220 /wd4018 /wd4101 /wd4477 /wd4996)
+        target_compile_options(${TARGET} PRIVATE /wd4018 /wd4101 /wd4477 /wd4996)
     endif()
 endif()
 

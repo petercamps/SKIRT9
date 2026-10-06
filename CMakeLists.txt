@@ -7,14 +7,9 @@
 # Builds all targets defined in the SKIRT project
 # ------------------------------------------------------------------
 
-# ensure minimum level of functionality
-cmake_minimum_required(VERSION 3.2.2...3.5 FATAL_ERROR)
-
-# if suppported (by CMake version 3.29 and up), de-duplicate libraries on link lines based on linker capabilities
-# to avoid link warnings for duplicate libraries
-if(POLICY CMP0156)
-  cmake_policy(SET CMP0156 NEW)
-endif()
+# ensure minimum level of functionality; the policies introduced up to the second version number are set to NEW
+# (including CMP0156 in CMake 3.29 and up, which de-duplicates libraries on link lines to avoid link warnings)
+cmake_minimum_required(VERSION 3.18...3.30)
 
 # define project
 project(SKIRTproject)

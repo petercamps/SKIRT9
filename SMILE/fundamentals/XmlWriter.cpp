@@ -41,7 +41,9 @@ namespace
 
     bool isControlCharacter(char c)  // including newline characters
     {
-        return (c >= 0x00 && c < ' ' && c != '\t') || c == 0x7F;
+        // convert to unsigned char so that the test does not depend on whether plain char is signed
+        unsigned char u = static_cast<unsigned char>(c);
+        return (u < ' ' && u != '\t') || u == 0x7F;
     }
 
     // a valid element/attribute name starts with a letter and contains letters, digits and dashes
