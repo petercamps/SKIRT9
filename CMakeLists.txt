@@ -26,6 +26,30 @@ option(BUILD_DOX_STYLE "build doxstyle, documentation block streamliner")
 # define a user-configurable option to force warnings to be handled as errors
 option (WARNINGS_AS_ERRORS "handle warnings as errors")
 
+# define a user-configurable option to build with link-time optimization (LTO), which allows the compiler to optimize
+# across source file and library boundaries at the cost of a longer link step; it applies to the Release build type only
+option(BUILD_WITH_LTO "build with link-time optimization, if supported by the compiler" ON)
+
+# enable link-time optimization for the Release build type of all targets, if requested and supported; this must be
+# done before adding the subdirectories because a target takes on the value of this variable at the time it is created
+if (BUILD_WITH_LTO)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT LTO_SUPPORTED OUTPUT LTO_OUTPUT LANGUAGES C CXX)
+    if (APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        # without a linker plugin, which the Apple linker lacks, GCC performs LTO only for object files listed on the
+        # link command line and not for those extracted from static libraries; because all our targets are static
+        # libraries, nothing would be optimized while the executable would carry along the unused intermediate code
+        set(LTO_SUPPORTED FALSE)
+    endif()
+    if (LTO_SUPPORTED)
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+        message(STATUS "Link-time optimization enabled for Release builds")
+    else()
+        message(STATUS "Link-time optimization is not supported with this compiler and platform; building without it")
+        message(VERBOSE "${LTO_OUTPUT}")
+    endif()
+endif()
+
 # add all relevant subdirectories; each subdirectory defines a single target
 add_subdirectory(SMILE)
 if (BUILD_SKIRT)

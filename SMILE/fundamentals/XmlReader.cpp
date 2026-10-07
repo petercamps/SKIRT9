@@ -178,7 +178,7 @@ string XmlReader::attributeValue(const string& name) const
 
 ////////////////////////////////////////////////////////////////////
 
-void XmlReader::throwError(string message)
+void XmlReader::throwError(const string& message)
 {
     throw FATALERROR("Error in XML stream '" + _streamName + "' at line " + std::to_string(_lineNumber) + "\n"
                      + message);

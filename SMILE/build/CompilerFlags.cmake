@@ -24,6 +24,11 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang|IntelLLVM")  # the Intel oneAPI compile
     endif()
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     target_compile_options(${TARGET} PRIVATE -Wall -W -pedantic)
+    # suppress the notes on parameter-passing ABI changes between GCC versions (e.g. for std::pair on aarch64 as of
+    # GCC 10.1), which do not matter because all code is compiled with the same compiler; with link-time optimization,
+    # these notes are issued at link time as well
+    target_compile_options(${TARGET} PRIVATE -Wno-psabi)
+    target_link_options(${TARGET} PRIVATE -Wno-psabi)
     if (NO_EXTRA_WARNINGS)
         target_compile_options(${TARGET} PRIVATE -Wno-misleading-indentation -Wno-unused-parameter
             -Wno-unused-function -Wno-unused-result -Wno-deprecated-copy -Wno-sign-compare -Wno-restrict

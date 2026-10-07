@@ -77,9 +77,10 @@ namespace
     std::mutex _mutex;
 
     // function to report cfitsio errors
-    void report_error(string filepath, const string& action, int status)
+    void report_error(const string& filepath, const string& action, int status)
     {
-        char message[FLEN_STATUS];
+        // cfitsio specifies FLEN_STATUS as the buffer size for ffgerr, but some of its status texts are longer
+        char message[FLEN_ERRMSG];
         ffgerr(status, message);
         throw FATALERROR("Error while " + action + " FITS file " + filepath + "\n" + string(message));
     }

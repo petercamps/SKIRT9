@@ -100,7 +100,7 @@ double UnitDef::out(const string& qty, string unit, double value) const
 
 ////////////////////////////////////////////////////////////////////
 
-string UnitDef::unit(string qty, string unitSystem, const string& unitStyle) const
+string UnitDef::unit(const string& qty, const string& unitSystem, const string& unitStyle) const
 {
     if (_unitSystems.count(unitSystem))
     {

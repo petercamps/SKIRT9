@@ -91,7 +91,7 @@ public:
     /** Throws an error with the specified error message, augmented with information about the
         current line number in the input stream. This function is used by the XML reader when an
         error occurs, and it may also be used by a client to raise a custom error. */
-    void throwError(string message);
+    void throwError(const string& message);
 
     // ================== Private parsing utilities ==================
 

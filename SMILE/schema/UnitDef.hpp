@@ -139,7 +139,7 @@ public:
         function tries again with the regular quantity name. If the specified combination of
         physical quantity (embellished or not) and unit system is not present in the unit
         definition, the function throws an exception. */
-    string unit(string qty, string unitSystem, const string& unitStyle = string()) const;
+    string unit(const string& qty, const string& unitSystem, const string& unitStyle = string()) const;
 
     // ================== Data members ==================
 
