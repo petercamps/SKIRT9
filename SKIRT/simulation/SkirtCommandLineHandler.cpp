@@ -28,7 +28,7 @@
 namespace
 {
     // the allowed options list, in the format consumed by the CommandLineArguments constructor
-    static const char* allowedOptions = "-t* -s* -d -b -v -m -e -k -i* -o* -r -x";
+    static const char* allowedOptions = "-t* -s* -b -v -m -e -k -i* -o* -r -x";
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -325,12 +325,6 @@ void SkirtCommandLineHandler::doSimulation(size_t index)
         //  - the number of parallel threads
         if (_args.intValue("-t") > 0) simulation->parallelFactory()->setMaxThreadCount(_args.intValue("-t"));
 
-        //  - the activation of data parallelization
-        if (_args.isPresent("-d") && ProcessManager::isMultiProc())
-        {
-            throw FATALERROR("Data parallelization (-d option) is not supported at this time");
-        }
-
         //  - the logging mechanisms
         FileLog* log = new FileLog();
         simulation->log()->setLinkedLog(log);
@@ -432,14 +426,13 @@ void SkirtCommandLineHandler::printHelp()
     _console.warning("To create a new ski file interactively:    skirt");
     _console.warning("To run a simulation with default options:  skirt <ski-filename>");
     _console.warning("");
-    _console.warning("  skirt [-t <threads>] [-s <simulations>] [-d]");
+    _console.warning("  skirt [-t <threads>] [-s <simulations>]");
     _console.warning("        [-b] [-v] [-m] [-e]");
     _console.warning("        [-k] [-i <dirpath>] [-o <dirpath>]");
     _console.warning("        [-r] {<filepath>}*");
     _console.warning("");
     _console.warning("  -t <threads> : the number of parallel threads for each simulation");
     _console.warning("  -s <simulations> : the number of parallel simulations per process");
-    _console.warning("  -d : enable data parallelization mode for multiple processes");
     _console.warning("  -b : force brief console logging");
     _console.warning("  -v : force verbose logging for multiple processes");
     _console.warning("  -m : state the amount of used memory at the start of each log message");

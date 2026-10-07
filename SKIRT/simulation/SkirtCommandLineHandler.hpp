@@ -20,7 +20,7 @@ result in a ski file, without actually performing the simulation. Otherwise, it 
 simulations in the ski files specified on the command line according to the following syntax:
 
 \verbatim
- skirt [-t <threads>] [-s <simulations>] [-d]
+ skirt [-t <threads>] [-s <simulations>]
        [-b] [-v] [-m] [-e]
        [-k] [-i <dirpath>] [-o <dirpath>]
        [-r] {<filepath>}*
@@ -30,8 +30,6 @@ simulations in the ski files specified on the command line according to the foll
   is the number of logical cores on the computer running SKIRT.
 
 - The -s option specifies the number of simulations to be executed in parallel. The default value is one.
-
-- The -d option enables data parallelization mode for multiple processes.
 
 - The -b option forces brief console logging, i.e. only success and error messages are shown rather than all progress
   messages. If there are multiple parallel simulations (see the -s option), the -b option is turned on automatically
