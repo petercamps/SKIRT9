@@ -63,9 +63,9 @@ namespace
             : Z(a[0]), n(a[1]), l(a[2]), Eth(a[3]), Emax(a[4]), E0(a[5]), sigma0(a[6]), ya(a[7]), P(a[8]), yw(a[9]),
               y0(a[10]), y1(a[11])
         {}
-        short Z;        // atomic number
-        short n;        // principal quantum number of the shell
-        short l;        // orbital quantum number of the subshell
+        int Z;          // atomic number
+        int n;          // principal quantum number of the shell
+        int l;          // orbital quantum number of the subshell
         double Eth;     // subshell ionization threshold energy (eV)
         double Emax;    // maximum energy for validity of the formula (eV)
         double E0;      // fit parameter (eV)
@@ -81,9 +81,9 @@ namespace
     struct FluorescenceParams
     {
         FluorescenceParams(const Array& a) : Z(a[0]), n(a[1]), l(a[2]), omega(a[3]), E(a[4]), W(a[5]) {}
-        short Z;       // atomic number
-        short n;       // principal quantum number of the shell
-        short l;       // orbital quantum number of the subshell
+        int Z;         // atomic number
+        int n;         // principal quantum number of the shell
+        int l;         // orbital quantum number of the subshell
         double omega;  // fluorescence yield (1)
         double E;      // (central) energy of the emitted photon (eV)
         double W;      // FWHM of the Lorentz shape for the emitted photon (eV), or zero

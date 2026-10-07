@@ -8,6 +8,7 @@
 #include "Configuration.hpp"
 #include "Constants.hpp"
 #include "DisjointWavelengthGrid.hpp"
+#include "FatalError.hpp"
 #include "NR.hpp"
 #include "Parallel.hpp"
 #include "ParallelFactory.hpp"
@@ -102,7 +103,7 @@ class SDE_Calculator
 private:
     const SDE_TemperatureGrid* _grid;  // temperature grid with corresponding black body discretization
     Triangle<double> _HRm;             // heating rates (indexed on f,i)
-    Triangle<short> _Km;               // radiation field wavelength index k (indexed on f,i)
+    Triangle<short> _Km;               // radiation field wavelength index k (indexed on f,i), short to save memory
     Array _CRv;                        // cooling rates (indexed on p)
     Array _planckabsv;                 // Planck-integrated absorption cross sections (indexed on p)
 
@@ -367,6 +368,10 @@ void StochasticDustEmissionCalculator::precalculate(SimulationItem* item, const 
     {
         // copy the simulation's radiation field wavelength grid
         int n = radiationFieldWLG->numBins();
+        if (n > std::numeric_limits<short>::max())
+            throw FATALERROR("Stochastic dust emission supports at most "
+                             + std::to_string(std::numeric_limits<short>::max())
+                             + " bins in the radiation field wavelength grid");
         _rflambdav.resize(n);
         _rfdlambdav.resize(n);
         for (int k = 0; k != n; ++k)
