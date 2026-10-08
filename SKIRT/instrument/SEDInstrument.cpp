@@ -5,7 +5,6 @@
 
 #include "SEDInstrument.hpp"
 #include "FluxRecorder.hpp"
-#include "PhotonPacket.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -15,13 +14,6 @@ void SEDInstrument::setupSelfBefore()
 
     // configure flux recorder
     instrumentFluxRecorder()->includeFluxDensityForDistant();
-}
-
-////////////////////////////////////////////////////////////////////
-
-void SEDInstrument::detect(PhotonPacket* pp)
-{
-    if (isInsideAperture(pp)) instrumentFluxRecorder()->detect(pp, 0);
 }
 
 ////////////////////////////////////////////////////////////////////

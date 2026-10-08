@@ -478,10 +478,13 @@ private:
     void performLifeCycle(size_t firstIndex, size_t numIndices, bool primary, bool peel, bool store);
 
     /** This function implements the peel-off of a photon packet after an emission event. This
-        means that we create a peel-off photon packet for every instrument in the instrument
-        system, which is forced to propagate in the direction of the observer instead of in the
-        propagation direction determined randomly by the emission process. Each peel-off photon
-        packet is subsequently fed into its target instrument for detection.
+        means that we create a peel-off photon packet for every group of instruments with the same
+        sight line (see InstrumentSystem::sightLineGroups()), which is forced to propagate in the
+        direction of the observer instead of in the propagation direction determined randomly by
+        the emission process. Each peel-off photon packet is subsequently fed into the instruments
+        of its target group for detection (see detectPeelOff()). Because the instrument geometry
+        depends only on the launch position, a group is skipped if none of its instruments would
+        detect the photon packet, avoiding the creation of the peel-off photon packet.
 
         A peel-off photon packet has the same characteristics as the original photon packet, except
         that the propagation direction is altered from the emission direction \f${\bf{k}}\f$ to the
@@ -491,7 +494,7 @@ private:
         probability that it is emitted in any other direction. If the source has a nonzero
         velocity, the wavelength of the peel-off photon packet is Doppler-shifted for the new
         direction. If the photon packet is polarized, the Stokes vector is rotated into the frame
-        of the target instrument.
+        of the first instrument in the target group.
 
         The first argument specifies the photon packet that was just emitted; the second argument
         provides a placeholder peel off photon packet for use by the function. */
@@ -652,16 +655,20 @@ private:
 
     /** This function simulates the peel-off of a photon packet before a scattering event. This
         means that, just before a scattering event, we create one or more peel-off photon packets
-        for every instrument in the instrument system, which are forced to propagate in the
-        direction of the observer instead of in the propagation direction determined randomly by
-        the scattering process. Each peel-off photon packet is subsequently fed into its target
-        instrument for detection.
+        for every group of instruments with the same sight line (see
+        InstrumentSystem::sightLineGroups()), which are forced to propagate in the direction of the
+        observer instead of in the propagation direction determined randomly by the scattering
+        process. Each peel-off photon packet is subsequently fed into the instruments of its target
+        group for detection (see detectPeelOff()). In contrast to peelOffEmission(), this function
+        does not skip groups based on the instrument geometry, because creating a scattering
+        peel-off photon packet may consume random numbers for some material mixes, and skipping it
+        would thus alter the random number sequence.
 
         If the rest-frame scattering event may change the wavelength of the photon packet (i.e.
         other than because of the bulk velocity of the medium), it is necessary to send a separate
-        peel-off packet for each medium component (to each instrument). If the wavelength cannot
-        change, we can send a consolidated peel-off packet that aggregates the relevant information
-        for all medium components.
+        peel-off packet for each medium component (to each group). If the wavelength cannot change,
+        we can send a consolidated peel-off packet that aggregates the relevant information for all
+        medium components.
 
         A peel-off photon packet has the same characteristics as the original photon packet, apart
         from four differences. The first one is, obviously, that the propagation direction is
@@ -677,6 +684,14 @@ private:
         scattered; the second argument provides a placeholder peel off photon packet for use by the
         function. */
     void peelOffScattering(PhotonPacket* pp, PhotonPacket* ppp);
+
+    /** This function has the specified peel-off photon packet detected by the instruments in the
+        specified group, which all have the same sight line. For each instrument, the function
+        verifies that the instrument records the photon packet's wavelength and determines the
+        pixel hit by the photon packet, if any. Only if at least one instrument in the group
+        actually detects the photon packet, the function calculates the extinction factor along
+        the sight line, which is then shared by all instruments in the group. */
+    void detectPeelOff(const vector<Instrument*>& group, const PhotonPacket* ppp);
 
     //======================== Data Members ========================
 

@@ -7,7 +7,6 @@
 #include "FatalError.hpp"
 #include "FluxRecorder.hpp"
 #include "Log.hpp"
-#include "PhotonPacket.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -86,15 +85,12 @@ void HEALPixSkyInstrument::setupSelfBefore()
 
 ////////////////////////////////////////////////////////////////////
 
-void HEALPixSkyInstrument::determineSameObserverAsPreceding(const Instrument* precedingInstrument)
+bool HEALPixSkyInstrument::hasSameSightLine(const Instrument* other) const
 {
-    if (auto other = dynamic_cast<const HEALPixSkyInstrument*>(precedingInstrument);
-        other && radius() == other->radius() && observerX() == other->observerX() && observerY() == other->observerY()
-        && observerZ() == other->observerZ() && crossX() == other->crossX() && crossY() == other->crossY()
-        && crossZ() == other->crossZ() && upX() == other->upX() && upY() == other->upY() && upZ() == other->upZ())
-    {
-        setSameObserverAsPreceding();
-    }
+    auto sky = dynamic_cast<const HEALPixSkyInstrument*>(other);
+    return sky && radius() == sky->radius() && observerX() == sky->observerX() && observerY() == sky->observerY()
+           && observerZ() == sky->observerZ() && crossX() == sky->crossX() && crossY() == sky->crossY()
+           && crossZ() == sky->crossZ() && upX() == sky->upX() && upY() == sky->upY() && upZ() == sky->upZ();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -133,17 +129,18 @@ Direction HEALPixSkyInstrument::bfky(Position bfr) const
 
 ////////////////////////////////////////////////////////////////////
 
-void HEALPixSkyInstrument::detect(PhotonPacket* pp)
+Instrument::Detection HEALPixSkyInstrument::locate(Position bfr) const
 {
     // transform launch position from world to observer coordinates
-    Position p(_transform.transform(pp->position()));
+    Position p(_transform.transform(bfr));
 
     // get the spherical coordinates of the launch position relative to the observer
     double d, theta, phi;
     p.spherical(d, theta, phi);
 
     // if the radial distance is very small, ignore the photon packet
-    if (d < _radius) return;
+    Detection detection;
+    if (d < _radius) return detection;
 
     // p.spherical() returns theta in [0, pi] and phi in [-pi, pi]
     // the HEALPix mapping algorithm expects theta in [0, pi] and phi in [0, 2*pi]
@@ -203,8 +200,9 @@ void HEALPixSkyInstrument::detect(PhotonPacket* pp)
     }
 
     // detect the photon packet in the appropriate pixel of the data cube and at the appropriate distance
-    int l = i + _Nx * j;
-    instrumentFluxRecorder()->detect(pp, l, d);
+    detection.pixel = i + _Nx * j;
+    detection.distance = d;
+    return detection;
 }
 
 ////////////////////////////////////////////////////////////////////

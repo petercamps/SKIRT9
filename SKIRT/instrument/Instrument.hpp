@@ -22,7 +22,17 @@ class PhotonPacket;
     from the simulation. It also includes facilities for configuring user properties that are
     common to all instruments, such as which flux contributions need to be recorded. A wavelength
     grid is established either by specifying a grid for this instrument specifically, or by
-    defaulting to the common grid specified for the instrument system. */
+    defaulting to the common grid specified for the instrument system.
+
+    The simulation detects a peel-off photon packet in a number of steps, so that it can avoid
+    unnecessary work. Firstly, the instrument system groups instruments with the same sight line,
+    using the hasSameSightLine() function, so that a single peel-off photon packet can serve all
+    instruments in a group. For each instrument, the simulation then verifies that the instrument
+    records the peel-off photon packet's wavelength, using the recordsWavelength() function, and
+    obtains the pixel hit by the photon packet (if any), using the locate() function. Only if the
+    photon packet is actually detected by at least one instrument in the group, the simulation
+    calculates the extinction along the sight line and passes it to the detect() function of the
+    instruments concerned. */
 class Instrument : public SimulationItem
 {
     ITEM_ABSTRACT(Instrument, SimulationItem, "an instrument")
@@ -100,18 +110,36 @@ public:
         with this instrument. */
     void write();
 
-    /** This function returns true if the receiving instrument has the same observer type, position
-        and viewing direction as the preceding instrument in the instrument system. This
-        information is determined and cached by the determineSameObserverAsPreceding() function,
-        which is called by the InstrumentSystem during setup. */
-    bool isSameObserverAsPreceding() const { return _isSameObserverAsPreceding; }
+    /** This structure describes where an instrument detects a photon packet, as determined by the
+        instrument's geometry and returned by the locate() function. */
+    struct Detection
+    {
+        /** The index of the pixel in the instrument frame where the photon packet is detected,
+            zero for instruments without spatial resolution, or -1 if the photon packet is not
+            detected. */
+        int pixel{-1};
+
+        /** The distance from the photon packet's launching position to the instrument, used to
+            calibrate the flux and to limit the path along which the extinction is calculated.
+            This distance is infinite for distant instruments. */
+        double distance{std::numeric_limits<double>::infinity()};
+    };
+
+    /** This function returns true if the instrument records photon packets with the specified
+        wavelength, i.e. if the wavelength (redshifted if applicable) falls within the range
+        covered by the instrument's wavelength grid. Otherwise it returns false. Although the
+        function may return true for a wavelength that falls in a gap between the bins of a grid,
+        it never returns false for a wavelength that is recorded. */
+    bool recordsWavelength(double lambda) const;
+
+    /** This function records the detection of the specified photon packet by the instrument, at
+        the pixel and distance determined by the locate() function, and with the specified
+        extinction factor \f$\exp(-\tau)\f$ (i.e. 1 for a simulation without media). It simply
+        calls the corresponding function of the FluxRecorder instance associated with this
+        instrument. */
+    void detect(const PhotonPacket* pp, Detection detection, double extinction);
 
 protected:
-    /** This function sets the "isSameObserverAsPreceding" flag to true. By default (i.e. if this
-        function is never invoked) the flag is set to false. This function is intended for use from
-        the determineSameObserverAsPreceding() function implementation in subclasses. */
-    void setSameObserverAsPreceding() { _isSameObserverAsPreceding = true; }
-
     /** This function returns the FluxRecorder instance associated with this instrument. This
         function is intended for use in subclasses only. */
     FluxRecorder* instrumentFluxRecorder() { return _recorder; }
@@ -119,11 +147,16 @@ protected:
     //=========== Functions to be implemented in subclass ===========
 
 public:
-    /** This function determines whether the specified instrument has the same observer type,
-        position and viewing direction as the receiving instrument, and if so, calls the
-        setSameObserverAsPreceding() function to remember the fact. The function is invoked by the
-        InstrumentSystem during setup. The implementation must be provided in a subclass. */
-    virtual void determineSameObserverAsPreceding(const Instrument* precedingInstrument) = 0;
+    /** This function returns true if the specified instrument has the same sight line as the
+        receiving instrument. Two instruments have the same sight line if a peel-off photon packet
+        launched towards one of them, including the extinction calculated along its path, can be
+        used for the other one as well. In other words, for any launching position, both
+        instruments must have the same direction towards the observer (see bfkobs()) and, for local
+        instruments, the same distance to the observer. If any of the two instruments records
+        polarization, they must also have the same orientation of the instrument frame (see
+        bfky()). The InstrumentSystem calls this function during setup to group instruments with
+        the same sight line. The implementation must be provided in a subclass. */
+    virtual bool hasSameSightLine(const Instrument* other) const = 0;
 
     /** This function returns the direction towards the observer, expressed in model coordinates,
         given the photon packet's launching position. The implementation must be provided in a
@@ -135,16 +168,18 @@ public:
         implementation must be provided in a subclass. */
     virtual Direction bfky(Position bfr) const = 0;
 
-    /** This function simulates the detection of a photon packet by the instrument. Its
-        implementation must be provided in a subclass. */
-    virtual void detect(PhotonPacket* pp) = 0;
+    /** This function determines where the instrument would detect a peel-off photon packet
+        launched towards it from the specified position. It returns the pixel index and distance
+        as described for the Detection structure, with a pixel index of -1 if the photon packet
+        would not be detected, e.g. because it projects outside of the instrument's aperture or
+        field of view. The implementation must be provided in a subclass. */
+    virtual Detection locate(Position bfr) const = 0;
 
     //======================== Data Members =======================
 
 private:
     const WavelengthGrid* _instrumentWavelengthGrid{nullptr};
     FluxRecorder* _recorder{nullptr};
-    bool _isSameObserverAsPreceding{false};
 };
 
 ////////////////////////////////////////////////////////////////////

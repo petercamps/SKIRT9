@@ -60,17 +60,18 @@ protected:
     //======================== Other Functions =======================
 
 public:
-    /** This function simulates the detection of a photon packet by the instrument. It determines
-        the projected position of the photon packet's last interaction site on the instrument frame
-        and, if this position falls within the frame, calls the detect() function of the
-        FluxRecorder instance associated with this instrument. */
-    void detect(PhotonPacket* pp) override;
+    /** This function determines whether and where the instrument would detect a peel-off photon
+        packet launched towards it from the specified position. It returns the index of the pixel
+        hit by the photon packet, or -1 if the position projects outside of the frame, as
+        determined by the pixelOnDetector() function. The distance is left at its default value of
+        infinity. */
+    Detection locate(Position bfr) const override;
 
 private:
     /** This private helper function returns the index of the spatial pixel on the detector that
-        will be hit by a photon packet, or -1 if the photon packet does not hit the detector. Given
-        the position \f${\boldsymbol{x}}=(x,y,z)\f$ of the last emission or scattering event of the
-        photon packet, the direction \f${\boldsymbol{k}}_{\text{obs}} = (\theta,\varphi)\f$ towards
+        will be hit by a photon packet launched from the specified position, or -1 if the photon
+        packet does not hit the detector. Given the position \f${\boldsymbol{x}}=(x,y,z)\f$ of the
+        last emission or scattering event of the photon packet, the direction \f${\boldsymbol{k}}_{\text{obs}} = (\theta,\varphi)\f$ towards
         the observer, and the roll angle \f$\omega\f$ of the instrument, the impact coordinates
         \f$(x_{\text{p}},y_{\text{p}})\f$ are given by the following Euler-like transformation,
         where \f$z_{\text{p}}\f$ is ignored: \f[ \begin{bmatrix}x_{\text{p}} \\ y_{\text{p}} \\
@@ -93,7 +94,7 @@ private:
         \f${\text{floor}}(z)\f$ is an operator that returns the largest integer that is not greater
         than \f$y\f$. The spatial pixel number \f$l\f$ is then determined as \f$l=i+j\,N_x\f$,
         asuming \f$i\f$ and \f$j\f$ are indeed within the detector range. */
-    int pixelOnDetector(const PhotonPacket* pp) const;
+    int pixelOnDetector(Position bfr) const;
 
     //======================== Data Members ========================
 

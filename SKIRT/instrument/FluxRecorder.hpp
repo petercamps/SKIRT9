@@ -10,7 +10,6 @@
 #include "ThreadLocalMember.hpp"
 #include <tuple>
 class PhotonPacket;
-class ExtinctionInterface;
 class SimulationItem;
 class TimeGrid;
 class WavelengthGrid;
@@ -266,6 +265,15 @@ public:
     //======================== Other Functions =======================
 
 public:
+    /** This function returns true if the recorder records photon packets with the specified
+        wavelength, i.e. if the wavelength, redshifted if applicable, falls within the range from
+        the smallest to the largest wavelength covered by the recorder's wavelength grid.
+        Otherwise it returns false. The function may thus return true for a wavelength that falls
+        in a gap between the bins of the grid, but it never returns false for a wavelength that is
+        recorded. This allows the caller to avoid calculating the extinction along the path of a
+        photon packet that would not be recorded anyway. */
+    bool recordsWavelength(double lambda) const;
+
     /** This function simulates the detection of a photon packet by the recorder as determined by
         its configuration. This function is thread-safe, so it may be (and often is) called from
         multiple parallel execution threads.
@@ -275,17 +283,17 @@ public:
         being used. For an instrument that records surface brightness, the index must refer to a
         pixel within the frame; the instrument should not call this function for a photon packet
         arriving outside of the frame. For other instruments, the index is ignored. In addition,
-        the instrument can specify a \em distance from the photon packet's
-        last interaction site to the instrument. For distant instruments with parallel projection,
-        this distance should be left at its default value of infinity. For instruments that may be
-        placed close by or inside the model, the actual distance should be specified so that the
-        flux can be properly calibrated for each individual photon packet.
+        the instrument specifies the \em distance from the photon packet's last interaction site
+        to the instrument. For distant instruments with parallel projection, this distance is
+        infinite. For instruments that may be placed close by or inside the model, the actual
+        distance is used to calibrate the flux for each individual photon packet.
 
-        All other information is obtained directly or indirectly from the photon packet. If there
-        is an obscuring medium, the optical depth from the photon packet's last interaction site to
-        the instrument is determined and the corresponding extincton is applied to the packet's
-        contribution before detection. */
-    void detect(PhotonPacket* pp, int l, double distance = std::numeric_limits<double>::infinity());
+        Finally, the caller provides the \em extinction factor \f$\exp(-\tau)\f$ corresponding
+        to the optical depth \f$\tau\f$ from the photon packet's last interaction site to the
+        instrument, or 1 if the simulation has no media. The extinction is applied to the packet's
+        contribution before detection. All other information is obtained directly or indirectly
+        from the photon packet. */
+    void detect(const PhotonPacket* pp, int l, double distance, double extinction);
 
     /** This function processes and clears any information that may have been buffered by the
         detect() function in thread-local storage. It is not thread-safe. After parallel threads
@@ -402,10 +410,12 @@ private:
     string _quantityXY;
 
     // cached info, initialized when configuration is finalized
-    ExtinctionInterface* _ms{nullptr};  // pointer to medium system, if present (used only if hasMedium is true)
-    bool _recordTotalOnly{true};        // becomes false if recordComponents and hasMedium are both true
-    size_t _numPixelsInFrame{0};        // number of pixels in a single IFU frame
-    int _numWavelengths{0};             // number of wavelengths in wavelength grid
+    bool _recordTotalOnly{true};          // becomes false if recordComponents and hasMedium are both true
+    size_t _numPixelsInFrame{0};          // number of pixels in a single IFU frame
+    int _numWavelengths{0};               // number of wavelengths in wavelength grid
+    bool _disjointWavelengthGrid{false};  // true if the wavelength grid has nonoverlapping bins
+    double _minWavelength{0};             // smallest wavelength covered by the wavelength grid
+    double _maxWavelength{0};             // largest wavelength covered by the wavelength grid
 
     // detector arrays that need to be calibrated, initialized when configuration is finalized
     vector<Array> _sed;

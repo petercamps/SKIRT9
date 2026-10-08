@@ -6,7 +6,6 @@
 #include "PerspectiveInstrument.hpp"
 #include "FatalError.hpp"
 #include "FluxRecorder.hpp"
-#include "PhotonPacket.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -92,16 +91,13 @@ void PerspectiveInstrument::setupSelfBefore()
 
 ////////////////////////////////////////////////////////////////////
 
-void PerspectiveInstrument::determineSameObserverAsPreceding(const Instrument* precedingInstrument)
+bool PerspectiveInstrument::hasSameSightLine(const Instrument* other) const
 {
-    if (auto other = dynamic_cast<const PerspectiveInstrument*>(precedingInstrument);
-        other && width() == other->width() && viewX() == other->viewX() && viewY() == other->viewY()
-        && viewZ() == other->viewZ() && crossX() == other->crossX() && crossY() == other->crossY()
-        && crossZ() == other->crossZ() && upX() == other->upX() && upY() == other->upY() && upZ() == other->upZ()
-        && focal() == other->focal())
-    {
-        setSameObserverAsPreceding();
-    }
+    auto perspective = dynamic_cast<const PerspectiveInstrument*>(other);
+    return perspective && width() == perspective->width() && viewX() == perspective->viewX()
+           && viewY() == perspective->viewY() && viewZ() == perspective->viewZ() && crossX() == perspective->crossX()
+           && crossY() == perspective->crossY() && crossZ() == perspective->crossZ() && upX() == perspective->upX()
+           && upY() == perspective->upY() && upZ() == perspective->upZ() && focal() == perspective->focal();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -129,11 +125,11 @@ Direction PerspectiveInstrument::bfky(Position /*bfr*/) const
 
 ////////////////////////////////////////////////////////////////////
 
-void PerspectiveInstrument::detect(PhotonPacket* pp)
+Instrument::Detection PerspectiveInstrument::locate(Position bfr) const
 {
     // get the position
     double x, y, z;
-    pp->position().cartesian(x, y, z);
+    bfr.cartesian(x, y, z);
 
     // transform from world to pixel coordinates
     double xp, yp, zp, wp;
@@ -143,12 +139,14 @@ void PerspectiveInstrument::detect(PhotonPacket* pp)
 
     // ignore photon packets arriving outside the viewport, originating from behind the viewport,
     // or originating from very close to the viewport
+    Detection detection;
     if (i >= 0 && i < _Nx && j >= 0 && j < _Ny && zp > _s / 10.)
     {
         // detect the photon packet in the appropriate pixel of the data cube and at the appropriate distance
-        int l = i + _Nx * j;
-        instrumentFluxRecorder()->detect(pp, l, zp);
+        detection.pixel = i + _Nx * j;
+        detection.distance = zp;
     }
+    return detection;
 }
 
 ////////////////////////////////////////////////////////////////////

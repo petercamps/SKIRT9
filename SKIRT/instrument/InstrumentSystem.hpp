@@ -14,7 +14,13 @@
 /** An InstrumentSystem instance keeps a list of zero or more instruments and an optional default
     wavelength grid that will be used by an instrument unless it specifies its own wavelength grid.
     The instruments can be of various nature and do not need to be located at the same observing
-    position. */
+    position.
+
+    During setup, the instrument system arranges the instruments in groups with the same sight line
+    (see Instrument::hasSameSightLine()), regardless of their order in the configuration. The
+    simulation launches a single peel-off photon packet for each group, which then serves all
+    instruments in the group, so that the peel-off photon packet and the extinction along its path
+    are calculated only once. */
 class InstrumentSystem : public SimulationItem
 {
     ITEM_CONCRETE(InstrumentSystem, SimulationItem, "an instrument system")
@@ -34,9 +40,10 @@ class InstrumentSystem : public SimulationItem
     //============= Construction - Setup - Destruction =============
 
 protected:
-    /** This function calls the determineSameObserverAsPreceding() function for all instruments in
-        the instrument system except for the first one (because it doesn't have a preceding
-        instrument). */
+    /** This function arranges the instruments in groups with the same sight line. Each instrument
+        joins the first group whose first instrument has the same sight line, or otherwise starts a
+        new group. As a result, the groups are ordered by the position of their first instrument in
+        the configuration, and the instruments in each group retain their configuration order. */
     void setupSelfAfter() override;
 
     //======================== Other Functions =======================
@@ -49,6 +56,17 @@ public:
     /** This function writes the recorded data for the complete instrument system to a set of
         files. It calls the write() function for each of the instruments. */
     void write();
+
+    /** This function returns the groups of instruments with the same sight line, as determined
+        during setup. Each group contains at least one instrument, and each instrument in the
+        instrument system belongs to exactly one group. */
+    const vector<vector<Instrument*>>& sightLineGroups() const { return _sightLineGroups; }
+
+    //======================== Data Members ========================
+
+private:
+    // the groups of instruments with the same sight line, initialized during setup
+    vector<vector<Instrument*>> _sightLineGroups;
 };
 
 ////////////////////////////////////////////////////////////////////

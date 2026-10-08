@@ -52,14 +52,13 @@ void DistantInstrument::setupSelfBefore()
 
 ////////////////////////////////////////////////////////////////////
 
-void DistantInstrument::determineSameObserverAsPreceding(const Instrument* precedingInstrument)
+bool DistantInstrument::hasSameSightLine(const Instrument* other) const
 {
-    if (auto other = dynamic_cast<const DistantInstrument*>(precedingInstrument);
-        other && distance() == other->distance() && inclination() == other->inclination()
-        && azimuth() == other->azimuth() && roll() == other->roll())
-    {
-        setSameObserverAsPreceding();
-    }
+    // the roll angle determines the orientation of the reference frame for the polarization state; it
+    // does not affect the intensity and thus matters only if any of the instruments records polarization
+    auto distant = dynamic_cast<const DistantInstrument*>(other);
+    return distant && inclination() == distant->inclination() && azimuth() == distant->azimuth()
+           && (roll() == distant->roll() || (!recordPolarization() && !distant->recordPolarization()));
 }
 
 ////////////////////////////////////////////////////////////////////

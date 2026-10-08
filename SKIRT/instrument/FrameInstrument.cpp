@@ -5,7 +5,6 @@
 
 #include "FrameInstrument.hpp"
 #include "FluxRecorder.hpp"
-#include "PhotonPacket.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -34,19 +33,20 @@ void FrameInstrument::setupSelfBefore()
 
 ////////////////////////////////////////////////////////////////////
 
-void FrameInstrument::detect(PhotonPacket* pp)
+Instrument::Detection FrameInstrument::locate(Position bfr) const
 {
-    // ignore photon packets arriving outside of the frame
-    if (int l = pixelOnDetector(pp); l >= 0) instrumentFluxRecorder()->detect(pp, l);
+    Detection detection;
+    detection.pixel = pixelOnDetector(bfr);
+    return detection;
 }
 
 ////////////////////////////////////////////////////////////////////
 
-int FrameInstrument::pixelOnDetector(const PhotonPacket* pp) const
+int FrameInstrument::pixelOnDetector(Position bfr) const
 {
     // get the position
     double x, y, z;
-    pp->position().cartesian(x, y, z);
+    bfr.cartesian(x, y, z);
 
     // transform to detector coordinates using inclination, azimuth, and roll angle
     double xpp = -_sinphi * x + _cosphi * y;

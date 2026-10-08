@@ -67,3 +67,17 @@ void Instrument::write()
 }
 
 ////////////////////////////////////////////////////////////////////
+
+bool Instrument::recordsWavelength(double lambda) const
+{
+    return _recorder->recordsWavelength(lambda);
+}
+
+////////////////////////////////////////////////////////////////////
+
+void Instrument::detect(const PhotonPacket* pp, Detection detection, double extinction)
+{
+    _recorder->detect(pp, detection.pixel, detection.distance, extinction);
+}
+
+////////////////////////////////////////////////////////////////////

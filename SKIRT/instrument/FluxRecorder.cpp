@@ -4,7 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "FluxRecorder.hpp"
-#include "ExtinctionInterface.hpp"
+#include "DisjointWavelengthGrid.hpp"
 #include "FITSInOut.hpp"
 #include "Indices.hpp"
 #include "LockFree.hpp"
@@ -184,11 +184,19 @@ void FluxRecorder::includeSpectralTimeMap()
 
 void FluxRecorder::finalizeConfiguration()
 {
-    // get a pointer to the medium system, if present
-    _ms = _parentItem->interface<ExtinctionInterface>(2, 1, false);
-
     // get array lengths
     _numWavelengths = _lambdagrid->numBins();
+
+    // determine the type of the wavelength grid and the overall wavelength range covered by its bins;
+    // the bins of a grid that is not disjoint may overlap and are not necessarily ordered by wavelength
+    _disjointWavelengthGrid = dynamic_cast<const DisjointWavelengthGrid*>(_lambdagrid) != nullptr;
+    _minWavelength = std::numeric_limits<double>::infinity();
+    _maxWavelength = 0.;
+    for (int ell = 0; ell != _numWavelengths; ++ell)
+    {
+        _minWavelength = min(_minWavelength, _lambdagrid->leftBorder(ell));
+        _maxWavelength = max(_maxWavelength, _lambdagrid->rightBorder(ell));
+    }
     _numPixelsInFrame = _numPixelsX * _numPixelsY;  // convert to size_t before calculating lenIFU
     size_t lenSED = _includeFluxDensity ? _numWavelengths : 0;
     size_t lenIFU = _includeSurfaceBrightness ? _numPixelsInFrame * _numWavelengths : 0;
@@ -307,14 +315,21 @@ void FluxRecorder::finalizeConfiguration()
 
 ////////////////////////////////////////////////////////////////////
 
-void FluxRecorder::detect(PhotonPacket* pp, int l, double distance)
+bool FluxRecorder::recordsWavelength(double lambda) const
+{
+    double wavelength = lambda * (1. + _redshift);
+    return wavelength >= _minWavelength && wavelength <= _maxWavelength;
+}
+
+////////////////////////////////////////////////////////////////////
+
+void FluxRecorder::detect(const PhotonPacket* pp, int l, double distance, double extinction)
 {
     // get the photon packet's redshifted wavelength
     double wavelength = pp->wavelength() * (1. + _redshift);
 
-    // get the wavelength bin indices that overlap the photon packet wavelength and perform recording for each
-    for (int ell : _lambdagrid->bins(wavelength))
-    {
+    // local function to perform recording for a given wavelength bin
+    auto recordForBin = [this, pp, l, distance, extinction, wavelength](int ell) {
         // get the luminosity contribution from the photon packet,
         // taking into account the transmission for the detector bin at this wavelength
         double L = pp->luminosity() * _lambdagrid->transmission(ell, wavelength);
@@ -323,24 +338,7 @@ void FluxRecorder::detect(PhotonPacket* pp, int l, double distance)
         if (_local) L /= distance * distance;
 
         // apply the extinction along the path to the recorder
-        double Lext = L;
-        if (_hasMedium)
-        {
-            // if this photon packet has already been launched towards an instrument with the same observer type,
-            // position and viewing direction, simply recover the stored optical depth from the photon packet;
-            // otherwise calculate the optical depth and store it in the photon packet for the next instrument
-            double tau;
-            if (pp->hasObservedOpticalDepth())
-            {
-                tau = pp->observedOpticalDepth();
-            }
-            else
-            {
-                tau = _ms->getExtinctionOpticalDepth(pp, distance);
-                pp->setObservedOpticalDepth(tau);
-            }
-            Lext *= exp(-tau);
-        }
+        double Lext = L * extinction;
 
         // local function to record the contribution in the flux detector arrays according to the configuration
         // params: vector of flux arrays; index in array, transparant luminosity, extincted luminosity,
@@ -470,6 +468,18 @@ void FluxRecorder::detect(PhotonPacket* pp, int l, double distance)
                 }
             }
         }
+    };
+
+    // perform recording for each wavelength bin that overlaps the photon packet wavelength;
+    // for a grid with nonoverlapping bins, avoid the overhead of constructing a list of bin indices
+    if (_disjointWavelengthGrid)
+    {
+        int ell = _lambdagrid->bin(wavelength);
+        if (ell >= 0) recordForBin(ell);
+    }
+    else
+    {
+        for (int ell : _lambdagrid->bins(wavelength)) recordForBin(ell);
     }
 }
 

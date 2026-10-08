@@ -37,10 +37,17 @@ protected:
 
     //======================== Other Functions =======================
 
-protected:
-    /** This function returns true if the position of the specified photon packet is inside the
-        configured radius, or if that radius is zero. Otherwise, it returns false. */
-    bool isInsideAperture(PhotonPacket* pp) const;
+public:
+    /** This function determines whether the instrument would detect a peel-off photon packet
+        launched towards it from the specified position. It returns a pixel index of zero if the
+        position projects inside the configured radius, or if that radius is zero, and a pixel
+        index of -1 otherwise. The distance is left at its default value of infinity. */
+    Detection locate(Position bfr) const override;
+
+private:
+    /** This function returns true if the specified position projects inside the configured
+        radius, or if that radius is zero. Otherwise, it returns false. */
+    bool isInsideAperture(Position bfr) const;
 
     //======================== Data Members ========================
 

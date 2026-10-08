@@ -24,14 +24,6 @@ class SEDInstrument : public ApertureInstrument
 protected:
     /** This function configures the FluxRecorder instance associated with this instrument. */
     void setupSelfBefore() override;
-
-    //======================== Other Functions =======================
-
-public:
-    /** This function simulates the detection of a photon packet by the instrument. It verifies
-        that the arriving photon packet projects within the aperture and then calls the detect()
-        function of the FluxRecorder instance associated with this instrument. */
-    void detect(PhotonPacket* pp) override;
 };
 
 ////////////////////////////////////////////////////////////////////

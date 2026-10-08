@@ -55,11 +55,9 @@ class VelocityInterface;
 
     The PhotonPacket class offers auxiliary facilities for caching "technical" information related
     to a photon packet's state during its lifecycle. This optional information is managed by the
-    clients invoking the corresponding store and retrieve functions. Examples include the observed
-    optical depth, used to avoid recalculating the optical depth for consecutive instruments with
-    the same viewing direction, and extra scattering information, used by some material mixes to
-    ensure that peel-off and random-walk operations for a given scattering interaction are treated
-    consistently. */
+    clients invoking the corresponding store and retrieve functions. Specifically, some material
+    mixes cache extra scattering information to ensure that peel-off and random-walk operations for
+    a given scattering interaction are treated consistently. */
 class PhotonPacket : public SpatialGridPath, public StokesVector
 {
     // ------- Construction, launch and lifecycle events -------
@@ -244,28 +242,6 @@ public:
         from its current weight and the specified perceived wavelength. */
     double perceivedLuminosity(double lambda) const { return _W / lambda; }
 
-    // ------- Caching observed optical depth -------
-
-public:
-    /** This function stores the most recently "observed" optical depth, calculated externally, in
-        a data member. This capability is offered so that consecutive instruments with the same
-        observer type, position and viewing direction can avoid recalculating the optical depth. */
-    void setObservedOpticalDepth(double tau)
-    {
-        _observedOpticalDepth = tau;
-        _hasObservedOpticalDepth = true;
-    }
-
-    /** This function returns true if an "observed" optical depth value has been stored and the
-        packet has not since been relaunched. Otherwise the function returns false. */
-    bool hasObservedOpticalDepth() const { return _hasObservedOpticalDepth; }
-
-    /** If hasObservedOpticalDepth() returns true, this function returns the most recently stored
-        "observed" optical depth. Otherwise, it returns some meaningless value. This capability is
-        offered so that consecutive instruments with the same observer type, position and viewing
-        direction can avoid recalculating the optical depth. */
-    double observedOpticalDepth() const { return _observedOpticalDepth; }
-
     // ------- Caching scattering info -------
 
 public:
@@ -359,10 +335,6 @@ private:
 
     // information on life cycle
     int _nscatt{0};  // number of experienced scattering events
-
-    // observed optical depth
-    double _observedOpticalDepth{0.};      // optical depth calculated for peel-off to an instrument
-    bool _hasObservedOpticalDepth{false};  // true if the above field holds a valid value for this packet
 
     // scattering information
     int _h{0};  // the index of the medium component currently participating in a scattering operation

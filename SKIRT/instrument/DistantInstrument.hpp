@@ -94,10 +94,11 @@ protected:
     //======================== Other Functions =======================
 
 public:
-    /** This function determines whether the specified instrument has the same observer type,
-        position and viewing direction as the receiving instrument, and if so, calls the
-        setSameObserverAsPreceding() function to remember the fact. */
-    void determineSameObserverAsPreceding(const Instrument* precedingInstrument) override;
+    /** This function returns true if the specified instrument is a distant instrument with the
+        same inclination and azimuth angles as the receiving instrument and, if any of the two
+        instruments records polarization, the same roll angle. The distances do not matter because
+        they affect only the calibration of the recorded fluxes. */
+    bool hasSameSightLine(const Instrument* other) const override;
 
     /** Returns the direction towards the observer, expressed in model coordinates. The provided
         photon packet's launching position is not used; it is considered to be very close to the
