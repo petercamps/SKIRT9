@@ -62,8 +62,8 @@ protected:
 public:
     /** This function simulates the detection of a photon packet by the instrument. It determines
         the projected position of the photon packet's last interaction site on the instrument frame
-        and then calls the detect() function of the FluxRecorder instance associated with this
-        instrument. */
+        and, if this position falls within the frame, calls the detect() function of the
+        FluxRecorder instance associated with this instrument. */
     void detect(PhotonPacket* pp) override;
 
 private:

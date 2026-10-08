@@ -272,7 +272,10 @@ public:
 
         The calling instrument is responsible for providing the index \em l of the pixel in the
         instrument frame where the photon packet arrives, because this depends on the projection
-        being used. In addition, the instrument can specify a \em distance from the photon packet's
+        being used. For an instrument that records surface brightness, the index must refer to a
+        pixel within the frame; the instrument should not call this function for a photon packet
+        arriving outside of the frame. For other instruments, the index is ignored. In addition,
+        the instrument can specify a \em distance from the photon packet's
         last interaction site to the instrument. For distant instruments with parallel projection,
         this distance should be left at its default value of infinity. For instruments that may be
         placed close by or inside the model, the actual distance should be specified so that the

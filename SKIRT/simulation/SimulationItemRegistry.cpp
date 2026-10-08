@@ -104,7 +104,6 @@
 #include "FlatUniverseCosmology.hpp"
 #include "FragmentDustMixDecorator.hpp"
 #include "FrameInstrument.hpp"
-#include "FullInstrument.hpp"
 #include "GammaGeometry.hpp"
 #include "GaussianGeometry.hpp"
 #include "GeometricMedium.hpp"
@@ -718,7 +717,6 @@ SimulationItemRegistry::SimulationItemRegistry(const string& version, const stri
     ItemRegistry::add<ApertureInstrument>();
     ItemRegistry::add<SEDInstrument>();
     ItemRegistry::add<FrameInstrument>();
-    ItemRegistry::add<FullInstrument>();
     ItemRegistry::add<AllSkyInstrument>();
     ItemRegistry::add<HEALPixSkyInstrument>();
     ItemRegistry::add<PerspectiveInstrument>();

@@ -309,9 +309,6 @@ void FluxRecorder::finalizeConfiguration()
 
 void FluxRecorder::detect(PhotonPacket* pp, int l, double distance)
 {
-    // abort if we're not recording integrated fluxes and the photon packet arrives outside of the frame
-    if (!_includeFluxDensity && l < 0) return;
-
     // get the photon packet's redshifted wavelength
     double wavelength = pp->wavelength() * (1. + _redshift);
 
@@ -440,7 +437,7 @@ void FluxRecorder::detect(PhotonPacket* pp, int l, double distance)
         }
 
         // record in IFU arrays
-        if (_includeSurfaceBrightness && l >= 0)
+        if (_includeSurfaceBrightness)
         {
             size_t index = l + ell * _numPixelsInFrame;
             record(_ifu, index, L, Lext, false);

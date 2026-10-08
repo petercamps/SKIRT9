@@ -36,8 +36,8 @@ void FrameInstrument::setupSelfBefore()
 
 void FrameInstrument::detect(PhotonPacket* pp)
 {
-    int l = pixelOnDetector(pp);
-    instrumentFluxRecorder()->detect(pp, l);
+    // ignore photon packets arriving outside of the frame
+    if (int l = pixelOnDetector(pp); l >= 0) instrumentFluxRecorder()->detect(pp, l);
 }
 
 ////////////////////////////////////////////////////////////////////
