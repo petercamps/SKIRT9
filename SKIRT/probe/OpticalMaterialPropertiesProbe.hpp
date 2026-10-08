@@ -12,9 +12,9 @@
 
 /** OpticalMaterialPropertiesProbe outputs column text files listing the key optical properties for
     the media configured in the simulation, discretized on a specified wavelength grid or on the
-    default instrument wavelength grid. For each medium component, the probe retrieves a
-    representative material mix (the mix at the origin of the model coordinate system) and creates
-    a file with the key optical properties for that mix. The files are named
+    default wavelength grid of the WavelengthGridPool. For each medium component, the probe
+    retrieves a representative material mix (the mix at the origin of the model coordinate system)
+    and creates a file with the key optical properties for that mix. The files are named
     <tt>prefix_probe_opticalprops_N.dat</tt> where N is replaced with the zero-based index of the
     medium in the configuration (i.e. in the ski file).
 

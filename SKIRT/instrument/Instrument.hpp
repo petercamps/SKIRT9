@@ -40,9 +40,10 @@ class Instrument : public SimulationItem
         PROPERTY_STRING(instrumentName, "the name for this instrument")
 
         PROPERTY_ITEM(wavelengthGrid, WavelengthGrid, "the wavelength grid for this instrument")
+        ATTRIBUTE_DEFAULT_VALUE(wavelengthGrid, "!DefaultInstrumentWavelengthGrid:LogWavelengthGrid;")
         ATTRIBUTE_RELEVANT_IF(wavelengthGrid, "Panchromatic")
         ATTRIBUTE_REQUIRED_IF(wavelengthGrid, "!DefaultInstrumentWavelengthGrid")
-        ATTRIBUTE_DISPLAYED_IF(wavelengthGrid, "Level2")
+        ATTRIBUTE_DISPLAYED_IF(wavelengthGrid, "Level2|!DefaultInstrumentWavelengthGrid")
 
         ATTRIBUTE_SUB_PROPERTIES_HERE(Instrument)
 
@@ -70,9 +71,10 @@ class Instrument : public SimulationItem
 
 protected:
     /** This function performs setup for the instrument. It establishes the wavelength grid for the
-        instrument: if a grid is specified for the instrument, that grid is used. If not, the
-        default wavelength grid specified for the instrument system is used instead. If neither of
-        these grids are specified, the function throws a fatal error.
+        instrument: if a grid is specified for the instrument, that grid is used (or the referenced
+        grid in the case of a ReferenceWavelengthGrid). If not, the default wavelength grid of the
+        WavelengthGridPool is used instead. If neither of these grids are specified, the function
+        throws a fatal error.
 
         The function also creates and partially configures the FluxRecorder instance for this
         instrument, passing it the values of the user properties offered by this class and some
@@ -96,9 +98,10 @@ public:
     string itemName() const override;
 
     /** This function returns the wavelength grid for the instrument as determined during setup,
-        i.e. either the grid specified for this instrument or the default grid specified for the
-        instrument system. After setup has completed, the function never returns a nulltpr because
-        setupSelfBefore() throws a fatal error if neither of these grids are specified. */
+        i.e. either the grid specified for this instrument (or the grid it references) or the
+        default grid of the wavelength grid pool. After setup has completed, the function never
+        returns a nulltpr because setupSelfBefore() throws a fatal error if neither of these grids
+        are specified. */
     const WavelengthGrid* instrumentWavelengthGrid() const { return _instrumentWavelengthGrid; }
 
     /** This function flushes any information buffered by the detect() function. It simply calls

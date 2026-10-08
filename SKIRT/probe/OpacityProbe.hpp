@@ -20,7 +20,8 @@
     probe outputs optical depth, \f$\tau=\int_s k(s) \mathrm{d}s\f$.
 
     The resulting opacities are evaluated at the characteristic wavelengths of the provided 
-    wavelength grid. If none is provided, the default wavelength grid is used.
+    wavelength grid. If none is provided, the default wavelength grid of the WavelengthGridPool is
+    used.
 
     Because probing is performed without the context of a photon packet, default values are used
     for any relevant incoming photon packet properties. For example, the effects of kinematics are
@@ -59,7 +60,7 @@ class OpacityProbe : public SpatialGridWhenFormProbe, public MaterialWavelengthR
         PROPERTY_ITEM(wavelengthGrid, WavelengthGrid, "the wavelength grid for this probe")
         ATTRIBUTE_RELEVANT_IF(wavelengthGrid, "Panchromatic")
         ATTRIBUTE_REQUIRED_IF(wavelengthGrid, "!DefaultInstrumentWavelengthGrid")
-        ATTRIBUTE_DISPLAYED_IF(wavelengthGrid, "Level2")
+        ATTRIBUTE_DISPLAYED_IF(wavelengthGrid, "Level2|!DefaultInstrumentWavelengthGrid")
 
         PROPERTY_ENUM(aggregation, Aggregation, "how to aggregate the opacity")
         ATTRIBUTE_DEFAULT_VALUE(aggregation, "Type")

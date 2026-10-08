@@ -40,7 +40,7 @@ class ImportedSourceLuminosityProbe : public InputModelFormProbe, public Materia
         PROPERTY_ITEM(wavelengthGrid, WavelengthGrid, "the wavelength grid for this probe")
         ATTRIBUTE_RELEVANT_IF(wavelengthGrid, "Panchromatic")
         ATTRIBUTE_REQUIRED_IF(wavelengthGrid, "!DefaultInstrumentWavelengthGrid")
-        ATTRIBUTE_DISPLAYED_IF(wavelengthGrid, "Level2")
+        ATTRIBUTE_DISPLAYED_IF(wavelengthGrid, "Level2|!DefaultInstrumentWavelengthGrid")
 
         PROPERTY_BOOL(convolve, "average or convolve the specific luminosity over the wavelength bin")
         ATTRIBUTE_DEFAULT_VALUE(convolve, "false")

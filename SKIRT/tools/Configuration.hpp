@@ -139,15 +139,21 @@ public:
     virtual vector<double> simulationWavelengths() const = 0;
 
     /** Returns the wavelength grid to be used for an instrument or probe, given the wavelength
-        grid configured locally for the calling instrument or probe (which may the null pointer to
-        indicate that no local grid was configured). For oligochromatic simulations, the function
-        always returns a wavelength grid with disjoint bins centered around the discrete source
-        wavelengths used in the simulation. For panchromatic simulations, the function returns the
-        provided local wavelength grid if it is non-null, and otherwise it returns the default
-        instrument wavelength grid obtained from the instrument system. If both the provided local
-        wavelength grid and the default instrument wavelength grid are the null pointer, the
-        function throws a fatal error. */
-    WavelengthGrid* wavelengthGrid(WavelengthGrid* localWavelengthGrid) const;
+        grid configured locally for the calling instrument or probe (which may be the null pointer
+        to indicate that no local grid was configured). For oligochromatic simulations, the
+        function always returns a wavelength grid with disjoint bins centered around the discrete
+        source wavelengths used in the simulation. For panchromatic simulations, the function
+        returns the provided local wavelength grid if it is non-null, and otherwise it returns the
+        default wavelength grid of the wavelength grid pool. If both the provided local wavelength
+        grid and the default wavelength grid are the null pointer, the function throws a fatal
+        error.
+
+        If the selected grid is a reference to a grid in the wavelength grid pool, the function
+        returns the referenced grid rather than the reference, so that the caller can take
+        advantage of the specific type of that grid (e.g. a grid with disjoint bins). Because this
+        requires knowledge of the reference type, which is not available at this level, the
+        function is implemented by the ConfigurationSetup subclass. */
+    virtual WavelengthGrid* wavelengthGrid(WavelengthGrid* localWavelengthGrid) const = 0;
 
     /** For oligochromatic simulations, this function returns the wavelength bias distribution to
         be used by all primary sources. For panchromatic simulations, the function returns the null

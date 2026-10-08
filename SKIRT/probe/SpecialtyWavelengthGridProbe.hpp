@@ -22,7 +22,7 @@ class SpecialtyWavelengthGridProbe : public SpecialtyProbe, public MaterialWavel
         PROPERTY_ITEM(wavelengthGrid, WavelengthGrid, "the wavelength grid for this probe")
         ATTRIBUTE_RELEVANT_IF(wavelengthGrid, "Panchromatic")
         ATTRIBUTE_REQUIRED_IF(wavelengthGrid, "!DefaultInstrumentWavelengthGrid")
-        ATTRIBUTE_DISPLAYED_IF(wavelengthGrid, "Level2")
+        ATTRIBUTE_DISPLAYED_IF(wavelengthGrid, "Level2|!DefaultInstrumentWavelengthGrid")
 
     ITEM_END()
 

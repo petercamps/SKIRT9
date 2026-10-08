@@ -14,20 +14,23 @@
 #include "ProbeSystem.hpp"
 #include "Simulation.hpp"
 #include "SourceSystem.hpp"
+#include "WavelengthGridPool.hpp"
 class SecondarySourceSystem;
 
 //////////////////////////////////////////////////////////////////////
 
 /** The MonteCarloSimulation class is the top-level class describing a SKIRT simulation. It holds
-    the source, media, instrument and probe systems, implements the core aspects of the photon
-    packet life-cycle, and manages the iterative processes in the simulation (including phases,
-    iterations and segments). Running a Monte Carlo simulation with SKIRT essentially comes down to
-    constructing an instance of the MonteCarloSimulation class and invoking the setupAndRun()
-    function on it. The runSimulation() function performs all segments of the simulation, calling
-    functions such as runPrimaryEmission() and runSecondaryEmission() as required. These functions
-    in turn invoke the performLifeCycle() function to trace photon packets through their complete
-    life cycle, including emission, scattering events, peel-off towards the instruments, and
-    registration of the contribution to the radiation field in each spatial cell crossed.
+    the source, media, instrument and probe systems, and the pool of named wavelength grids for the
+    instruments and probes (see WavelengthGridPool). It also implements the core aspects of the
+    photon packet life-cycle, and manages the iterative processes in the simulation (including
+    phases, iterations and segments). Running a Monte Carlo simulation with SKIRT essentially comes
+    down to constructing an instance of the MonteCarloSimulation class and invoking the
+    setupAndRun() function on it. The runSimulation() function performs all segments of the
+    simulation, calling functions such as runPrimaryEmission() and runSecondaryEmission() as
+    required. These functions in turn invoke the performLifeCycle() function to trace photon
+    packets through their complete life cycle, including emission, scattering events, peel-off
+    towards the instruments, and registration of the contribution to the radiation field in each
+    spatial cell crossed.
 
     The MonteCarloSimulation class also holds the non-discoverable \em config property, which is
     automatically set to an instance of the Configuration class. The setup() function of the config
@@ -275,6 +278,12 @@ class MonteCarloSimulation : public Simulation
         PROPERTY_ITEM(mediumSystem, MediumSystem, "the medium system")
         ATTRIBUTE_DEFAULT_VALUE(mediumSystem, "!NoMedium:MediumSystem;")
         ATTRIBUTE_REQUIRED_IF(mediumSystem, "!NoMedium")
+
+        PROPERTY_ITEM(wavelengthGridPool, WavelengthGridPool, "the pool of named wavelength grids")
+        ATTRIBUTE_DEFAULT_VALUE(wavelengthGridPool, "WavelengthGridPool")
+        ATTRIBUTE_RELEVANT_IF(wavelengthGridPool, "Panchromatic")
+        ATTRIBUTE_REQUIRED_IF(wavelengthGridPool, "false")
+        ATTRIBUTE_DISPLAYED_IF(wavelengthGridPool, "Level2")
 
         PROPERTY_ITEM(instrumentSystem, InstrumentSystem, "the instrument system")
         ATTRIBUTE_DEFAULT_VALUE(instrumentSystem, "InstrumentSystem")

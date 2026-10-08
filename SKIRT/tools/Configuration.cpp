@@ -4,7 +4,6 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "Configuration.hpp"
-#include "FatalError.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -34,15 +33,6 @@ void Configuration::setEmulationMode()
     _hasSecondaryDynamicStateMedia = false;
     _hasPrimaryDynamicState = false;
     _hasSecondaryDynamicState = false;
-}
-
-////////////////////////////////////////////////////////////////////
-
-WavelengthGrid* Configuration::wavelengthGrid(WavelengthGrid* localWavelengthGrid) const
-{
-    auto result = localWavelengthGrid && !_oligochromatic ? localWavelengthGrid : _defaultWavelengthGrid;
-    if (!result) throw FATALERROR("Cannot find a wavelength grid for instrument or probe");
-    return result;
 }
 
 ////////////////////////////////////////////////////////////////////

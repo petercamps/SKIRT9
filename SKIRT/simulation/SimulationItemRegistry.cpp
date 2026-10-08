@@ -192,6 +192,7 @@
 #include "MollweideProjection.hpp"
 #include "MonteCarloSimulation.hpp"
 #include "MultiGaussianExpansionGeometry.hpp"
+#include "NamedWavelengthGrid.hpp"
 #include "NestedDensityTreePolicy.hpp"
 #include "NestedLogWavelengthGrid.hpp"
 #include "NetzerAngularDistribution.hpp"
@@ -230,6 +231,7 @@
 #include "ReadFits3DGeometry.hpp"
 #include "ReadFitsGeometry.hpp"
 #include "RedistributeGeometryDecorator.hpp"
+#include "ReferenceWavelengthGrid.hpp"
 #include "ResolutionBorderWavelengthGrid.hpp"
 #include "ResolutionWavelengthGrid.hpp"
 #include "RingGeometry.hpp"
@@ -304,6 +306,7 @@
 #include "VoronoiMeshMedium.hpp"
 #include "VoronoiMeshSource.hpp"
 #include "VoronoiMeshSpatialGrid.hpp"
+#include "WavelengthGridPool.hpp"
 #include "WeingartnerDraineDustMix.hpp"
 #include "XRayAtomicGasMix.hpp"
 #include "XRayIonicGasMix.hpp"
@@ -687,6 +690,7 @@ SimulationItemRegistry::SimulationItemRegistry(const string& version, const stri
 
     // wavelength grids
     ItemRegistry::add<WavelengthGrid>();
+    ItemRegistry::add<ReferenceWavelengthGrid>();
     ItemRegistry::add<DisjointWavelengthGrid>();
     ItemRegistry::add<LogWavelengthGrid>();
     ItemRegistry::add<NestedLogWavelengthGrid>();
@@ -703,6 +707,10 @@ SimulationItemRegistry::SimulationItemRegistry(const string& version, const stri
     ItemRegistry::add<BandWavelengthGrid>();
     ItemRegistry::add<PredefinedBandWavelengthGrid>();
     ItemRegistry::add<ConfigurableBandWavelengthGrid>();
+
+    // wavelength grid pool
+    ItemRegistry::add<WavelengthGridPool>();
+    ItemRegistry::add<NamedWavelengthGrid>();
 
     // time grids
     ItemRegistry::add<TimeGrid>();

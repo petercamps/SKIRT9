@@ -7,14 +7,13 @@
 #define INSTRUMENTSYSTEM_HPP
 
 #include "Instrument.hpp"
-#include "WavelengthGrid.hpp"
 
 //////////////////////////////////////////////////////////////////////
 
-/** An InstrumentSystem instance keeps a list of zero or more instruments and an optional default
-    wavelength grid that will be used by an instrument unless it specifies its own wavelength grid.
-    The instruments can be of various nature and do not need to be located at the same observing
-    position.
+/** An InstrumentSystem instance keeps a list of zero or more instruments. The instruments can be
+    of various nature and do not need to be located at the same observing position. An instrument
+    that does not specify its own wavelength grid uses the default wavelength grid of the
+    WavelengthGridPool.
 
     During setup, the instrument system arranges the instruments in groups with the same sight line
     (see Instrument::hasSameSightLine()), regardless of their order in the configuration. The
@@ -24,12 +23,6 @@
 class InstrumentSystem : public SimulationItem
 {
     ITEM_CONCRETE(InstrumentSystem, SimulationItem, "an instrument system")
-
-        PROPERTY_ITEM(defaultWavelengthGrid, WavelengthGrid, "the default instrument wavelength grid")
-        ATTRIBUTE_DEFAULT_VALUE(defaultWavelengthGrid, "LogWavelengthGrid")
-        ATTRIBUTE_RELEVANT_IF(defaultWavelengthGrid, "Panchromatic")
-        ATTRIBUTE_REQUIRED_IF(defaultWavelengthGrid, "!Level2")
-        ATTRIBUTE_INSERT(defaultWavelengthGrid, "defaultWavelengthGrid:DefaultInstrumentWavelengthGrid")
 
         PROPERTY_ITEM_LIST(instruments, Instrument, "the instruments")
         ATTRIBUTE_DEFAULT_VALUE(instruments, "SEDInstrument")

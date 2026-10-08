@@ -53,6 +53,11 @@ public:
     /** Returns a list of wavelengths that are explicitly or indirectly mentioned by the simulation
         configuration. See the base class for the full description. */
     vector<double> simulationWavelengths() const override;
+
+    /** Returns the wavelength grid to be used for an instrument or probe, given the wavelength
+        grid configured locally for the calling instrument or probe, resolving a reference to a
+        grid in the wavelength grid pool. See the base class for the full description. */
+    WavelengthGrid* wavelengthGrid(WavelengthGrid* localWavelengthGrid) const override;
 };
 
 ////////////////////////////////////////////////////////////////////

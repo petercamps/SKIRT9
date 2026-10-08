@@ -14,8 +14,10 @@
 #include "OligoWavelengthDistribution.hpp"
 #include "OligoWavelengthGrid.hpp"
 #include "ProbeSystem.hpp"
+#include "ReferenceWavelengthGrid.hpp"
 #include "StringUtils.hpp"
 #include "VoronoiMeshSpatialGrid.hpp"
+#include "WavelengthGridPool.hpp"
 #include <set>
 
 ////////////////////////////////////////////////////////////////////
@@ -64,7 +66,7 @@ void ConfigurationSetup::setupSelfBefore()
     else
     {
         _sourceWavelengthRange.set(ss->minWavelength(), ss->maxWavelength());
-        if (auto is = find<InstrumentSystem>(false)) _defaultWavelengthGrid = is->defaultWavelengthGrid();
+        if (auto pool = find<WavelengthGridPool>(false)) _defaultWavelengthGrid = pool->defaultGrid();
     }
 
     // determine source and (provisional) model dimension based on sources only
@@ -568,7 +570,7 @@ Range ConfigurationSetup::simulationWavelengthRange() const
         range.extend(Range(0.09e-6, 2000e-6));
     }
 
-    // include default instrument wavelength grid
+    // include default wavelength grid for instruments and probes
     if (_defaultWavelengthGrid) extendForWavelengthGrid(range, _defaultWavelengthGrid);
 
     // include instrument-specific wavelength grids
@@ -630,7 +632,7 @@ vector<double> ConfigurationSetup::simulationWavelengths() const
     if (_hasRadiationField) addForWavelengthGrid(wavelengths, _radiationFieldWLG);
     if (_dustEmissionWLG) addForWavelengthGrid(wavelengths, _dustEmissionWLG);
 
-    // include default instrument wavelength grid
+    // include default wavelength grid for instruments and probes
     if (_defaultWavelengthGrid) addForWavelengthGrid(wavelengths, _defaultWavelengthGrid);
 
     // include instrument-specific wavelength grids
@@ -645,6 +647,22 @@ vector<double> ConfigurationSetup::simulationWavelengths() const
     addForMaterialWavelengthRange(wavelengths, sim);
 
     return vector<double>(wavelengths.begin(), wavelengths.end());
+}
+
+////////////////////////////////////////////////////////////////////
+
+WavelengthGrid* ConfigurationSetup::wavelengthGrid(WavelengthGrid* localWavelengthGrid) const
+{
+    auto result = localWavelengthGrid && !_oligochromatic ? localWavelengthGrid : _defaultWavelengthGrid;
+    if (!result) throw FATALERROR("Cannot find a wavelength grid for instrument or probe");
+
+    // replace a reference to a pool grid by the referenced grid
+    if (auto reference = dynamic_cast<ReferenceWavelengthGrid*>(result))
+    {
+        reference->setup();
+        result = reference->referencedGrid();
+    }
+    return result;
 }
 
 ////////////////////////////////////////////////////////////////////
