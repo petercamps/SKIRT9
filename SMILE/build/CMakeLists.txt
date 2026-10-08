@@ -24,31 +24,18 @@ include("CompilerFlags.cmake")
 
 # ------------------------------------------------------------------
 
-# get the project-wide version string
-include("Version.cmake")
-
-# create the version.h header containing the version string
-configure_file("version_in.h" "${CMAKE_CURRENT_BINARY_DIR}/version.h")
-
-# ------------------------------------------------------------------
-
-# write a cmake script that writes the timestamp.h header containing a build timestamp and the git commit hash
+# write a cmake script that writes the timestamp.h header containing a build timestamp and the version information
+# derived from the git repository by the Version.cmake script, so that this information is current for each build
 set(TS_PATH "${PROJECT_BINARY_DIR}/timestamp.cmake")
 file(WRITE ${TS_PATH}  "string(TIMESTAMP BUILD_DATE \"%d/%m/%Y\")\n")
 file(APPEND ${TS_PATH} "string(TIMESTAMP BUILD_TIME \"%H:%M:%S\")\n")
-find_program(GIT_EXECUTABLE git)
-if (GIT_EXECUTABLE)
-  file(APPEND ${TS_PATH} "execute_process(COMMAND \"${GIT_EXECUTABLE}\" describe --dirty --always\n")
-  file(APPEND ${TS_PATH} "    WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\" OUTPUT_VARIABLE GIT_COMMIT_HASH\n")
-  file(APPEND ${TS_PATH} "    ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)\n")
-else()
-  file(APPEND ${TS_PATH} "set(GIT_COMMIT_HASH 0)\n")
-endif()
+file(APPEND ${TS_PATH} "include(\"${CMAKE_CURRENT_SOURCE_DIR}/Version.cmake\")\n")
 file(APPEND ${TS_PATH} "file(WRITE timestamp.h \"#ifndef TIMESTAMP_H\\n\")\n")
 file(APPEND ${TS_PATH} "file(APPEND timestamp.h \"#define TIMESTAMP_H\\n\")\n")
 file(APPEND ${TS_PATH} "file(APPEND timestamp.h \"#define BUILD_DATE \\\"\${BUILD_DATE}\\\"\\n\")\n")
 file(APPEND ${TS_PATH} "file(APPEND timestamp.h \"#define BUILD_TIME \\\"\${BUILD_TIME}\\\"\\n\")\n")
-file(APPEND ${TS_PATH} "file(APPEND timestamp.h \"#define COMMIT_HASH \\\"\${GIT_COMMIT_HASH}\\\"\\n\")\n")
+file(APPEND ${TS_PATH} "file(APPEND timestamp.h \"#define PROJECT_VERSION \\\"\${BUILDINFO_PROJECT_VERSION}\\\"\\n\")\n")
+file(APPEND ${TS_PATH} "file(APPEND timestamp.h \"#define CODE_VERSION \\\"\${BUILDINFO_CODE_VERSION}\\\"\\n\")\n")
 file(APPEND ${TS_PATH} "file(APPEND timestamp.h \"#endif\\n\")\n")
 
 # provide a custom target that will execute the above cmake script at build time

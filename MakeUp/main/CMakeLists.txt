@@ -51,15 +51,15 @@ include_directories(../../SMILE/wizard ../../SMILE/fundamentals ../../SMILE/buil
 # adjust C++ compiler flags to our needs
 include("../../SMILE/build/CompilerFlags.cmake")
 
-# get the project-wide version string
-include ("../../SMILE/build/Version.cmake")
+# get the version information derived from the git repository
+include("../../SMILE/build/Version.cmake")
 
 # configure the executable as a GUI application
 if (CMAKE_HOST_APPLE)
     set_target_properties(${TARGET} PROPERTIES
                                         MACOSX_BUNDLE true
                                         MACOSX_BUNDLE_INFO_STRING "MakeUp -- wizard for editing SMILE data sets"
-                                        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+                                        MACOSX_BUNDLE_SHORT_VERSION_STRING "${BUILDINFO_PROJECT_VERSION}"
                                         MACOSX_BUNDLE_COPYRIGHT "© Astronomical Observatory, Ghent University"
                                         MACOSX_BUNDLE_GUI_IDENTIFIER "be.ugent.observatory.make-up"
                                         MACOSX_BUNDLE_ICON_FILE "mirror.icns")

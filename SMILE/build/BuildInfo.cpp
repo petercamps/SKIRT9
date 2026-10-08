@@ -5,7 +5,6 @@
 
 #include "BuildInfo.hpp"
 #include "timestamp.h"
-#include "version.h"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -25,7 +24,7 @@ string BuildInfo::projectVersion()
 
 string BuildInfo::codeVersion()
 {
-    return "git " COMMIT_HASH;
+    return "git " CODE_VERSION;
 }
 
 ////////////////////////////////////////////////////////////////////
