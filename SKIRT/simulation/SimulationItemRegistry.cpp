@@ -573,7 +573,7 @@ SimulationItemRegistry::SimulationItemRegistry(const string& version, const stri
 
     // medium system options
     ItemRegistry::add<PhotonPacketOptions>();
-    ItemRegistry::add<LyaOptions>();
+    ItemRegistry::add<ResonanceOptions>();
     ItemRegistry::add<DynamicStateOptions>();
     ItemRegistry::add<RadiationFieldOptions>();
     ItemRegistry::add<SecondaryEmissionOptions>();

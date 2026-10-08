@@ -34,7 +34,7 @@
 class LyaNeutralHydrogenGasMix : public MaterialMix
 {
     ITEM_CONCRETE(LyaNeutralHydrogenGasMix, MaterialMix, "neutral hydrogen for Lyman-alpha line transfer")
-        ATTRIBUTE_TYPE_DISPLAYED_IF(LyaNeutralHydrogenGasMix, "Lya")
+        ATTRIBUTE_TYPE_DISPLAYED_IF(LyaNeutralHydrogenGasMix, "Resonance")
         ATTRIBUTE_TYPE_INSERT(LyaNeutralHydrogenGasMix, "GasMix")
 
         PROPERTY_DOUBLE(defaultTemperature, "the default temperature of the neutral hydrogen gas")

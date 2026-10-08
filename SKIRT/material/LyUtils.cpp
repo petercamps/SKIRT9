@@ -40,17 +40,17 @@ std::pair<Vec, double> LyUtils::sampleAtomVelocity(double lambda, double center,
     // select the critical value of the dimensionless frequency depending on the acceleration scheme;
     // leaving the value at zero is equivalent to no acceleration
     double xcrit = 0.;
-    switch (config->lyaAccelerationScheme())
+    switch (config->accelerationScheme())
     {
-        case Configuration::LyaAccelerationScheme::None: break;
-        case Configuration::LyaAccelerationScheme::Constant:
+        case Configuration::AccelerationScheme::None: break;
+        case Configuration::AccelerationScheme::Constant:
         {
-            xcrit = config->lyaAccelerationStrength() * 3.;
+            xcrit = config->accelerationStrength() * 3.;
             break;
         }
-        case Configuration::LyaAccelerationScheme::Variable:
+        case Configuration::AccelerationScheme::Variable:
         {
-            xcrit = config->lyaAccelerationStrength() * pow(nH / T, 1. / 6.);
+            xcrit = config->accelerationStrength() * pow(nH / T, 1. / 6.);
             break;
         }
     }

@@ -132,7 +132,7 @@ class PhotonPacket;
     simulations will usually include primary sources and possibly a dust medium. There is, however,
     no need to include secondary emission, so the simulation mode can be set to "ExtinctionOnly"
     and there is no need to store the radiation field. Only if the user option \em
-    resonantScattering is enabled does the simulation mode need to be set to "LyaExtinctionOnly".
+    resonantScattering is enabled does the simulation mode need to be set to "ResonanceExtinction".
     The resulting continuum spectrum and absorption and emission features can be recorded by a
     single instrument configured with a high-resolution wavelength grid, or separate instruments
     can be configured with wavelength grids to resolve specific features of interest.
@@ -446,7 +446,7 @@ class XRayIonicGasMix : public MaterialMix
         PROPERTY_BOOL(resonantScattering, "enable resonant line scattering for hydrogen- and helium-like ions")
         ATTRIBUTE_DEFAULT_VALUE(resonantScattering, "false")
         ATTRIBUTE_DISPLAYED_IF(resonantScattering, "Level2")
-        ATTRIBUTE_RELEVANT_IF(resonantScattering, "simulationModeLyaExtinctionOnly")
+        ATTRIBUTE_RELEVANT_IF(resonantScattering, "simulationModeResonanceExtinction")
 
     ITEM_END()
 

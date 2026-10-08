@@ -3,28 +3,31 @@
 ////       © Astronomical Observatory, Ghent University         ////
 ///////////////////////////////////////////////////////////////// */
 
-#ifndef LYAOPTIONS_HPP
-#define LYAOPTIONS_HPP
+#ifndef RESONANCEOPTIONS_HPP
+#define RESONANCEOPTIONS_HPP
 
 #include "SimulationItem.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
-/** The LyaOptions class simply offers a number of configuration options related to the treatment
-    of Lyman-alpha line transfer, if this is enabled in the simulation. */
-class LyaOptions : public SimulationItem
+/** The ResonanceOptions class simply offers a number of configuration options related to the
+    treatment of resonant line scattering, if this is enabled in the simulation. The options apply
+    to all material mixes that support resonant line scattering, such as the
+    LyaNeutralHydrogenGasMix class for the hydrogen Lyman-alpha line and the XRayIonicGasMix class
+    for the resonance lines of hydrogen- and helium-like ions. */
+class ResonanceOptions : public SimulationItem
 {
-    /** The enumeration type indicating the supported Lyman-alpha acceleration schemes.
+    /** The enumeration type indicating the supported resonant line scattering acceleration schemes.
 
-        In a high-optical-depth medium, the number of scatterings for photon packets near the
-        Lyman-alpha line is so high, and the corresponding free path lengths so short, that the
-        Monte Carlo photon cycle becomes prohibitively slow. The core-skipping acceleration
-        mechanism, first introduced by Ahn et al. 2002 (ApJ, 567:922-930) and used by many authors
-        since, forces the wavelength of some photon packets from the core of the Lyman-alpha line
-        into the wings of the line. This dramatically reduces the scattering cross section,
-        allowing the photon packet to escape. More specifically, all photon packets with a
-        dimensionless frequency \f$x\f$ smaller than a given critical value \f$x_\mathrm{crit}\f$
-        are treated this way.
+        In a high-optical-depth medium, the number of scatterings for photon packets near a
+        resonance line such as Lyman-alpha is so high, and the corresponding free path lengths so
+        short, that the Monte Carlo photon cycle becomes prohibitively slow. The core-skipping
+        acceleration mechanism, first introduced for Lyman-alpha by Ahn et al. 2002 (ApJ,
+        567:922-930) and used by many authors since, forces the wavelength of some photon packets
+        from the core of the line into the wings of the line. This dramatically reduces the
+        scattering cross section, allowing the photon packet to escape. More specifically, all
+        photon packets with a dimensionless frequency \f$x\f$ smaller than a given critical value
+        \f$x_\mathrm{crit}\f$ are treated this way.
 
         SKIRT implements three variations of the core-skipping acceleration scheme:
 
@@ -41,11 +44,12 @@ class LyaOptions : public SimulationItem
         - \em Variable: acceleration with a variable critical value that depends on the local gas
         temperature and density. Specifically, the critical value is determined as \f[
         x_\mathrm{crit} = s\, \left( \frac{n_\mathrm{H}}{T} \right)^{1/6}, \f] where \f$s\f$ is the
-        acceleration strength configured by the user and \f$n_\mathrm{H}\f$ is the neutral hydrogen
-        number density (in \f$\mathrm{m}^{-3}\f$) and \f$T\f$ the gas temperature (in K) in the
-        spatial cell hosting the scattering event. The rationale behind this formula is discussed
-        below. This variable mechanism is applicable for most models, and is preferred for models
-        with a broad dynamic range in optical depths.
+        acceleration strength configured by the user, \f$n_\mathrm{H}\f$ is the number density (in
+        \f$\mathrm{m}^{-3}\f$) of the medium component causing the scattering event (for
+        Lyman-alpha, the neutral hydrogen number density), and \f$T\f$ is the gas temperature (in K)
+        in the spatial cell hosting the scattering event. The rationale behind this formula is
+        discussed below. This variable mechanism is applicable for most models, and is preferred
+        for models with a broad dynamic range in optical depths.
 
         For both the constant and variable schemes, the user can configure the acceleration
         strength \f$s\f$, with a default value of unity. Larger values will decrease run time and
@@ -72,24 +76,24 @@ class LyaOptions : public SimulationItem
         \propto (n_\mathrm{H}/T)^{1/6}\f$. With the gas properties expressed in SI units,
         experiments with benchmark models show that a proportionality factor of order unity is
         appropriate. */
-    ENUM_DEF(LyaAccelerationScheme, None, Constant, Variable)
-        ENUM_VAL(LyaAccelerationScheme, None, "no acceleration")
-        ENUM_VAL(LyaAccelerationScheme, Constant, "acceleration scheme with a constant critical value")
-        ENUM_VAL(LyaAccelerationScheme, Variable, "acceleration scheme depending on local gas temperature and density")
+    ENUM_DEF(AccelerationScheme, None, Constant, Variable)
+        ENUM_VAL(AccelerationScheme, None, "no acceleration")
+        ENUM_VAL(AccelerationScheme, Constant, "acceleration scheme with a constant critical value")
+        ENUM_VAL(AccelerationScheme, Variable, "acceleration scheme depending on local gas temperature and density")
     ENUM_END()
 
-    ITEM_CONCRETE(LyaOptions, SimulationItem, "a set of options related to Lyman-alpha line transfer")
+    ITEM_CONCRETE(ResonanceOptions, SimulationItem, "a set of options related to resonant line scattering")
 
-        PROPERTY_ENUM(lyaAccelerationScheme, LyaAccelerationScheme, "the Lyman-alpha line transfer acceleration scheme")
-        ATTRIBUTE_DEFAULT_VALUE(lyaAccelerationScheme, "Variable")
-        ATTRIBUTE_DISPLAYED_IF(lyaAccelerationScheme, "Level2")
+        PROPERTY_ENUM(accelerationScheme, AccelerationScheme, "the resonant line scattering acceleration scheme")
+        ATTRIBUTE_DEFAULT_VALUE(accelerationScheme, "Variable")
+        ATTRIBUTE_DISPLAYED_IF(accelerationScheme, "Level2")
 
-        PROPERTY_DOUBLE(lyaAccelerationStrength, "the acceleration strength; higher is faster but less accurate")
-        ATTRIBUTE_MIN_VALUE(lyaAccelerationStrength, "]0")
-        ATTRIBUTE_MAX_VALUE(lyaAccelerationStrength, "10]")
-        ATTRIBUTE_DEFAULT_VALUE(lyaAccelerationStrength, "1")
-        ATTRIBUTE_RELEVANT_IF(lyaAccelerationStrength, "lyaAccelerationSchemeConstant|lyaAccelerationSchemeVariable")
-        ATTRIBUTE_DISPLAYED_IF(lyaAccelerationStrength, "Level2")
+        PROPERTY_DOUBLE(accelerationStrength, "the acceleration strength; higher is faster but less accurate")
+        ATTRIBUTE_MIN_VALUE(accelerationStrength, "]0")
+        ATTRIBUTE_MAX_VALUE(accelerationStrength, "10]")
+        ATTRIBUTE_DEFAULT_VALUE(accelerationStrength, "1")
+        ATTRIBUTE_RELEVANT_IF(accelerationStrength, "accelerationSchemeConstant|accelerationSchemeVariable")
+        ATTRIBUTE_DISPLAYED_IF(accelerationStrength, "Level2")
 
         PROPERTY_BOOL(includeHubbleFlow, "include the Doppler shift caused by the expansion of the universe")
         ATTRIBUTE_DEFAULT_VALUE(includeHubbleFlow, "false")

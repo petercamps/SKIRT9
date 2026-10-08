@@ -37,7 +37,7 @@
 class LyaDoublePeakedSED : public ContSED
 {
     ITEM_CONCRETE(LyaDoublePeakedSED, ContSED, "a double-peaked spectrum around the central Lyman-alpha wavelength")
-        ATTRIBUTE_TYPE_DISPLAYED_IF(LyaDoublePeakedSED, "Lya|Level3")
+        ATTRIBUTE_TYPE_DISPLAYED_IF(LyaDoublePeakedSED, "Resonance|Level3")
 
         PROPERTY_DOUBLE(scale, "the velocity scale")
         ATTRIBUTE_QUANTITY(scale, "velocity")

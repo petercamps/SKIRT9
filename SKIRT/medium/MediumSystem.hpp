@@ -10,12 +10,12 @@
 #include "DustEmissionOptions.hpp"
 #include "DynamicStateOptions.hpp"
 #include "IterationOptions.hpp"
-#include "LyaOptions.hpp"
 #include "MaterialMix.hpp"
 #include "Medium.hpp"
 #include "MediumState.hpp"
 #include "PhotonPacketOptions.hpp"
 #include "RadiationFieldOptions.hpp"
+#include "ResonanceOptions.hpp"
 #include "SamplingOptions.hpp"
 #include "SecondaryEmissionOptions.hpp"
 #include "SimulationItem.hpp"
@@ -106,9 +106,9 @@ class MediumSystem : public SimulationItem
         ATTRIBUTE_DEFAULT_VALUE(photonPacketOptions, "PhotonPacketOptions")
         ATTRIBUTE_RELEVANT_IF(media, "!NoMedium")
 
-        PROPERTY_ITEM(lyaOptions, LyaOptions, "the Lyman-alpha line transfer options")
-        ATTRIBUTE_DEFAULT_VALUE(lyaOptions, "LyaOptions")
-        ATTRIBUTE_RELEVANT_IF(lyaOptions, "Lya")
+        PROPERTY_ITEM(resonanceOptions, ResonanceOptions, "the resonant line scattering options")
+        ATTRIBUTE_DEFAULT_VALUE(resonanceOptions, "ResonanceOptions")
+        ATTRIBUTE_RELEVANT_IF(resonanceOptions, "Resonance")
 
         PROPERTY_ITEM(dynamicStateOptions, DynamicStateOptions, "the dynamic medium state options")
         ATTRIBUTE_DEFAULT_VALUE(dynamicStateOptions, "DynamicStateOptions")

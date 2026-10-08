@@ -108,25 +108,26 @@ void ConfigurationSetup::setupSelfBefore()
     for (auto medium : ms->media())
         if (medium->mix()->hasNegativeExtinction()) _hasNegativeExtinction = true;
 
-    // retrieve Lyman-alpha options
-    if (simulationMode == SimulationMode::LyaExtinctionOnly)
+    // retrieve resonant line scattering options
+    if (simulationMode == SimulationMode::ResonanceExtinction)
     {
-        _hasLymanAlpha = true;
-        switch (ms->lyaOptions()->lyaAccelerationScheme())
+        _hasResonantScattering = true;
+        switch (ms->resonanceOptions()->accelerationScheme())
         {
-            case LyaOptions::LyaAccelerationScheme::None:
-                _lyaAccelerationScheme = Configuration::LyaAccelerationScheme::None;
+            case ResonanceOptions::AccelerationScheme::None:
+                _accelerationScheme = Configuration::AccelerationScheme::None;
                 break;
-            case LyaOptions::LyaAccelerationScheme::Constant:
-                _lyaAccelerationScheme = Configuration::LyaAccelerationScheme::Constant;
-                _lyaAccelerationStrength = ms->lyaOptions()->lyaAccelerationStrength();
+            case ResonanceOptions::AccelerationScheme::Constant:
+                _accelerationScheme = Configuration::AccelerationScheme::Constant;
+                _accelerationStrength = ms->resonanceOptions()->accelerationStrength();
                 break;
-            case LyaOptions::LyaAccelerationScheme::Variable:
-                _lyaAccelerationScheme = Configuration::LyaAccelerationScheme::Variable;
-                _lyaAccelerationStrength = ms->lyaOptions()->lyaAccelerationStrength();
+            case ResonanceOptions::AccelerationScheme::Variable:
+                _accelerationScheme = Configuration::AccelerationScheme::Variable;
+                _accelerationStrength = ms->resonanceOptions()->accelerationStrength();
                 break;
         }
-        if (ms->lyaOptions()->includeHubbleFlow()) _hubbleExpansionRate = sim->cosmology()->relativeExpansionRate();
+        if (ms->resonanceOptions()->includeHubbleFlow())
+            _hubbleExpansionRate = sim->cosmology()->relativeExpansionRate();
     }
 
     // retrieve the presence of phases and iterations
@@ -287,14 +288,15 @@ void ConfigurationSetup::setupSelfBefore()
         throw FATALERROR("The grid symmetry (" + std::to_string(_gridDimension)
                          + "D) does not support the model symmetry (" + std::to_string(_modelDimension) + "D)");
 
-    // verify that there is a Lya medium component if required, and none if not required
-    int numLyaMedia = 0;
+    // verify that there is a medium component with resonant line scattering if required, and none if not required
+    int numResonantMedia = 0;
     for (auto medium : ms->media())
-        if (medium->mix()->hasResonantScattering()) numLyaMedia++;
-    if (_hasLymanAlpha && numLyaMedia < 1)
-        throw FATALERROR("Lyman-alpha simulation mode requires a medium component with Lyman-alpha material mix");
-    if (!_hasLymanAlpha && numLyaMedia > 0)
-        throw FATALERROR("Lyman-alpha material mix is allowed only with Lyman-alpha simulation mode");
+        if (medium->mix()->hasResonantScattering()) numResonantMedia++;
+    if (_hasResonantScattering && numResonantMedia < 1)
+        throw FATALERROR(
+            "Simulation mode ResonanceExtinction requires a medium component with resonant line scattering");
+    if (!_hasResonantScattering && numResonantMedia > 0)
+        throw FATALERROR("Resonant line scattering by a medium component requires simulation mode ResonanceExtinction");
 
     // determine whether media must support the generatePosition() function
     // currently, that function is called only by the VoronoiMeshSpatialGrid class for certain policies
@@ -390,7 +392,7 @@ void ConfigurationSetup::setupSelfAfter()
     log->info("  " + regime + "chromatic wavelength regime");
     string medium = _hasMedium ? "With" : "No";
     log->info("  " + medium + " transfer medium");
-    if (_hasLymanAlpha) log->info("  Including Lyman-alpha line transfer");
+    if (_hasResonantScattering) log->info("  Including resonant line scattering");
 
     if (_hasStochasticDustEmission)
         log->info("  Including dust emission with stochastic heating");

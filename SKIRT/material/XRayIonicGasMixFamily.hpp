@@ -50,7 +50,7 @@ class XRayIonicGasMixFamily : public MaterialMixFamily
         PROPERTY_BOOL(resonantScattering, "enable resonant line scattering for hydrogen- and helium-like ions")
         ATTRIBUTE_DEFAULT_VALUE(resonantScattering, "false")
         ATTRIBUTE_DISPLAYED_IF(resonantScattering, "Level2")
-        ATTRIBUTE_RELEVANT_IF(resonantScattering, "Lya")
+        ATTRIBUTE_RELEVANT_IF(resonantScattering, "Resonance")
 
     ITEM_END()
 

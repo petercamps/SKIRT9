@@ -23,7 +23,7 @@
 
     - With or without forced scattering. Forced scattering tends to reduce noise for simulations
     with low to limited optical depths, such as for most dust models on galaxy-wide scales.
-    Therefore, forced scattering is the default behavior except when Lyman-alpha line transfer is
+    Therefore, forced scattering is the default behavior except when resonant line scattering is
     included, because the extra peel-offs for the many resonant scattering events tend to slow down
     the simulation. Furthermore, the implementation without forced scattering currently does \em
     not support storing the radiation field, which means it cannot be used when the simulation
@@ -61,7 +61,7 @@ class PhotonPacketOptions : public SimulationItem
         ATTRIBUTE_DISPLAYED_IF(explicitAbsorption, "Level3")
 
         PROPERTY_BOOL(forceScattering, "use forced scattering to reduce noise")
-        ATTRIBUTE_DEFAULT_VALUE(forceScattering, "Lya:false;true")
+        ATTRIBUTE_DEFAULT_VALUE(forceScattering, "Resonance:false;true")
         ATTRIBUTE_RELEVANT_IF(forceScattering, "!(Emission|IteratePrimary)")
         ATTRIBUTE_DISPLAYED_IF(forceScattering, "Level3")
         ATTRIBUTE_INSERT(forceScattering, "Emission|IteratePrimary|forceScattering:ForceScattering")
@@ -83,8 +83,8 @@ class PhotonPacketOptions : public SimulationItem
         PROPERTY_DOUBLE(pathLengthBias, "the fraction of path lengths sampled from a stretched distribution")
         ATTRIBUTE_MIN_VALUE(pathLengthBias, "[0")
         ATTRIBUTE_MAX_VALUE(pathLengthBias, "1]")
-        ATTRIBUTE_DEFAULT_VALUE(pathLengthBias, "(ForceScattering)&(!Lya):0.5;0")
-        ATTRIBUTE_RELEVANT_IF(pathLengthBias, "(ForceScattering)&(!Lya)")
+        ATTRIBUTE_DEFAULT_VALUE(pathLengthBias, "(ForceScattering)&(!Resonance):0.5;0")
+        ATTRIBUTE_RELEVANT_IF(pathLengthBias, "(ForceScattering)&(!Resonance)")
         ATTRIBUTE_DISPLAYED_IF(pathLengthBias, "Level3")
 
     ITEM_END()

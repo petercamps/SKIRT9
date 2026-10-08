@@ -145,7 +145,7 @@ class SecondarySourceSystem;
     |-|-----------------|--------------|
     | 1 | \c OligoNoMedium | \f$\mathbf{P}^p\f$ |
     | 2 | \c OligoExtinctionOnly | \f$\mathbf{P}^p_{(r)}\f$ |
-    | 3 | \c LyaExtinctionOnly | \f$\mathbf{P}^p_{(r)}\f$ |
+    | 3 | \c ResonanceExtinction | \f$\mathbf{P}^p_{(r)}\f$ |
     | 4 | \c NoMedium | \f$\mathbf{P}^p\f$ |
     | 5 | \c ExtinctionOnly | \f$\mathbf{P}^p_{(r)}\f$ |
     | 6 | ... + \em iteratePrimaryEmission | \f$\overleftarrow{\mathbf{P}_{rs}} \;\rightarrow\; \mathbf{P}^p_{(r)}\f$ |
@@ -181,8 +181,8 @@ class SecondarySourceSystem;
     path up to the model boundary, regardless of the location of the scattering event along the
     path.
 
-    - Without forced scattering. In models with very intensive scattering, such as for Lyman-alpha
-    line transfer, the photon cycle without forced scattering is often the better choice, because
+    - Without forced scattering. In models with very intensive scattering, such as for resonant
+    line scattering, the photon cycle without forced scattering is often the better choice, because
     it avoids calculating the path geometry and optical depth beyond the scattering location.
     However, our implementation does not support storing the radiation field, which means this
     option cannot be used when the simulation includes secondary emission or dynamic state
@@ -218,14 +218,15 @@ class MonteCarloSimulation : public Simulation
         of the simulation and its capabilities. The choice made for the simulation mode has a
         significant impact on which options are allowed or required in the simulation's
         configuration. See the class header for more information. */
-    ENUM_DEF(SimulationMode, OligoNoMedium, OligoExtinctionOnly, NoMedium, ExtinctionOnly, LyaExtinctionOnly,
+    ENUM_DEF(SimulationMode, OligoNoMedium, OligoExtinctionOnly, NoMedium, ExtinctionOnly, ResonanceExtinction,
              DustEmission, GasEmission, DustAndGasEmission)
         ENUM_VAL(SimulationMode, OligoNoMedium, "No medium - oligochromatic regime (a few discrete wavelengths)")
         ENUM_VAL(SimulationMode, OligoExtinctionOnly,
                  "Extinction only - oligochromatic regime (a few discrete wavelengths)")
         ENUM_VAL(SimulationMode, NoMedium, "No medium (primary sources only)")
         ENUM_VAL(SimulationMode, ExtinctionOnly, "Extinction only (no secondary emission)")
-        ENUM_VAL(SimulationMode, LyaExtinctionOnly, "Extinction only with Lyman-alpha line transfer")
+        ENUM_VAL(SimulationMode, ResonanceExtinction,
+                 "Extinction only with resonant line scattering (e.g. Lyman-alpha)")
         ENUM_VAL(SimulationMode, DustEmission, "With secondary emission from dust")
         ENUM_VAL(SimulationMode, GasEmission, "With secondary emission from gas")
         ENUM_VAL(SimulationMode, DustAndGasEmission, "With secondary emission from dust and gas")
@@ -241,7 +242,7 @@ class MonteCarloSimulation : public Simulation
             "simulationModeOligoExtinctionOnly:Oligochromatic,ExtinctionOnly;"
             "simulationModeNoMedium:Panchromatic,NoMedium;"
             "simulationModeExtinctionOnly:Panchromatic,ExtinctionOnly;"
-            "simulationModeLyaExtinctionOnly:Lya,Panchromatic,ExtinctionOnly;"
+            "simulationModeResonanceExtinction:Resonance,Panchromatic,ExtinctionOnly;"
             "simulationModeDustEmission:Panchromatic,DustEmission,Emission,RadiationField;"
             "simulationModeGasEmission:Panchromatic,GasEmission,Emission,RadiationField;"
             "simulationModeDustAndGasEmission:Panchromatic,DustEmission,GasEmission,Emission,RadiationField")

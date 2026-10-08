@@ -372,22 +372,22 @@ public:
         distribution. */
     double pathLengthBias() const { return _pathLengthBias; }
 
-    /** This enumeration lists the supported Lyman-alpha acceleration schemes. */
-    enum class LyaAccelerationScheme { None, Constant, Variable };
+    /** This enumeration lists the supported resonant line scattering acceleration schemes. */
+    enum class AccelerationScheme { None, Constant, Variable };
 
-    /** Returns the enumeration value determining the acceleration scheme to be used for
-        Lyman-alpha line scattering. The value is relevant only if Lyman-alpha line treatment is
-        enabled in the simulation. */
-    LyaAccelerationScheme lyaAccelerationScheme() const { return _lyaAccelerationScheme; }
+    /** Returns the enumeration value determining the acceleration scheme to be used for resonant
+        line scattering. The value is relevant only if resonant line scattering is enabled in the
+        simulation. */
+    AccelerationScheme accelerationScheme() const { return _accelerationScheme; }
 
-    /** Returns the strength of the Lyman-alpha acceleration scheme to be applied. The value is
-        relevant only if Lyman-alpha line treatment is enabled in the simulation and
-        lyaAccelerationScheme() returns \c Constant or \c Variable. */
-    double lyaAccelerationStrength() const { return _lyaAccelerationStrength; }
+    /** Returns the strength of the resonant line scattering acceleration scheme to be applied. The
+        value is relevant only if resonant line scattering is enabled in the simulation and
+        accelerationScheme() returns \c Constant or \c Variable. */
+    double accelerationStrength() const { return _accelerationStrength; }
 
     /** If inclusion of the Hubble flow is enabled, this function returns the relative expansion
         rate of the universe in which the model resides. If inclusion of the Hubble flow is
-        disabled, or if the simulation does not include Lyman-alpha treatment, this function
+        disabled, or if the simulation does not include resonant line scattering, this function
         returns zero. */
     double hubbleExpansionRate() const { return _hubbleExpansionRate; }
 
@@ -538,9 +538,9 @@ protected:
     double _minWeightReduction{1e4};
     int _minScattEvents{0};
     double _pathLengthBias{0.5};
-    bool _hasLymanAlpha{false};
-    LyaAccelerationScheme _lyaAccelerationScheme{LyaAccelerationScheme::Variable};
-    double _lyaAccelerationStrength{1.};
+    bool _hasResonantScattering{false};
+    AccelerationScheme _accelerationScheme{AccelerationScheme::Variable};
+    double _accelerationStrength{1.};
     double _hubbleExpansionRate{0.};
 
     // radiation field

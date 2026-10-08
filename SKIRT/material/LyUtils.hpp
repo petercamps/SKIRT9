@@ -118,15 +118,14 @@ namespace LyUtils
         The \em lambda argument specifies the photon packet wavelength as it is perceived in the
         local gas frame. The \em T and \em nH arguments specify the gas temperature and the number
         density of the scattering species in the current spatial cell; together with the globally
-        configured acceleration scheme (exposed as Configuration::lyaAccelerationScheme() and
-        Configuration::lyaAccelerationStrength(), named for its original Lyman-alpha context but
-        applied here regardless of which transition is being sampled), these optionally bias the
-        sampled velocity towards the line wings so as to reduce the number of scattering events
-        needed to escape a very optically thick medium. Note that \em T and \em vth both relate to
-        the same physical temperature but are independent arguments because they enter the
-        calculation differently: \em vth (specific to the scattering ion's mass) sets the width of
-        the dimensionless frequency scale, while \em T enters the acceleration scheme's own scaling
-        relation directly.
+        configured acceleration scheme (exposed as Configuration::accelerationScheme() and
+        Configuration::accelerationStrength(), and applied regardless of which transition is being
+        sampled), these optionally bias the sampled velocity towards the line wings so as to reduce
+        the number of scattering events needed to escape a very optically thick medium. Note that
+        \em T and \em vth both relate to the same physical temperature but are independent
+        arguments because they enter the calculation differently: \em vth (specific to the
+        scattering ion's mass) sets the width of the dimensionless frequency scale, while \em T
+        enters the acceleration scheme's own scaling relation directly.
 
         The function proceeds as follows:
 
