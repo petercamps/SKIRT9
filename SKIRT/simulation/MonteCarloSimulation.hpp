@@ -497,8 +497,10 @@ private:
         of the first instrument in the target group.
 
         The first argument specifies the photon packet that was just emitted; the second argument
-        provides a placeholder peel off photon packet for use by the function. */
-    void peelOffEmission(const PhotonPacket* pp, PhotonPacket* ppp);
+        provides a placeholder peel off photon packet for use by the function; and the third
+        argument provides scratch space for the detection information of the instruments in a
+        group, with at least as many elements as there are instruments. */
+    void peelOffEmission(const PhotonPacket* pp, PhotonPacket* ppp, vector<Instrument::Detection>& detections);
 
     /** This function stores the contribution of the specified photon packet to the radiation field
         in the cells crossed by the packet's path. The function assumes that both the geometric and
@@ -659,10 +661,9 @@ private:
         InstrumentSystem::sightLineGroups()), which are forced to propagate in the direction of the
         observer instead of in the propagation direction determined randomly by the scattering
         process. Each peel-off photon packet is subsequently fed into the instruments of its target
-        group for detection (see detectPeelOff()). In contrast to peelOffEmission(), this function
-        does not skip groups based on the instrument geometry, because creating a scattering
-        peel-off photon packet may consume random numbers for some material mixes, and skipping it
-        would thus alter the random number sequence.
+        group for detection (see detectPeelOff()). Because the instrument geometry depends only on
+        the scattering position, a group is skipped if none of its instruments would detect the
+        photon packet, avoiding the calculation of the peel-off photon packet.
 
         If the rest-frame scattering event may change the wavelength of the photon packet (i.e.
         other than because of the bulk velocity of the medium), it is necessary to send a separate
@@ -682,16 +683,20 @@ private:
 
         The first argument to this function specifies the photon packet that is about to be
         scattered; the second argument provides a placeholder peel off photon packet for use by the
-        function. */
-    void peelOffScattering(PhotonPacket* pp, PhotonPacket* ppp);
+        function; and the third argument provides scratch space for the detection information of
+        the instruments in a group, with at least as many elements as there are instruments. */
+    void peelOffScattering(PhotonPacket* pp, PhotonPacket* ppp, vector<Instrument::Detection>& detections);
 
     /** This function has the specified peel-off photon packet detected by the instruments in the
-        specified group, which all have the same sight line. For each instrument, the function
-        verifies that the instrument records the photon packet's wavelength and determines the
-        pixel hit by the photon packet, if any. Only if at least one instrument in the group
-        actually detects the photon packet, the function calculates the extinction factor along
-        the sight line, which is then shared by all instruments in the group. */
-    void detectPeelOff(const vector<Instrument*>& group, const PhotonPacket* ppp);
+        specified group, which all have the same sight line, given the detection information
+        determined for each of these instruments, in the same order, by the Instrument::locate()
+        function. For each instrument that detects the photon packet's launch position, the
+        function verifies that the instrument also records the photon packet's wavelength. Only if
+        at least one instrument in the group actually detects the photon packet, the function
+        calculates the extinction factor along the sight line, which is then shared by all
+        instruments in the group. */
+    void detectPeelOff(const vector<Instrument*>& group, const vector<Instrument::Detection>& detections,
+                       const PhotonPacket* ppp);
 
     //======================== Data Members ========================
 
