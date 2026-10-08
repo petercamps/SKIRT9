@@ -7,6 +7,7 @@
 #define FLUXRECORDER_HPP
 
 #include "Array.hpp"
+#include "Range.hpp"
 #include "ThreadLocalMember.hpp"
 #include <tuple>
 class PhotonPacket;
@@ -414,8 +415,7 @@ private:
     size_t _numPixelsInFrame{0};          // number of pixels in a single IFU frame
     int _numWavelengths{0};               // number of wavelengths in wavelength grid
     bool _disjointWavelengthGrid{false};  // true if the wavelength grid has nonoverlapping bins
-    double _minWavelength{0};             // smallest wavelength covered by the wavelength grid
-    double _maxWavelength{0};             // largest wavelength covered by the wavelength grid
+    Range _wavelengthRange;               // overall wavelength range covered by the wavelength grid
 
     // detector arrays that need to be calibrated, initialized when configuration is finalized
     vector<Array> _sed;

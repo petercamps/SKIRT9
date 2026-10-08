@@ -11,7 +11,7 @@ void ApertureInstrument::setupSelfBefore()
 {
     DistantInstrument::setupSelfBefore();
 
-    // precalculate information needed by isInsideAperture() function
+    // precalculate information needed by locate() function
     _radius2 = radius() * radius();
     _costheta = cos(inclination());
     _sintheta = sin(inclination());
@@ -24,14 +24,7 @@ void ApertureInstrument::setupSelfBefore()
 Instrument::Detection ApertureInstrument::locate(Position bfr) const
 {
     Detection detection;
-    if (isInsideAperture(bfr)) detection.pixel = 0;
-    return detection;
-}
 
-////////////////////////////////////////////////////////////////////
-
-bool ApertureInstrument::isInsideAperture(Position bfr) const
-{
     // if the instrument has an aperture
     if (_radius2)
     {
@@ -44,11 +37,14 @@ bool ApertureInstrument::isInsideAperture(Position bfr) const
         double xpp = -_sinphi * x + _cosphi * y;
         double ypp = -_cosphi * _costheta * x - _sinphi * _costheta * y + _sintheta * z;
 
-        // if the position projects outside of the aperture, reject it
+        // if the position projects outside of the aperture, the photon packet is not detected
         double radius2 = xpp * xpp + ypp * ypp;
-        if (radius2 > _radius2) return false;
+        if (radius2 > _radius2) return detection;
     }
-    return true;
+
+    // otherwise, the photon packet is detected in the single "pixel"
+    detection.pixel = 0;
+    return detection;
 }
 
 ////////////////////////////////////////////////////////////////////

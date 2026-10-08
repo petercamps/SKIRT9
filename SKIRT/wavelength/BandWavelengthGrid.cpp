@@ -56,6 +56,19 @@ double BandWavelengthGrid::rightBorder(int ell) const
 
 ////////////////////////////////////////////////////////////////////
 
+Range BandWavelengthGrid::wavelengthRange() const
+{
+    Range range;
+    if (!_bands.empty())
+    {
+        range = _bands[0]->wavelengthRange();
+        for (const Band* band : _bands) range.extend(band->wavelengthRange());
+    }
+    return range;
+}
+
+////////////////////////////////////////////////////////////////////
+
 double BandWavelengthGrid::effectiveWidth(int ell) const
 {
     return _bands[ell]->effectiveWidth();

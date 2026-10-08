@@ -186,22 +186,15 @@ void FluxRecorder::finalizeConfiguration()
 {
     // get array lengths
     _numWavelengths = _lambdagrid->numBins();
-
-    // determine the type of the wavelength grid and the overall wavelength range covered by its bins;
-    // the bins of a grid that is not disjoint may overlap and are not necessarily ordered by wavelength
-    _disjointWavelengthGrid = dynamic_cast<const DisjointWavelengthGrid*>(_lambdagrid) != nullptr;
-    _minWavelength = std::numeric_limits<double>::infinity();
-    _maxWavelength = 0.;
-    for (int ell = 0; ell != _numWavelengths; ++ell)
-    {
-        _minWavelength = min(_minWavelength, _lambdagrid->leftBorder(ell));
-        _maxWavelength = max(_maxWavelength, _lambdagrid->rightBorder(ell));
-    }
     _numPixelsInFrame = _numPixelsX * _numPixelsY;  // convert to size_t before calculating lenIFU
     size_t lenSED = _includeFluxDensity ? _numWavelengths : 0;
     size_t lenIFU = _includeSurfaceBrightness ? _numPixelsInFrame * _numWavelengths : 0;
     size_t lenLC = _includeLightCurve ? _timegrid->numBins() : 0;
     size_t lenSTM = _includeSpectralTimeMap ? _numWavelengths * _timegrid->numBins() : 0;
+
+    // determine the overall wavelength range covered by the wavelength grid, and whether its bins are nonoverlapping
+    _wavelengthRange = _lambdagrid->wavelengthRange();
+    _disjointWavelengthGrid = dynamic_cast<const DisjointWavelengthGrid*>(_lambdagrid) != nullptr;
 
     // do not try to record components if there is no medium
     _recordTotalOnly = !_recordComponents || !_hasMedium;
@@ -317,8 +310,7 @@ void FluxRecorder::finalizeConfiguration()
 
 bool FluxRecorder::recordsWavelength(double lambda) const
 {
-    double wavelength = lambda * (1. + _redshift);
-    return wavelength >= _minWavelength && wavelength <= _maxWavelength;
+    return _wavelengthRange.contains(lambda * (1. + _redshift));
 }
 
 ////////////////////////////////////////////////////////////////////

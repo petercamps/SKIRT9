@@ -16,7 +16,7 @@ void FrameInstrument::setupSelfBefore()
     instrumentFluxRecorder()->includeSurfaceBrightnessForDistant(
         numPixelsX(), numPixelsY(), fieldOfViewX() / numPixelsX(), fieldOfViewY() / numPixelsY(), centerX(), centerY());
 
-    // precalculate information needed by pixelOnDetector() function
+    // precalculate information needed by locate() function
     _costheta = cos(inclination());
     _sintheta = sin(inclination());
     _cosphi = cos(azimuth());
@@ -35,15 +35,6 @@ void FrameInstrument::setupSelfBefore()
 
 Instrument::Detection FrameInstrument::locate(Position bfr) const
 {
-    Detection detection;
-    detection.pixel = pixelOnDetector(bfr);
-    return detection;
-}
-
-////////////////////////////////////////////////////////////////////
-
-int FrameInstrument::pixelOnDetector(Position bfr) const
-{
     // get the position
     double x, y, z;
     bfr.cartesian(x, y, z);
@@ -57,10 +48,11 @@ int FrameInstrument::pixelOnDetector(Position bfr) const
     // scale and round to pixel index
     int i = static_cast<int>(floor((xp - _xpmin) / _xpsiz));
     int j = static_cast<int>(floor((yp - _ypmin) / _ypsiz));
-    if (i < 0 || i >= _Nxp || j < 0 || j >= _Nyp)
-        return -1;
-    else
-        return i + _Nxp * j;
+
+    // return the pixel index if the position projects inside of the frame
+    Detection detection;
+    if (i >= 0 && i < _Nxp && j >= 0 && j < _Nyp) detection.pixel = i + _Nxp * j;
+    return detection;
 }
 
 ////////////////////////////////////////////////////////////////////

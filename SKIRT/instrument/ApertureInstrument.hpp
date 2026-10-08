@@ -32,7 +32,7 @@ class ApertureInstrument : public DistantInstrument
     //============= Construction - Setup - Destruction =============
 
 protected:
-    /** This function stores some information used by the isInsideAperture() function. */
+    /** This function stores some information used by the locate() function. */
     void setupSelfBefore() override;
 
     //======================== Other Functions =======================
@@ -44,15 +44,10 @@ public:
         index of -1 otherwise. The distance is left at its default value of infinity. */
     Detection locate(Position bfr) const override;
 
-private:
-    /** This function returns true if the specified position projects inside the configured
-        radius, or if that radius is zero. Otherwise, it returns false. */
-    bool isInsideAperture(Position bfr) const;
-
     //======================== Data Members ========================
 
 private:
-    // data members derived from the discoverable properties during setup, used in isInsideAperture()
+    // data members derived from the discoverable properties during setup, used in locate()
     double _radius2{0};
     double _costheta{0};
     double _sintheta{0};

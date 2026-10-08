@@ -61,6 +61,12 @@ public:
         longer than the right border. */
     double rightBorder(int ell) const override;
 
+    /** This function returns the wavelength range covered by the wavelength grid, i.e. the
+        smallest range that includes the wavelength ranges of all bands. Because the bands are
+        ordered by pivot wavelength and may overlap, this range does not necessarily extend from the
+        left border of the first band to the right border of the last band. */
+    Range wavelengthRange() const override;
+
     /** This function returns the effective width of the band corresponding to the index
         \f$\ell\f$. Refer to the Band class for the relevant formulas. */
     double effectiveWidth(int ell) const override;

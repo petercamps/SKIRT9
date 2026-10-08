@@ -83,9 +83,9 @@ protected:
     //======================== Other Functions =======================
 
 public:
-    /** This function returns true if the specified instrument is a PerspectiveInstrument with the same
-        configuration for the observer position and viewing direction as the receiving instrument.
-        */
+    /** This function returns true if the specified instrument is a PerspectiveInstrument with the
+        same configuration for the observer position and viewing direction as the receiving
+        instrument. */
     bool hasSameSightLine(const Instrument* other) const override;
 
     /** Returns the direction towards the eye from the given photon packet launching position. */
@@ -99,8 +99,8 @@ public:
 public:
     /** This function determines whether and where the instrument would detect a peel-off photon
         packet launched towards it from the specified position. It returns the index of the pixel
-        hit by the photon packet and the distance from the position to the viewport plane, or a pixel index of -1 if the photon packet would not
-        be detected. */
+        hit by the photon packet and the distance from the position to the viewport plane, or a
+        pixel index of -1 if the photon packet would not be detected. */
     Detection locate(Position bfr) const override;
 
     //======================== Data Members ========================
