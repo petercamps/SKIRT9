@@ -184,6 +184,33 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
+void MediumSystem::setupSelfBefore()
+{
+    SimulationItem::setupSelfBefore();
+
+    // set up the children that precede the spatial grid, in the usual order (some medium components need the
+    // options to be set up first); the remaining children (i.e. the spatial grid) are set up after this function
+    for (Item* child : children())
+    {
+        if (child == _grid) break;
+        if (auto item = dynamic_cast<SimulationItem*>(child)) item->setup();
+    }
+
+    // cache a list of medium component indices for each material type, so that these are available to the grid
+    int numMedia = _media.size();
+    for (int h = 0; h != numMedia; ++h)
+    {
+        switch (_media[h]->mix()->materialType())
+        {
+            case MaterialMix::MaterialType::Dust: _dust_hv.push_back(h); break;
+            case MaterialMix::MaterialType::Gas: _gas_hv.push_back(h); break;
+            case MaterialMix::MaterialType::Electrons: _elec_hv.push_back(h); break;
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////
+
 void MediumSystem::setupSelfAfter()
 {
     SimulationItem::setupSelfAfter();
@@ -258,15 +285,9 @@ void MediumSystem::setupSelfAfter()
     }
     allocatedBytes += _mixv.size() * sizeof(MaterialMix*);
 
-    // cache a list of medium component indices for each material type
+    // cache a list of medium component indices for each type of dynamic medium state
     for (int h = 0; h != _numMedia; ++h)
     {
-        switch (mix(0, h)->materialType())
-        {
-            case MaterialMix::MaterialType::Dust: _dust_hv.push_back(h); break;
-            case MaterialMix::MaterialType::Gas: _gas_hv.push_back(h); break;
-            case MaterialMix::MaterialType::Electrons: _elec_hv.push_back(h); break;
-        }
         switch (mix(0, h)->hasDynamicMediumState())
         {
             case MaterialMix::DynamicStateType::None: break;
@@ -444,6 +465,19 @@ bool MediumSystem::hasMaterialType(MaterialMix::MaterialType type) const
     for (int h = 0; h != _numMedia; ++h)
         if (mix(0, h)->materialType() == type) return true;
     return false;
+}
+
+////////////////////////////////////////////////////////////////////
+
+const vector<int>& MediumSystem::mediumIndices(MaterialMix::MaterialType type) const
+{
+    switch (type)
+    {
+        case MaterialMix::MaterialType::Dust: return _dust_hv;
+        case MaterialMix::MaterialType::Electrons: return _elec_hv;
+        case MaterialMix::MaterialType::Gas: return _gas_hv;
+    }
+    return _dust_hv;  // unreachable; avoids a compiler warning
 }
 
 ////////////////////////////////////////////////////////////////////

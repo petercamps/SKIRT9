@@ -8,8 +8,10 @@
 
 #include "BoxCellDensityMixIn.hpp"
 #include "BoxSpatialGrid.hpp"
+#include "TreePolicy.hpp"
+#include <array>
+#include <deque>
 class TextOutFile;
-class TreeNode;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -19,53 +21,189 @@ class TreeNode;
     recursively divide space into ever finer nodes. The depth of the tree can vary from place to
     place. The leaf nodes (those that are not further subdivided) are the actual spatial cells.
 
-    The actual tree construction, including the choice of node type (a subclass of TreeNode) is
-    delegated to each concrete subclass. This base class implements all other aspects required for
-    using the grid, such as calculating paths traversing the grid. Depending on the type of
-    TreeNode, the tree can become an octtree (8 children per node) or a binary tree (2 children per
-    node). Other node types could be implemented, as long as they are cuboids lined up with the
-    coordinate axes. */
+    <b>Construction</b>
+
+    The tree is constructed according to a list of user-configured subdivision policies (see the
+    TreePolicy class) within the configured range of subdivision levels: nodes are always
+    subdivided up to the minimum level, and never beyond the maximum level. In between, a node is
+    subdivided as soon as one of the policies asks for it, so that the policies can be combined
+    freely. The policies are evaluated in the order in which they are listed, and evaluation stops
+    as soon as a policy asks for subdivision. If the list is empty, the tree is subdivided to the
+    minimum level everywhere.
+
+    The tree is constructed level by level. Starting from a list holding just the root node, each
+    pass evaluates every node at the current level, and subdivides the nodes that need it,
+    appending their children to the end of the same list. The newly appended range of nodes thus
+    forms the next level. Because subdivision only ever appends, the position of a node in the list
+    serves as a stable, level-ordered identifier. Evaluating whether a node needs subdivision is
+    read-only and can be expensive (for example, it may require sampling the density of the media),
+    so it is performed in parallel for all nodes at a level. The policies evaluating a node share
+    the properties of the media in the node, which are calculated only once (see the
+    TreeNodeEvaluation class). Subdividing the flagged nodes is performed sequentially.
+
+    The way in which a node is subdivided depends on the type of tree, and is implemented by a
+    subclass: an octtree (8 children per node) or a binary tree (2 children per node). In both
+    cases, the children of a node are consecutive in the list.
+
+    <b>Representation</b>
+
+    Once construction is complete, the tree is stored as a flat array of small, fixed-size nodes
+    that refer to each other by index into the array rather than by pointer. Each node holds its own
+    extent, the index of its first child (the other children follow it directly), its cell index
+    (for a leaf node), and the index of its neighbor across each of its six walls. The neighbor
+    across a wall is the node at the same level in the tree that touches the wall, if there is one;
+    otherwise it is the leaf node (at a lower level) that covers the other side of the wall. The
+    neighbor links are established by the subclass in a single top-down pass over the complete
+    tree. The cells are the leaf nodes, numbered in the order in which they occur in the array.
+
+    This base class implements the functions that depend only on the extent of the cells, and the
+    output of the grid structure and topology. The subclass implements the functions that depend on
+    the tree type, including the location of the cell containing a given position and the
+    generation of path segments, which follows the neighbor links. */
 class TreeSpatialGrid : public BoxSpatialGrid, public BoxCellDensityMixIn
 {
     ITEM_ABSTRACT(TreeSpatialGrid, BoxSpatialGrid, "a hierarchical tree spatial grid")
+
+        PROPERTY_ITEM_LIST(policies, TreePolicy, "the tree subdivision policies")
+        ATTRIBUTE_DEFAULT_VALUE(policies, "DensityTreePolicy")
+        ATTRIBUTE_REQUIRED_IF(policies, "false")
+
+        PROPERTY_INT(minLevel, "the minimum level of grid refinement")
+        ATTRIBUTE_MIN_VALUE(minLevel, "0")
+        ATTRIBUTE_MAX_VALUE(minLevel, "99")
+        ATTRIBUTE_DEFAULT_VALUE(minLevel, "OctTreeSpatialGrid:3;BinTreeSpatialGrid:9")
+
+        PROPERTY_INT(maxLevel, "the maximum level of grid refinement")
+        ATTRIBUTE_MIN_VALUE(maxLevel, "0")
+        ATTRIBUTE_MAX_VALUE(maxLevel, "99")
+        ATTRIBUTE_DEFAULT_VALUE(maxLevel, "OctTreeSpatialGrid:7;BinTreeSpatialGrid:21")
+
     ITEM_END()
 
     //============= Construction - Setup - Destruction =============
 
-public:
-    /** The destructor deletes all tree nodes created during setup. */
-    ~TreeSpatialGrid();
-
 protected:
-    /** This function invokes the constructTree() function, to be implemented by a subclass,
-        causing the tree to be constructed. The subclass returns a list of all created nodes back
-        to the base class, and gives each node an identifier (ID) corresponding to its index in
-        this list. Ownership of the nodes resides in the list passed back to the base class (not in
-        the subclass, and not in the node hierarchy itself).
+    /** This function verifies that the maximum level is not below the minimum level. */
+    void setupSelfBefore() override;
 
-        After the subclass passes back the tree nodes, this function creates an extra vector that
-        contains the node IDs of all leaf nodes, i.e. all nodes corresponding to the actual spatial
-        cells. Conversely, the function also creates a vector with the cell indices of all the
-        nodes, i.e. the rank \f$m\f$ of the node in the ID vector if the node is a leaf, and the
-        number -1 if the node is not a leaf (and hence not a spatial cell). Finally, the function
-        logs some details on the number of cells in the tree. */
+    /** This function constructs the tree as described in the class header, converts it to the
+        flat array representation, asks the subclass to establish the neighbor links, determines
+        the cell indices, and logs some details on the number of cells in the tree. */
     void setupSelfAfter() override;
 
-    /** This function must be implemented in a subclass. It constructs the hierarchical tree and
-        all (interconnected) nodes forming the tree. All nodes are instances of the same TreeNode
-        subclass, selected by this function. The function returns a list of pointers to all created
-        nodes (leaf and nonleaf). Ownership of the nodes resides in this returned list (not in the
-        node hierarchy itself) and is thus handed to the caller.
+    //======================== Nodes =======================
 
-        Each (leaf and nonleaf) node is given an identifier (ID) corresponding to its index in the
-        list. The first node in the list is the root node of tree, i.e. the node encompasssing the
-        complete spatial domain. Thus, by definition, the root node has an ID of zero.
+public:
+    /** The Node class represents a node in the tree, which is either a leaf node (corresponding to
+        a spatial cell) or a nonleaf node with children. The nodes are stored by value in a single
+        contiguous array, and they refer to each other by index into this array. The children of a
+        nonleaf node are consecutive in the array, so a node stores just the index of its first
+        child. The class has no virtual functions.
 
-        This function also causes the nodes to construct neighbor lists, interconnecting the nodes
-        according to their spatial relationship. The neighbor lists are sorted so that the
-        neighbors with the largest overlapping border area are listed first, increasing (on
-        average) the probability of locating the correct neighbor early in the list. */
-    virtual vector<TreeNode*> constructTree() = 0;
+        The class is public only so that the implementation files of the subclasses can use it in
+        local functions. Other classes cannot obtain the nodes of a tree, because the nodes()
+        function is protected.
+
+        The six walls of a node are numbered such that wall \f$2a\f$ is the lower and wall
+        \f$2a+1\f$ the upper wall perpendicular to axis \f$a\f$, with \f$a=0,1,2\f$ for x, y, and
+        z. A node stores the coordinate of each wall along the corresponding axis, and the index of
+        its neighbor across each wall (or -1 for a wall on the boundary of the domain). It also
+        stores the axis perpendicular to the splitting plane, which is used by binary trees only.
+        Indices are 32-bit integers to keep the node small: its size is 88 bytes. */
+    class Node
+    {
+    public:
+        /** This constructor creates a node with the specified extent and level, without any
+            children or neighbors. The splitting axis is set to the level modulo three. */
+        Node(const Box& extent, int level)
+            : _wallv{{extent.xmin(), extent.xmax(), extent.ymin(), extent.ymax(), extent.zmin(), extent.zmax()}},
+              _level(level), _axis(level % 3)
+        {}
+
+        /** This function returns the extent of the node as a box. */
+        Box extent() const { return Box(_wallv[0], _wallv[2], _wallv[4], _wallv[1], _wallv[3], _wallv[5]); }
+
+        /** This function returns the level of the node in the tree, with level zero for the root
+            node. */
+        int level() const { return _level; }
+
+        /** This function returns the axis (0=x, 1=y, 2=z) perpendicular to the plane along which a
+            nonleaf node in a binary tree is split. */
+        int axis() const { return _axis; }
+
+        /** This function returns the coordinate of the specified wall (0-5) along the axis
+            perpendicular to that wall. */
+        double wall(int w) const { return _wallv[w]; }
+
+        /** This function returns the coordinate of the center of the node along the specified axis
+            (0-2), i.e. the coordinate of a splitting plane perpendicular to that axis. */
+        double center(int a) const { return 0.5 * (_wallv[2 * a] + _wallv[2 * a + 1]); }
+
+        /** This function returns true if the specified position is inside the node, borders
+            included. */
+        bool contains(double x, double y, double z) const
+        {
+            return x >= _wallv[0] && x <= _wallv[1] && y >= _wallv[2] && y <= _wallv[3] && z >= _wallv[4]
+                   && z <= _wallv[5];
+        }
+
+        /** This function returns true if the node is a leaf node, i.e. a spatial cell without
+            children. */
+        bool isLeaf() const { return _child < 0; }
+
+        /** This function returns the index of the first child of a nonleaf node; the other
+            children follow it directly. */
+        int child() const { return _child; }
+
+        /** This function returns the cell index for a leaf node, or -1 for a nonleaf node. */
+        int cell() const { return _cell; }
+
+        /** This function returns the index of the neighbor across the specified wall (0-5), or -1
+            if there is none. */
+        int neighbor(int w) const { return _neighborv[w]; }
+
+        /** This function sets the index of the first child. */
+        void setChild(int child) { _child = child; }
+
+        /** This function sets the cell index. */
+        void setCell(int cell) { _cell = cell; }
+
+        /** This function sets the index of the neighbor across the specified wall (0-5). */
+        void setNeighbor(int w, int neighbor) { _neighborv[w] = neighbor; }
+
+        /** This function sets the coordinate of the specified wall (0-5). */
+        void setWall(int w, double coordinate) { _wallv[w] = coordinate; }
+
+    private:
+        std::array<double, 6> _wallv;                             // xmin, xmax, ymin, ymax, zmin, zmax
+        std::array<int, 6> _neighborv{{-1, -1, -1, -1, -1, -1}};  // neighbor across each wall
+        int _child{-1};                                           // index of the first child; -1 for a leaf
+        int _cell{-1};                                            // cell index; -1 for a nonleaf node
+        int _level{0};                                            // level of the node in the tree
+        int _axis{0};                                             // splitting axis for a binary tree
+    };
+
+    //=========== Functions implemented by subclasses ===========
+
+public:
+    /** This function must be implemented in a subclass to return the number of children of a
+        nonleaf node: 2 for a binary tree and 8 for an octtree. */
+    virtual int numChildren() const = 0;
+
+protected:
+    /** This function must be implemented in a subclass to append the children of the specified
+        nonleaf node to the end of the specified list of nodes, in the order of their index
+        relative to the first child. The function must not change the parent node itself; the
+        caller sets the index of its first child. The parent node is an element of the same list,
+        which is safe because appending to a deque never moves its existing elements, so that the
+        reference to the parent remains valid while the children are being appended. */
+    virtual void appendChildren(const Node& parent, std::deque<Node>& nodes) const = 0;
+
+    /** This function must be implemented in a subclass to establish the neighbor links for all
+        nodes in the specified array, as described in the class header. On entry, the nodes have
+        their extent, level, and children, but no neighbors. The nodes are ordered such that each
+        node comes after its parent, and the root node has index zero. */
+    virtual void linkNeighbors(vector<Node>& nodes) const = 0;
 
     //======================== Other Functions =======================
 
@@ -74,61 +212,27 @@ public:
     int numCells() const override;
 
     /** This function returns the box defining the cell with index \f$m\f$, as required by the
-        BoxCellDensityMixIn class. The function determines the node ID corresponding to the cell
-        index \f$m\f$, and then simply returns the corresponding bounding box. */
+        BoxCellDensityMixIn class. */
     Box cellBox(int m) const override;
 
-    /** This function returns the volume of the cell with index \f$m\f$. For a tree grid, it
-        determines the node ID corresponding to the cell index \f$m\f$, and then simply calculates
-        the volume of the corresponding cuboidal node using \f$V = \Delta x\, \Delta y\, \Delta
-        z\f$. */
+    /** This function returns the volume of the cell with index \f$m\f$, calculated as \f$V =
+        \Delta x\, \Delta y\, \Delta z\f$. */
     double volume(int m) const override;
 
-    /** This function returns the actuale diagonal of the cell with index \f$m\f$. For a tree grid,
-        it determines the node ID corresponding to the cell index \f$m\f$, and then simply
-        calculates the diagonal of the corresponding cuboidal node using \f$d = \sqrt{ (\Delta x)^2
-        + (\Delta y)^2 + (\Delta z)^2 }\f$. */
+    /** This function returns the actual diagonal of the cell with index \f$m\f$, calculated as
+        \f$d = \sqrt{ (\Delta x)^2 + (\Delta y)^2 + (\Delta z)^2 }\f$. */
     double diagonal(int m) const override;
 
-    /** This function returns the index of the cell that contains the position \f${\bf{r}}\f$. For
-        a tree grid, the search algorithm starts at the root node and selects the child node that
-        contains the position. This procedure is repeated until the node is childless, i.e. until
-        it is a leaf node that corresponds to an actual spatial cell. */
-    int cellIndex(Position bfr) const override;
-
-    /** This function returns the central location of the cell with index \f$m\f$. For a tree grid,
-        it determines the node ID corresponding to the cell index \f$m\f$, and then calculates the
-        central position in that node through \f[ \begin{split} x &= x_{\text{min}} + \frac12\,
-        \Delta x \\ y &= y_{\text{min}} + \frac12\, \Delta y \\ z &= z_{\text{min}} + \frac12\,
-        \Delta z \end{split} \f] */
+    /** This function returns the central location of the cell with index \f$m\f$, calculated as
+        \f[ \begin{split} x &= x_{\text{min}} + \frac12\, \Delta x \\ y &= y_{\text{min}} +
+        \frac12\, \Delta y \\ z &= z_{\text{min}} + \frac12\, \Delta z \end{split} \f] */
     Position centralPositionInCell(int m) const override;
 
-    /** This function returns a random location from the cell with index \f$m\f$. For a tree grid,
-        it determines the node ID corresponding to the cell index \f$m\f$, and then calculates a
-        random position in that cell through \f[ \begin{split} x &= x_{\text{min}} + {\cal{X}}_1\,
-        \Delta x \\ y &= y_{\text{min}} + {\cal{X}}_2\, \Delta y \\ z &= z_{\text{min}} +
-        {\cal{X}}_3\, \Delta z \end{split} \f] with \f${\cal{X}}_1\f$, \f${\cal{X}}_2\f$ and
-        \f${\cal{X}}_3\f$ three uniform deviates. */
+    /** This function returns a random location from the cell with index \f$m\f$, calculated as
+        \f[ \begin{split} x &= x_{\text{min}} + {\cal{X}}_1\, \Delta x \\ y &= y_{\text{min}} +
+        {\cal{X}}_2\, \Delta y \\ z &= z_{\text{min}} + {\cal{X}}_3\, \Delta z \end{split} \f] with
+        \f${\cal{X}}_1\f$, \f${\cal{X}}_2\f$ and \f${\cal{X}}_3\f$ three uniform deviates. */
     Position randomPositionInCell(int m) const override;
-
-    /** This function creates and hands over ownership of a path segment generator (an instance of
-        a PathSegmentGenerator subclass) appropriate for a tree grid, implemented as a private
-        PathSegmentGenerator subclass. The algorithm used to construct the path is described below.
-
-        The function uses a rather straighforward algorithm. It determines the
-        cell that contains the starting position, and calculates the first wall of the cell that
-        will be crossed. The pathlength \f$\Delta s\f$ is determined and the current position is
-        moved to a new position along this path, a tiny fraction further than \f$\Delta s\f$, \f[
-        \begin{split} x_{\text{new}} &= x_{\text{current}} + (\Delta s + \epsilon)\,k_x \\
-        y_{\text{new}} &= y_{\text{current}} + (\Delta s + \epsilon)\,k_y \\ z_{\text{new}} &=
-        z_{\text{current}} + (\Delta s + \epsilon)\,k_z \end{split} \f] where \f[ \epsilon =
-        10^{-12} \sqrt{x_{\text{max}}^2 + y_{\text{max}}^2 + z_{\text{max}}^2} \f] By adding this
-        small extra bit, we ensure that the new position is now within the next cell, and we can
-        repeat this exercise. This loop is terminated when the next position is outside the grid.
-
-        To determine the cell index of the "next cell" in this algorithm, the function uses the
-        neighbor lists constructed for each tree node during setup. */
-    std::unique_ptr<PathSegmentGenerator> createPathSegmentGenerator() const override;
 
     /** This function writes the topology of the tree to the specified text file in a simple,
         proprietary format. After a brief descriptive header, it writes lines that each contain
@@ -140,6 +244,14 @@ public:
     void writeTopology(TextOutFile* outfile) const;
 
 protected:
+    /** This function returns the array of nodes; the first node is the root node. It is intended
+        for use by subclasses, after setup has been completed. */
+    const vector<Node>& nodes() const { return _nodev; }
+
+    /** This function returns a small distance relative to the spatial extent of the grid, used by
+        the path segment generator to move a position just across a cell wall. */
+    double eps() const { return _eps; }
+
     /** This function writes the intersection of the grid with the xy plane to the specified
         SpatialGridPlotFile object. */
     void write_xy(SpatialGridPlotFile* outfile) const override;
@@ -157,21 +269,6 @@ protected:
         predefined number of cells to keep the line density in the output plot within reason. */
     void write_xyz(SpatialGridPlotFile* outfile) const override;
 
-private:
-    /** This function returns a pointer to the root node of the tree. */
-    TreeNode* root() const;
-
-    /** This function returns a pointer to the node corresponding to cell index \f$m\f$. It just
-        reads the node ID of the \f$m\f$'th leaf cell from the precalculated ID vector and returns
-        the corresponding pointer of the tree vector. */
-    TreeNode* nodeForCellIndex(int m) const;
-
-    /** This function returns the cell index \f$m\f$ of a node in the tree. It just obtains the
-        node ID from the node and determines the corresponding cell index from the precalculated
-        cell index vector. */
-    int cellIndexForNode(const TreeNode* node) const;
-
-protected:
     /** This function is used by the interface() function to ensure that the receiving item can
         actually offer the specified interface. If the requested interface is the
         DensityInCellInterface, the implementation in this class returns the value returned by the
@@ -179,19 +276,22 @@ protected:
         function invokes its counterpart in the base class. */
     bool offersInterface(const std::type_info& interfaceTypeInfo) const override;
 
+private:
+    /** This function constructs the tree level by level according to the configured policies and
+        subdivision levels, and returns the resulting list of nodes. */
+    std::deque<Node> constructTree() const;
+
+    /** This function returns a reference to the leaf node corresponding to the cell with index
+        \f$m\f$. */
+    const Node& cellNode(int m) const { return _nodev[_idv[m]]; }
+
     //======================== Data Members ========================
 
 private:
     // data members initialized during setup
-    double _eps{0.};           // a small fraction relative to the spatial extent of the grid
-    vector<TreeNode*> _nodev;  // list of all nodes in the tree; holds ownership; first item is root node
-                               // node id in each node corresponds to index in this vector
-    vector<int> _cellindexv;   // cell index m corresponding to each node in nodev; -1 for nonleaf nodes
-    vector<int> _idv;          // node id (or equivalently, index in nodev) for each cell (i.e. leaf node)
-
-    // allow our path segment generator to access our private data members
-    class MySegmentGenerator;
-    friend class MySegmentGenerator;
+    double _eps{0.};      // a small fraction relative to the spatial extent of the grid
+    vector<Node> _nodev;  // all nodes in the tree; the first one is the root node
+    vector<int> _idv;     // index in _nodev of the leaf node for each cell (i.e. for each cell index)
 };
 
 //////////////////////////////////////////////////////////////////////

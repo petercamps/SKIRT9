@@ -22,6 +22,7 @@
 #include "AxPowerLawRedistributeGeometryDecorator.hpp"
 #include "BandLuminosityNormalization.hpp"
 #include "BegemannPorousAluminaGrainComposition.hpp"
+#include "BinTreeSpatialGrid.hpp"
 #include "BinnedWavelengthDistribution.hpp"
 #include "BlackBodySED.hpp"
 #include "BlackBodySEDFamily.hpp"
@@ -67,6 +68,7 @@
 #include "DensityTreePolicy.hpp"
 #include "DiffuseIonizedGasMix.hpp"
 #include "DiscreteWavelengthDistribution.hpp"
+#include "DispersionTreePolicy.hpp"
 #include "DonutGeometry.hpp"
 #include "DorschnerOlivineGrainComposition.hpp"
 #include "DraineGraphiteGrainComposition.hpp"
@@ -98,7 +100,6 @@
 #include "FileSED.hpp"
 #include "FileSSPSEDFamily.hpp"
 #include "FileTimeGrid.hpp"
-#include "FileTreeSpatialGrid.hpp"
 #include "FileWavelengthDistribution.hpp"
 #include "FileWavelengthGrid.hpp"
 #include "FlatUniverseCosmology.hpp"
@@ -193,17 +194,18 @@
 #include "MonteCarloSimulation.hpp"
 #include "MultiGaussianExpansionGeometry.hpp"
 #include "NamedWavelengthGrid.hpp"
-#include "NestedDensityTreePolicy.hpp"
 #include "NestedLogWavelengthGrid.hpp"
 #include "NetzerAngularDistribution.hpp"
 #include "NoPolarizationProfile.hpp"
 #include "NonLTELineGasMix.hpp"
 #include "NumberColumnMaterialNormalization.hpp"
 #include "NumberMaterialNormalization.hpp"
+#include "OctTreeSpatialGrid.hpp"
 #include "OffsetGeometryDecorator.hpp"
 #include "OffsetVectorFieldDecorator.hpp"
 #include "OpacityProbe.hpp"
 #include "OpticalDepthMaterialNormalization.hpp"
+#include "OpticalDepthTreePolicy.hpp"
 #include "OpticalMaterialPropertiesProbe.hpp"
 #include "ParaboloidGeometry.hpp"
 #include "ParaboloidShellGeometry.hpp"
@@ -216,7 +218,6 @@
 #include "PlanarCutsForm.hpp"
 #include "PlummerGeometry.hpp"
 #include "PointSource.hpp"
-#include "PolicyTreeSpatialGrid.hpp"
 #include "PowMesh.hpp"
 #include "PowerLawGrainSizeDistribution.hpp"
 #include "PredefinedBandWavelengthGrid.hpp"
@@ -248,7 +249,6 @@
 #include "SineSquarePolarizationProfile.hpp"
 #include "SingleGrainSizeDistribution.hpp"
 #include "SingleWavelengthSED.hpp"
-#include "SiteListTreePolicy.hpp"
 #include "SourceSystem.hpp"
 #include "SpatialCellPropertiesProbe.hpp"
 #include "SpatialGrid.hpp"
@@ -536,8 +536,8 @@ SimulationItemRegistry::SimulationItemRegistry(const string& version, const stri
     ItemRegistry::add<BoxSpatialGrid>();
     ItemRegistry::add<CartesianSpatialGrid>();
     ItemRegistry::add<TreeSpatialGrid>();
-    ItemRegistry::add<PolicyTreeSpatialGrid>();
-    ItemRegistry::add<FileTreeSpatialGrid>();
+    ItemRegistry::add<OctTreeSpatialGrid>();
+    ItemRegistry::add<BinTreeSpatialGrid>();
     ItemRegistry::add<AdaptiveMeshSpatialGrid>();
     ItemRegistry::add<VoronoiMeshSpatialGrid>();
     ItemRegistry::add<TetraMeshSpatialGrid>();
@@ -546,8 +546,8 @@ SimulationItemRegistry::SimulationItemRegistry(const string& version, const stri
     // spatial grid policies
     ItemRegistry::add<TreePolicy>();
     ItemRegistry::add<DensityTreePolicy>();
-    ItemRegistry::add<NestedDensityTreePolicy>();
-    ItemRegistry::add<SiteListTreePolicy>();
+    ItemRegistry::add<OpticalDepthTreePolicy>();
+    ItemRegistry::add<DispersionTreePolicy>();
 
     // one-dimensional meshes for spatial grids
     ItemRegistry::add<Mesh>();

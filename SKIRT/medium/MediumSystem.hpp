@@ -156,14 +156,20 @@ class MediumSystem : public SimulationItem
 
         PROPERTY_ITEM(grid, SpatialGrid, "the spatial grid")
         ATTRIBUTE_DEFAULT_VALUE(
-            grid,
-            "RequiredDimension3:PolicyTreeSpatialGrid;RequiredDimension2:Cylinder2DSpatialGrid;Sphere1DSpatialGrid")
+            grid, "RequiredDimension3:OctTreeSpatialGrid;RequiredDimension2:Cylinder2DSpatialGrid;Sphere1DSpatialGrid")
 
     ITEM_END()
 
     //============= Construction - Setup - Destruction =============
 
 protected:
+    /** This function sets up the children of the medium system that precede the spatial grid
+        (the options and the medium components), in the usual order, and then determines the lists
+        of medium component indices for each material type (see dustMediumIndices() and friends).
+        As a result, these lists are available to the spatial grid during its setup, which happens
+        after this function returns (for example, for the subdivision policies of a tree grid). */
+    void setupSelfBefore() override;
+
     /** This function calculates and stores initial state information for each spatial cell,
         including the cell volume and the number density for each medium as defined by the input
         model. If needed for the simulation's configuration, it also allocates one or two radiation
@@ -236,6 +242,10 @@ public:
 
     /** This function returns a list of indices \f$h\f$ for media components that contain electrons. */
     const vector<int>& electronMediumIndices() const { return _elec_hv; }
+
+    /** This function returns a list of indices \f$h\f$ for media components that have the
+        specified fundamental material type (i.e. dust, electrons, or gas). */
+    const vector<int>& mediumIndices(MaterialMix::MaterialType type) const;
 
     //=============== Input model ===================
 

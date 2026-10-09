@@ -3,14 +3,14 @@
 ////       © Astronomical Observatory, Ghent University         ////
 ///////////////////////////////////////////////////////////////// */
 
-#include "DensityTreePolicy.hpp"
+#include "DispersionTreePolicy.hpp"
 #include "FatalError.hpp"
 #include "MediumSystem.hpp"
 #include "TreeNodeEvaluation.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
-void DensityTreePolicy::setupSelfBefore()
+void DispersionTreePolicy::setupSelfBefore()
 {
     TreePolicy::setupSelfBefore();
 
@@ -22,20 +22,25 @@ void DensityTreePolicy::setupSelfBefore()
         case MaterialType::Gas: _type = MaterialMix::MaterialType::Gas; break;
     }
 
-    // determine the total amount of material of that type (don't setup the medium system because we are part of it)
+    // verify that there are medium components of that type (don't setup the medium system because we are part of it)
     auto ms = find<MediumSystem>(false);
     if (!ms || ms->mediumIndices(_type).empty())
         throw FATALERROR(type() + " for " + TreeNodeEvaluation::materialTypeName(_type)
                          + " requires a medium component of that material type");
-    for (int h : ms->mediumIndices(_type))
-        _total += _type == MaterialMix::MaterialType::Dust ? ms->media()[h]->mass() : ms->media()[h]->number();
 }
 
 ////////////////////////////////////////////////////////////////////
 
-bool DensityTreePolicy::needsSubdivide(TreeNodeEvaluation& node) const
+bool DispersionTreePolicy::needsSubdivide(TreeNodeEvaluation& node) const
 {
-    return node.amount(_type) / _total > maxFraction();
+    // determine the smallest and largest sampled density in the node
+    const auto& samples = node.densitySamples(_type);
+    auto [minIt, maxIt] = std::minmax_element(samples.cbegin(), samples.cend());
+    double rhomin = *minIt;
+    double rhomax = *maxIt;
+
+    double q = rhomax > 0 ? (rhomax - rhomin) / rhomax : 0.;
+    return q > maxDispersion();
 }
 
 ////////////////////////////////////////////////////////////////////

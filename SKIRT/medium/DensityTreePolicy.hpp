@@ -6,194 +6,71 @@
 #ifndef DENSITYTREEPOLICY_HPP
 #define DENSITYTREEPOLICY_HPP
 
-#include "MaterialWavelengthRangeInterface.hpp"
+#include "MaterialMix.hpp"
 #include "TreePolicy.hpp"
-class Medium;
-class Random;
-class MassInBoxInterface;
 
 //////////////////////////////////////////////////////////////////////
 
-/** DensityTreePolicy represents the configurable options and the corresponding implementation
-    mechanisms for constructing spatial tree grids based on the density distribution of the media
-    in the medium system.
+/** DensityTreePolicy is a tree subdivision policy that limits the fraction of the material of a
+    given type (dust, electrons, or gas) contained in each cell. A node is subdivided if it contains
+    a fraction of the total amount of material of the selected type that exceeds the configured
+    maximum fraction \f$\delta_\text{max}\f$.
 
-    This policy offers several options for configuring the recursive subdivision of the
-    hierarchical tree. First of all, the minimum and maximum tree subdvision levels (actually
-    offered by the base class) override the other subdvision criteria described below. Tree nodes
-    are always subdivided up to the minimum level, and nodes are never subdivided beyond the
-    maximum level, regardless of the outcome of the other criteria.
+    For dust, the policy uses mass and mass density, which is the appropriate quantity in case
+    multiple dust medium components have a different mass per hydrogen atom. For electrons and gas,
+    it uses number and number density. The description below refers to mass and mass density; for
+    electrons and gas, read number and number density instead.
 
-    The remaining subdvision criteria consist of the maximum mass fraction \f$\delta_\text{max}\f$
-    for each material type (dust, electrons, gas), the maximum diagonal dust optical depth
-    \f$\tau_{\lambda,\text{max}}\f$ at wavelength \f$\lambda\f$, and the maximum dust density
-    dispersion \f$q_\text{max}\f$. A node is subdivided as long as the value calculated for the
-    node for one or more of these five criteria exceeds the corresponding configured maximum value.
-    A criterion is automatically disabled if the corresponding material type is not present in the
-    model, and it can be explicitly disabled by configuring a zero maximum value. Configuring an
-    impossibly high maximum value has the same effect, but may require substantial calculation to
-    verify the criterion for each node.
+    The total mass in the model, \f$M_\text{model}\f$, and the mass \f$M\f$ inside a node are
+    obtained by summing the corresponding quantity for each medium component of the selected
+    material type. The mass of a medium component inside the node is calculated exactly if the
+    component offers the MassInBoxInterface, and is otherwise estimated from density samples (see
+    the TreeNodeEvaluation class). The fraction of the mass within the node is then \f[\delta =
+    \frac{M}{M_\text{model}}.\f]
 
-    We first discuss the three criteria related to dust. For this material type, we use mass and
-    mass density (as opposed to number and number density) because it is the appropriate quantity
-    for dust in case multiple dust medium components have a different mass per hydrogen atom value.
-    The total dust mass in the model, \f$M_\text{model}\f$, and the dust density at a given
-    position, \f$\rho(\bf{r})\f$, are obtained by summing the corresponding quantity for each dust
-    medium. The average dust density \f$\rho\f$ inside a given node is estimated from density
-    samples in \f$N\f$ random positions \f$\bf{r}_i\f$ distributed uniformly across the volume
-    \f$V\f$ of the node: \f[\rho = \frac{1}{N}\,\sum_{i=1}^{N}\rho(\bf{r}_i) .\f] The fraction of
-    the mass \f$\delta\f$ within the node is then easily found as \f[\delta = \frac{\rho V}
-    {M_\text{model}}.\f]
-
-    The estimated optical depth \f$\tau_\lambda\f$ at wavelength \f$\lambda\f$ across the diagonal
-    \f$\Delta s\f$ of a node can now be expressed as \f[\tau_\lambda = \kappa_\lambda
-    \,\rho\,\Delta s\f] where \f$\kappa_\lambda\f$ is a representative extinction mass coefficient
-    for the dust in the medium. For the sake of performance this value is assumed to be constant
-    across the spatial domain, and it is determined as an average of the \f$\kappa_\lambda\f$
-    values of the dust media components, taken at the origin of the model coordinate system.
-
-    Finally, a measure for the dust density dispersion \f$q\f$ within the node is determined as \f[
-    q = \begin{cases} \;\dfrac{\rho_{\text{max}}-\rho_{\text{min}}}{\rho_{\text{max}}} &
-    \quad\text{if $\rho_{\text{max}}>0$,} \\ \;0 & \quad\text{if $\rho_{\text{max}}=0$.}
-    \end{cases} \f] where \f$\rho_{\text{min}}\f$ and \f$\rho_{\text{max}}\f$ are the smallest and
-    largest sampled density values from the list of \f$N\f$ sampled positions in the node. The
-    quantity \f$q\f$ is a simple measure for the uniformity of the density within the node: for a
-    constant density, \f$q=0\f$, whereas \f$q\f$ approaches 1 if a steep gradient is present. The
-    special case \f$\rho_{\text{max}}=0\f$ is included because it is possible that a node is empty,
-    in which case the uniform value \f$q=0\f$ should be returned. With a configured value of
-    \f$0<q_\text{max}<1\f$, nodes that contain a sharp edge with empty space one side will continue
-    to be subdivided for ever, because such cells have a density dispersion measure of \f$q=1\f$.
-    It is thus important to always specify a reasonable maximum subdivision level when using this
-    subdivision criterion.
-
-    For electrons and for gas, only the maximum mass fraction criterion is offered. For these
-    material types, the number \f$\mathcal{N}\f$ and number density \f$n\f$ are used instead of the
-    mass \f$M\f$ and mass density \f$\rho\f$. Other than this, the procedure is the same as the one
-    described for dust.
-
-    This class implements the MaterialWavelengthRangeInterface to indicate that wavelength-dependent
-    material properties will be required in case the optical depth criterion is enabled. */
-class DensityTreePolicy : public TreePolicy, public MaterialWavelengthRangeInterface
+    If the simulation has no medium components of the selected material type, setup reports a fatal
+    error. */
+class DensityTreePolicy : public TreePolicy
 {
+    /** The enumeration type indicating the material type to which the criterion applies. */
+    ENUM_DEF(MaterialType, Dust, Electrons, Gas)
+        ENUM_VAL(MaterialType, Dust, "dust")
+        ENUM_VAL(MaterialType, Electrons, "electrons")
+        ENUM_VAL(MaterialType, Gas, "gas")
+    ENUM_END()
+
     ITEM_CONCRETE(DensityTreePolicy, TreePolicy,
-                  "a tree grid construction policy using the medium density distribution")
+                  "a tree subdivision policy limiting the fraction of material in a cell")
 
-        PROPERTY_DOUBLE(maxDustFraction, "the maximum fraction of dust contained in each cell")
-        ATTRIBUTE_MIN_VALUE(maxDustFraction, "[0")
-        ATTRIBUTE_MAX_VALUE(maxDustFraction, "1e-2]")
-        ATTRIBUTE_DEFAULT_VALUE(maxDustFraction, "1e-6")
-        ATTRIBUTE_DISPLAYED_IF(maxDustFraction, "DustMix")
+        PROPERTY_ENUM(materialType, MaterialType, "the material type to which the criterion applies")
+        ATTRIBUTE_DEFAULT_VALUE(materialType, "DustMix:Dust;GasMix:Gas;Electrons")
 
-        PROPERTY_DOUBLE(maxDustOpticalDepth, "the maximum diagonal dust optical depth for each cell")
-        ATTRIBUTE_MIN_VALUE(maxDustOpticalDepth, "[0")
-        ATTRIBUTE_MAX_VALUE(maxDustOpticalDepth, "100]")
-        ATTRIBUTE_DEFAULT_VALUE(maxDustOpticalDepth, "0")
-        ATTRIBUTE_DISPLAYED_IF(maxDustOpticalDepth, "DustMix&Level2")
-
-        PROPERTY_DOUBLE(wavelength, "the wavelength at which to evaluate the optical depth")
-        ATTRIBUTE_QUANTITY(wavelength, "wavelength")
-        ATTRIBUTE_MIN_VALUE(wavelength, "1 pm")
-        ATTRIBUTE_MAX_VALUE(wavelength, "1 m")
-        ATTRIBUTE_DEFAULT_VALUE(wavelength, "0.55 micron")
-        ATTRIBUTE_RELEVANT_IF(wavelength, "maxDustOpticalDepth")
-
-        PROPERTY_DOUBLE(maxDustDensityDispersion, "the maximum dust density dispersion in each cell")
-        ATTRIBUTE_MIN_VALUE(maxDustDensityDispersion, "[0")
-        ATTRIBUTE_MAX_VALUE(maxDustDensityDispersion, "1]")
-        ATTRIBUTE_DEFAULT_VALUE(maxDustDensityDispersion, "0")
-        ATTRIBUTE_DISPLAYED_IF(maxDustDensityDispersion, "DustMix&Level2")
-
-        PROPERTY_DOUBLE(maxElectronFraction, "the maximum fraction of electrons contained in each cell")
-        ATTRIBUTE_MIN_VALUE(maxElectronFraction, "[0")
-        ATTRIBUTE_MAX_VALUE(maxElectronFraction, "1e-2]")
-        ATTRIBUTE_DEFAULT_VALUE(maxElectronFraction, "1e-6")
-        ATTRIBUTE_DISPLAYED_IF(maxElectronFraction, "ElectronMix")
-
-        PROPERTY_DOUBLE(maxGasFraction, "the maximum fraction of gas contained in each cell")
-        ATTRIBUTE_MIN_VALUE(maxGasFraction, "[0")
-        ATTRIBUTE_MAX_VALUE(maxGasFraction, "1e-2]")
-        ATTRIBUTE_DEFAULT_VALUE(maxGasFraction, "1e-6")
-        ATTRIBUTE_DISPLAYED_IF(maxGasFraction, "GasMix")
+        PROPERTY_DOUBLE(maxFraction, "the maximum fraction of the material contained in each cell")
+        ATTRIBUTE_MIN_VALUE(maxFraction, "]0")
+        ATTRIBUTE_MAX_VALUE(maxFraction, "1e-2]")
+        ATTRIBUTE_DEFAULT_VALUE(maxFraction, "1e-6")
 
     ITEM_END()
 
     //============= Construction - Setup - Destruction =============
 
 protected:
-    /** This function obtains and caches information used by the needsSubdivide() function to
-        evaluate the configured criteria. */
+    /** This function obtains and caches information used by the needsSubdivide() function. */
     void setupSelfBefore() override;
-
-public:
-    /** This function returns true if the given node needs to be subdivided according to the
-        criteria configured for this policy, including minimum and maximum level, and false
-        otherwise. */
-    virtual bool needsSubdivide(TreeNode* node);
-
-    /** This function constructs the hierarchical tree and all (interconnected) nodes forming the
-        tree as described for the corresponding pure virtual function in the base class. The
-        implementation for this class loops over the tree subdivision levels. For each level, the
-        function alternates between evaluating all of the nodes (i.e. determining which nodes need
-        subdivision) and actually subdividing the nodes that need it.
-
-        These operations are split over two phases because the first one can be parallelized (the
-        only output is a Boolean flag), while the second one cannot (the tree structure is updated
-        in various ways). Parallelizing the first operation is often meaningful, because
-        determining whether a node needs subdivision can be resource-intensive. For example, it may
-        require sampling densities in the source distribution. */
-    vector<TreeNode*> constructTree(TreeNode* root) override;
 
     //======================== Other Functions =======================
 
 public:
-    /** If the optical depth criterion is enabled, this function returns a wavelength range
-        corresponding to the related user-configured wavelength, indicating that
-        wavelength-dependent material properties will be required for this wavelength. Otherwise,
-        the function returns a null range. */
-    Range wavelengthRange() const override;
+    /** This function returns true if the specified node contains a fraction of the material of
+        the selected type that exceeds the configured maximum fraction, and false otherwise. */
+    bool needsSubdivide(TreeNodeEvaluation& node) const override;
 
     //======================== Data Members ========================
 
 private:
     // data members initialized by setupSelfBefore()
-    Random* _random{nullptr};
-    int _numSamples{0};
-
-    // lists of medium components of each material type;
-    // list remains empty if no criteria are enabled for the corresponding material type
-    vector<Medium*> _dustMedia;
-    vector<Medium*> _electronMedia;
-    vector<Medium*> _gasMedia;
-
-    // lists of MassInBoxInterface pointers corresponding to the medium component lists above
-    // list remains empty if not all of the medium components of that type offer MassInBoxInterface
-    vector<MassInBoxInterface*> _dustMIBv;
-    vector<MassInBoxInterface*> _electronMIBv;
-    vector<MassInBoxInterface*> _gasMIBv;
-
-    // flags become true if corresponding criterion is enabled
-    // (i.e. configured maximum is nonzero and material type is present)
-    bool _hasDustFraction{false};
-    bool _hasDustOpticalDepth{false};
-    bool _hasDustDensityDispersion{false};
-    bool _hasElectronFraction{false};
-    bool _hasGasFraction{false};
-    bool _hasAny{false};
-
-    // flah becomes true if we need samples versus the MassInBoxInterface
-    bool _needDustSamples{false};
-    bool _needElectronSamples{false};
-    bool _needGasSamples{false};
-    bool _needAnySamples{false};
-    bool _hasDustMIB{false};
-    bool _hasElectronMIB{false};
-    bool _hasGasMIB{false};
-
-    // cached values for each material type (valid if corresponding flag is enabled)
-    double _dustMass{0.};
-    double _dustKappa{0.};
-    double _electronNumber{0.};
-    double _gasNumber{0.};
+    MaterialMix::MaterialType _type{MaterialMix::MaterialType::Dust};  // the selected material type
+    double _total{0.};  // the total amount of material of that type in the model
 };
 
 //////////////////////////////////////////////////////////////////////
