@@ -40,6 +40,7 @@ class XRayIonicGasMixFamily : public MaterialMixFamily
     ENUM_END()
 
     ITEM_CONCRETE(XRayIonicGasMixFamily, MaterialMixFamily, "a family of ionic mixes for each cell")
+        ATTRIBUTE_TYPE_INSERT(XRayIonicGasMixFamily, "GasMix")
 
         PROPERTY_STRING(ions, "the names of the ions for each element (e.g. H,He+,Li+1,..)")
 

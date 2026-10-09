@@ -6,6 +6,7 @@
 #ifndef CELLGEOMETRY_HPP
 #define CELLGEOMETRY_HPP
 
+#include "CellMeshInterface.hpp"
 #include "ImportedGeometry.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -42,7 +43,7 @@
     temperature, the mass and density of the cell are set to zero, regardless of the mass or
     density specified in the seventh column. If the \em importTemperature option is disabled, or
     the maximum temperature value is set to zero, such a cutoff is not applied. */
-class CellGeometry : public ImportedGeometry
+class CellGeometry : public ImportedGeometry, public CellMeshInterface
 {
     /** The enumeration type indicating the type of mass quantity to be imported. */
     ENUM_DEF(MassType, MassDensity, Mass, NumberDensity, Number)
@@ -53,6 +54,7 @@ class CellGeometry : public ImportedGeometry
     ENUM_END()
 
     ITEM_CONCRETE(CellGeometry, ImportedGeometry, "a geometry imported from cuboidal cell data")
+        ATTRIBUTE_TYPE_INSERT(CellGeometry, "CellMeshInterface")
 
         PROPERTY_ENUM(massType, MassType, "the type of mass quantity to be imported")
         ATTRIBUTE_DEFAULT_VALUE(massType, "MassDensity")
@@ -66,6 +68,19 @@ protected:
         it to import a mass or density column, and finally returns a pointer to the object.
         Ownership of the Snapshot object is transferred to the caller. */
     Snapshot* createAndOpenSnapshot() override;
+
+    //=================== Other functions ==================
+
+protected:
+    /** This function implements the CellMeshInterface interface. It returns a pointer to the cell
+        snapshot maintained by this geometry. */
+    CellSnapshot* cellMesh() const override;
+
+    //===================== Data members ====================
+
+private:
+    // an extra pointer to our snapshot used to implement CellMeshInterface (ownership is passed to base class)
+    CellSnapshot* _cellSnapshot{nullptr};
 };
 
 ////////////////////////////////////////////////////////////////////

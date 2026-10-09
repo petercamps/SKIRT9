@@ -221,7 +221,12 @@ public:
         converted input values are stored into it in column order, and the function returns true.
 
         If the end of the file is reached before a row can be read, the function returns false and
-        the size and contents of the \em values array are undefined. */
+        the size and contents of the \em values array are undefined.
+
+        If no columns have been declared, the function reads the next data line without
+        interpreting its contents, sets the \em values array to zero length, and returns true. This
+        allows a client to read the structure of a file while ignoring the data, for example the
+        tree structure of an adaptive mesh file (see the readNonLeaf() function). */
     bool readRow(Array& values);
 
     /** This is a specialty function intended for use by the AdaptiveMeshSnapshot class when

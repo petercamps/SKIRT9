@@ -120,9 +120,15 @@ public:
         data structures were not created, invoking this function causes undefined behavior. */
     void getEntities(EntityCollection& entities, Position bfr, Direction bfk) const override;
 
-    //=================== Private helper functions =====================
+    /** This function returns the index of the cell containing the specified point, or -1 if the
+        point is not inside any of the cells. If multiple cells contain the point (because they
+        overlap, or because the point is on a common wall), the function returns the cell that is
+        listed first in the imported file, consistent with the other functions of this class. If
+        the search data structures were not created (because neither a mass density policy nor the
+        need for the getEntities() functions was configured), invoking this function causes
+        undefined behavior. */
+    int cellIndex(Position bfr) const;
 
-private:
     /** This function returns the bounding box representing the cell with the given index. If the
         index is out of range, the behavior is undefined. */
     Box boxForCell(int m) const;

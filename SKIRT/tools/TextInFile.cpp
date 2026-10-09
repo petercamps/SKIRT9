@@ -391,8 +391,6 @@ void TextInFile::addColumn(const string& description, const string& quantity, st
 
 bool TextInFile::readRow(Array& values)
 {
-    if (!_hasProgInfo) throw FATALERROR("No columns were declared for column text file");
-
     // read next row in text file
     if (_hasTextOpen)
     {

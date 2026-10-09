@@ -78,6 +78,17 @@ public:
         density for dust, or the number density for electrons and gas. */
     const vector<double>& densitySamples(MaterialMix::MaterialType type);
 
+    /** This function returns the density of the medium component with index \f$h\f$ at each of
+        the sample positions in the node: the mass density for a dust component, or the number
+        density for an electron or gas component. */
+    const vector<double>& componentDensitySamples(int h);
+
+    /** This function returns the random positions, distributed uniformly across the volume of the
+        node, at which the densities are sampled. The positions are drawn when first requested,
+        either through this function or through one of the functions returning density samples.
+        A policy can use them to sample other quantities at the same positions. */
+    const vector<Position>& samplePositions();
+
     /** This function returns a lowercase name for the specified material type ("dust",
         "electrons", or "gas"), for use in messages. */
     static string materialTypeName(MaterialMix::MaterialType type);
@@ -85,12 +96,6 @@ public:
 private:
     // returns the list of medium component indices for the specified material type
     const vector<int>& indices(MaterialMix::MaterialType type) const;
-
-    // returns the sample positions in the node, drawing them if needed
-    const vector<Position>& positions();
-
-    // returns the density of the specified medium component at each sample position
-    const vector<double>& componentSamples(int h);
 
     // returns the amount of material of the specified medium component in the node
     double componentAmount(int h);

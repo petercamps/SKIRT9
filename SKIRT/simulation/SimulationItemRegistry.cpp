@@ -14,6 +14,7 @@
 #include "AdaptiveMeshMedium.hpp"
 #include "AdaptiveMeshSource.hpp"
 #include "AdaptiveMeshSpatialGrid.hpp"
+#include "AdaptiveMeshTreePolicy.hpp"
 #include "AllCellsLibrary.hpp"
 #include "AllSkyInstrument.hpp"
 #include "AllSkyProjectionForm.hpp"
@@ -40,6 +41,7 @@
 #include "CellGeometry.hpp"
 #include "CellMedium.hpp"
 #include "CellSource.hpp"
+#include "CellTreePolicy.hpp"
 #include "ClearDensityRecipe.hpp"
 #include "ClumpyGeometryDecorator.hpp"
 #include "ClumpySphericalSpatialGrid.hpp"
@@ -107,6 +109,7 @@
 #include "FragmentDustMixDecorator.hpp"
 #include "FrameInstrument.hpp"
 #include "GammaGeometry.hpp"
+#include "GasThermalEnergyTreePolicy.hpp"
 #include "GaussianGeometry.hpp"
 #include "GeometricMedium.hpp"
 #include "GeometricSource.hpp"
@@ -211,6 +214,7 @@
 #include "ParaboloidGeometry.hpp"
 #include "ParaboloidShellGeometry.hpp"
 #include "ParallelProjectionForm.hpp"
+#include "ParticleFieldTreePolicy.hpp"
 #include "ParticleGeometry.hpp"
 #include "ParticleMedium.hpp"
 #include "ParticleSource.hpp"
@@ -236,6 +240,7 @@
 #include "ReferenceWavelengthGrid.hpp"
 #include "ResolutionBorderWavelengthGrid.hpp"
 #include "ResolutionWavelengthGrid.hpp"
+#include "ResolvedSpheresTreePolicy.hpp"
 #include "RingGeometry.hpp"
 #include "RotateGeometryDecorator.hpp"
 #include "RotateVectorFieldDecorator.hpp"
@@ -551,9 +556,14 @@ SimulationItemRegistry::SimulationItemRegistry(const string& version, const stri
     ItemRegistry::add<DensityTreePolicy>();
     ItemRegistry::add<OpticalDepthTreePolicy>();
     ItemRegistry::add<DispersionTreePolicy>();
+    ItemRegistry::add<GasThermalEnergyTreePolicy>();
     ItemRegistry::add<SiteListTreePolicy>();
     ItemRegistry::add<BoxTreePolicy>();
     ItemRegistry::add<TopologyTreePolicy>();
+    ItemRegistry::add<ParticleFieldTreePolicy>();
+    ItemRegistry::add<ResolvedSpheresTreePolicy>();
+    ItemRegistry::add<AdaptiveMeshTreePolicy>();
+    ItemRegistry::add<CellTreePolicy>();
 
     // one-dimensional meshes for spatial grids
     ItemRegistry::add<Mesh>();

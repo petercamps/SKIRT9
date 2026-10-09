@@ -12,6 +12,7 @@ Snapshot* CellGeometry::createAndOpenSnapshot()
 {
     // create and open the snapshot
     auto snapshot = new CellSnapshot;
+    _cellSnapshot = snapshot;
     snapshot->open(this, filename(), "cuboidal cells");
 
     // honor custom column reordering
@@ -29,6 +30,13 @@ Snapshot* CellGeometry::createAndOpenSnapshot()
         case MassType::Number: snapshot->importNumber(); break;
     }
     return snapshot;
+}
+
+////////////////////////////////////////////////////////////////////
+
+CellSnapshot* CellGeometry::cellMesh() const
+{
+    return _cellSnapshot;
 }
 
 ////////////////////////////////////////////////////////////////////

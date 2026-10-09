@@ -6,6 +6,7 @@
 #ifndef CELLMEDIUM_HPP
 #define CELLMEDIUM_HPP
 
+#include "CellMeshInterface.hpp"
 #include "ImportedMedium.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -60,7 +61,7 @@
     Finally, if the \em importVariableMixParams option is enabled, the remaining columns specify
     the parameters used by the configured material mix family to select a particular material mix
     for the cell. */
-class CellMedium : public ImportedMedium
+class CellMedium : public ImportedMedium, public CellMeshInterface
 {
     /** The enumeration type indicating the type of mass quantity to be imported. */
     ENUM_DEF(MassType, MassDensity, Mass, NumberDensity, Number)
@@ -71,6 +72,7 @@ class CellMedium : public ImportedMedium
     ENUM_END()
 
     ITEM_CONCRETE(CellMedium, ImportedMedium, "a transfer medium imported from cuboidal cell data")
+        ATTRIBUTE_TYPE_INSERT(CellMedium, "CellMeshInterface")
 
         PROPERTY_ENUM(massType, MassType, "the type of mass quantity to be imported")
         ATTRIBUTE_DEFAULT_VALUE(massType, "MassDensity")
@@ -84,6 +86,19 @@ protected:
         it to import a mass or density column, and finally returns a pointer to the object.
         Ownership of the Snapshot object is transferred to the caller. */
     Snapshot* createAndOpenSnapshot() override;
+
+    //=================== Other functions ==================
+
+protected:
+    /** This function implements the CellMeshInterface interface. It returns a pointer to the cell
+        snapshot maintained by this medium. */
+    CellSnapshot* cellMesh() const override;
+
+    //===================== Data members ====================
+
+private:
+    // an extra pointer to our snapshot used to implement CellMeshInterface (ownership is passed to base class)
+    CellSnapshot* _cellSnapshot{nullptr};
 };
 
 ////////////////////////////////////////////////////////////////////

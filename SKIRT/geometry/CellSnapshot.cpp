@@ -13,6 +13,17 @@
 
 ////////////////////////////////////////////////////////////////////
 
+int CellSnapshot::cellIndex(Position bfr) const
+{
+    for (int m : _search.entitiesFor(bfr))
+    {
+        if (boxForCell(m).contains(bfr)) return m;
+    }
+    return -1;
+}
+
+////////////////////////////////////////////////////////////////////
+
 Box CellSnapshot::boxForCell(int m) const
 {
     const auto& prop = _propv[m];

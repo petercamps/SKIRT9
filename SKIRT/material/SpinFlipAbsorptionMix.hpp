@@ -62,6 +62,7 @@
 class SpinFlipAbsorptionMix : public MaterialMix
 {
     ITEM_CONCRETE(SpinFlipAbsorptionMix, MaterialMix, "A gas mix supporting the spin-flip 21 cm hydrogen absorption")
+        ATTRIBUTE_TYPE_INSERT(SpinFlipAbsorptionMix, "GasMix")
 
         PROPERTY_DOUBLE(defaultTemperature, "the default temperature of the gas")
         ATTRIBUTE_QUANTITY(defaultTemperature, "temperature")

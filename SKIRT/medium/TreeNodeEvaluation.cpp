@@ -48,7 +48,7 @@ double TreeNodeEvaluation::density(int h)
 {
     if (_mibv[h]) return componentAmount(h) / _box.volume();
 
-    const auto& samples = componentSamples(h);
+    const auto& samples = componentDensitySamples(h);
     return std::accumulate(samples.cbegin(), samples.cend(), 0.) / _numSamples;
 }
 
@@ -67,7 +67,7 @@ const vector<double>& TreeNodeEvaluation::densitySamples(MaterialMix::MaterialTy
 {
     // for a single medium component, simply return its samples
     const auto& hv = indices(type);
-    if (hv.size() == 1) return componentSamples(hv[0]);
+    if (hv.size() == 1) return componentDensitySamples(hv[0]);
 
     // otherwise, sum the samples of the medium components
     int t = static_cast<int>(type);
@@ -77,7 +77,7 @@ const vector<double>& TreeNodeEvaluation::densitySamples(MaterialMix::MaterialTy
         samples.assign(_numSamples, 0.);
         for (int h : hv)
         {
-            const auto& componentSamplesv = componentSamples(h);
+            const auto& componentSamplesv = componentDensitySamples(h);
             for (int i = 0; i != _numSamples; ++i) samples[i] += componentSamplesv[i];
         }
         _hasTypeSamplesv[t] = true;
@@ -107,7 +107,7 @@ const vector<int>& TreeNodeEvaluation::indices(MaterialMix::MaterialType type) c
 
 ////////////////////////////////////////////////////////////////////
 
-const vector<Position>& TreeNodeEvaluation::positions()
+const vector<Position>& TreeNodeEvaluation::samplePositions()
 {
     if (!_hasPositions)
     {
@@ -120,12 +120,12 @@ const vector<Position>& TreeNodeEvaluation::positions()
 
 ////////////////////////////////////////////////////////////////////
 
-const vector<double>& TreeNodeEvaluation::componentSamples(int h)
+const vector<double>& TreeNodeEvaluation::componentDensitySamples(int h)
 {
     auto& samples = _samplesv[h];
     if (!_hasSamplesv[h])
     {
-        const auto& positionv = positions();
+        const auto& positionv = samplePositions();
         samples.resize(_numSamples);
         for (int i = 0; i != _numSamples; ++i)
             samples[i] = _dustv[h] ? _media[h]->massDensity(positionv[i]) : _media[h]->numberDensity(positionv[i]);
@@ -146,7 +146,7 @@ double TreeNodeEvaluation::componentAmount(int h)
         }
         else
         {
-            const auto& samples = componentSamples(h);
+            const auto& samples = componentDensitySamples(h);
             _amountv[h] = std::accumulate(samples.cbegin(), samples.cend(), 0.) / _numSamples * _box.volume();
         }
         _hasAmountv[h] = true;
