@@ -16,21 +16,28 @@ int OctTreeSpatialGrid::numChildren() const
 
 ////////////////////////////////////////////////////////////////////
 
-void OctTreeSpatialGrid::appendChildren(const Node& parent, std::deque<Node>& nodes) const
+Box OctTreeSpatialGrid::childExtent(const Box& extent, int level, int c) const
 {
-    // the child with index i covers the lower or upper half of the parent along axis a depending on bit a of i
-    for (int i = 0; i != 8; ++i)
+    // the child with index c covers the lower or upper half of the parent along axis a depending on bit a of c
+    const Node parent(extent, level);
+    Node child(extent, level + 1);
+    for (int a = 0; a != 3; ++a)
     {
-        nodes.emplace_back(parent.extent(), parent.level() + 1);
-        Node& child = nodes.back();
-        for (int a = 0; a != 3; ++a)
-        {
-            if ((i & (1 << a)) != 0)
-                child.setWall(2 * a, parent.center(a));  // upper half: the lower wall moves to the center
-            else
-                child.setWall(2 * a + 1, parent.center(a));  // lower half: the upper wall moves to the center
-        }
+        if ((c & (1 << a)) != 0)
+            child.setWall(2 * a, parent.center(a));  // upper half: the lower wall moves to the center
+        else
+            child.setWall(2 * a + 1, parent.center(a));  // lower half: the upper wall moves to the center
     }
+    return child.extent();
+}
+
+////////////////////////////////////////////////////////////////////
+
+int OctTreeSpatialGrid::childIndex(const Box& extent, int /*level*/, Vec position) const
+{
+    Vec center = extent.center();
+    return (position.x() < center.x() ? 0 : 1) + (position.y() < center.y() ? 0 : 2)
+           + (position.z() < center.z() ? 0 : 4);
 }
 
 ////////////////////////////////////////////////////////////////////

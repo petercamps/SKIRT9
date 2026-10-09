@@ -16,18 +16,24 @@ int BinTreeSpatialGrid::numChildren() const
 
 ////////////////////////////////////////////////////////////////////
 
-void BinTreeSpatialGrid::appendChildren(const Node& parent, std::deque<Node>& nodes) const
+Box BinTreeSpatialGrid::childExtent(const Box& extent, int level, int c) const
 {
-    int a = parent.axis();
-    double split = parent.center(a);
+    // the lower child (c=0) extends from the lower wall of the parent to the splitting plane perpendicular to the
+    // axis for this level, and the upper child (c=1) from the splitting plane to the upper wall of the parent
+    Node node(extent, level);
+    int a = node.axis();
+    node.setWall(c ? 2 * a : 2 * a + 1, node.center(a));
+    return node.extent();
+}
 
-    // the lower child extends from the lower wall of the parent to the splitting plane
-    nodes.emplace_back(parent.extent(), parent.level() + 1);
-    nodes.back().setWall(2 * a + 1, split);
+////////////////////////////////////////////////////////////////////
 
-    // the upper child extends from the splitting plane to the upper wall of the parent
-    nodes.emplace_back(parent.extent(), parent.level() + 1);
-    nodes.back().setWall(2 * a, split);
+int BinTreeSpatialGrid::childIndex(const Box& extent, int level, Vec position) const
+{
+    Node node(extent, level);
+    int a = node.axis();
+    const double r[3] = {position.x(), position.y(), position.z()};
+    return r[a] < node.center(a) ? 0 : 1;
 }
 
 ////////////////////////////////////////////////////////////////////

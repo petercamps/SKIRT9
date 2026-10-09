@@ -27,6 +27,7 @@
 #include "BlackBodySED.hpp"
 #include "BlackBodySEDFamily.hpp"
 #include "BoxClipGeometryDecorator.hpp"
+#include "BoxTreePolicy.hpp"
 #include "BpassSED.hpp"
 #include "BpassSEDFamily.hpp"
 #include "BroadBand.hpp"
@@ -249,6 +250,7 @@
 #include "SineSquarePolarizationProfile.hpp"
 #include "SingleGrainSizeDistribution.hpp"
 #include "SingleWavelengthSED.hpp"
+#include "SiteListTreePolicy.hpp"
 #include "SourceSystem.hpp"
 #include "SpatialCellPropertiesProbe.hpp"
 #include "SpatialGrid.hpp"
@@ -288,6 +290,7 @@
 #include "ThemisDustMix.hpp"
 #include "ToddlersSED.hpp"
 #include "ToddlersSEDFamily.hpp"
+#include "TopologyTreePolicy.hpp"
 #include "TorusGeometry.hpp"
 #include "TreePolicy.hpp"
 #include "TreeSpatialGrid.hpp"
@@ -548,6 +551,9 @@ SimulationItemRegistry::SimulationItemRegistry(const string& version, const stri
     ItemRegistry::add<DensityTreePolicy>();
     ItemRegistry::add<OpticalDepthTreePolicy>();
     ItemRegistry::add<DispersionTreePolicy>();
+    ItemRegistry::add<SiteListTreePolicy>();
+    ItemRegistry::add<BoxTreePolicy>();
+    ItemRegistry::add<TopologyTreePolicy>();
 
     // one-dimensional meshes for spatial grids
     ItemRegistry::add<Mesh>();

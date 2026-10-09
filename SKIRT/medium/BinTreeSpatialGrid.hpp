@@ -67,11 +67,16 @@ public:
     /** This function returns the number of children of a nonleaf node, i.e. 2. */
     int numChildren() const override;
 
-protected:
-    /** This function appends the two children of the specified node to the end of the specified
-        list of nodes, as described in the class header. */
-    void appendChildren(const Node& parent, std::deque<Node>& nodes) const override;
+    /** This function returns the extent of the child with index \f$c\f$ of a node with the
+        specified extent and level, as described in the class header. */
+    Box childExtent(const Box& extent, int level, int c) const override;
 
+    /** This function returns the index of the child that contains the specified position, for a
+        node with the specified extent and level. A position on a splitting plane is assigned to the
+        upper child. */
+    int childIndex(const Box& extent, int level, Vec position) const override;
+
+protected:
     /** This function establishes the neighbor links for all nodes in the specified array, as
         described in the class header. */
     void linkNeighbors(vector<Node>& nodes) const override;

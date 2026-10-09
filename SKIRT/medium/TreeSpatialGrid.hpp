@@ -190,15 +190,20 @@ public:
         nonleaf node: 2 for a binary tree and 8 for an octtree. */
     virtual int numChildren() const = 0;
 
-protected:
-    /** This function must be implemented in a subclass to append the children of the specified
-        nonleaf node to the end of the specified list of nodes, in the order of their index
-        relative to the first child. The function must not change the parent node itself; the
-        caller sets the index of its first child. The parent node is an element of the same list,
-        which is safe because appending to a deque never moves its existing elements, so that the
-        reference to the parent remains valid while the children are being appended. */
-    virtual void appendChildren(const Node& parent, std::deque<Node>& nodes) const = 0;
+    /** This function must be implemented in a subclass to return the extent of the child with
+        index \f$c\f$ (from zero to numChildren()-1) of a node with the specified extent and level
+        in the tree. The tree uses this function to subdivide its nodes. Together with the
+        childIndex() function, it also allows a subdivision policy to mirror the structure of the
+        tree, for example to descend a recorded tree topology. */
+    virtual Box childExtent(const Box& extent, int level, int c) const = 0;
 
+    /** This function must be implemented in a subclass to return the index (from zero to
+        numChildren()-1) of the child that contains the specified position, for a node with the
+        specified extent and level in the tree. A position on a splitting plane is assigned to the
+        child on the upper side of the plane. The position is assumed to be inside the node. */
+    virtual int childIndex(const Box& extent, int level, Vec position) const = 0;
+
+protected:
     /** This function must be implemented in a subclass to establish the neighbor links for all
         nodes in the specified array, as described in the class header. On entry, the nodes have
         their extent, level, and children, but no neighbors. The nodes are ordered such that each

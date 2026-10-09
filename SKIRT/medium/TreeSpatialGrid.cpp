@@ -102,17 +102,21 @@ std::deque<TreeSpatialGrid::Node> TreeSpatialGrid::constructTree() const
             ProcessManager::sumToAll(divide);
         }
 
-        // subdivide the nodes that have been flagged, appending their children to the list
+        // subdivide the nodes that have been flagged, appending their children to the list; the reference to the
+        // parent node remains valid while the children are being appended, because appending to a deque never moves
+        // its existing elements
         size_t numDivideNodes = divide.sum();
         log->infoSetElapsed(numDivideNodes);
         size_t numDone = 0;
+        int numChildren = this->numChildren();
         for (size_t l = 0; l != numEvalNodes; ++l)
         {
             if (divide[l])
             {
                 Node& node = nodes[lbeg + l];
                 node.setChild(static_cast<int>(nodes.size()));
-                appendChildren(node, nodes);
+                for (int c = 0; c != numChildren; ++c)
+                    nodes.emplace_back(childExtent(node.extent(), level, c), level + 1);
                 numDone++;
                 if (numDone % logDivideChunkSize == 0)
                     log->infoIfElapsed("Subdivision for level " + std::to_string(level) + ": ", logDivideChunkSize);

@@ -343,7 +343,7 @@
     distribution, resulting in a slightly different structure for each run. To work around this
     problem, one needs to output the topology of the hierarchical grid in the first simulation
     using a TreeSpatialGridTopologyProbe instance, and load this topology in subsequent simulations
-    using a FileTreeSpatialGrid instance.
+    using a tree grid with a TopologyTreePolicy instance as its only subdivision policy.
 
     */
 class NonLTELineGasMix : public EmittingGasMix
