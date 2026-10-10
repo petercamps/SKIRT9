@@ -56,10 +56,52 @@ class TextOutFile;
     neighbor links are established by the subclass in a single top-down pass over the complete
     tree. The cells are the leaf nodes, numbered in the order in which they occur in the array.
 
-    This base class implements the functions that depend only on the extent of the cells, and the
+    This base class implements the functions that depend only on the extent of the cells, the
+    location of the cell containing a given position, the generation of path segments, and the
     output of the grid structure and topology. The subclass implements the functions that depend on
-    the tree type, including the location of the cell containing a given position and the
-    generation of path segments, which follows the neighbor links. */
+    the tree type: the subdivision of a node into its children, and the neighbor links.
+
+    <b>Locating a position</b>
+
+    To locate the leaf node containing a given position, a top-down search descends the tree from
+    the root node, selecting at each level the child that contains the position. For a binary tree,
+    this is the child on the lower or upper side of the splitting plane perpendicular to the axis of
+    the node; for an octtree, it is the octant on the lower or upper side of each of the three
+    planes through the center of the node. A position on a splitting plane is assigned to the child
+    on the upper side of the plane.
+
+    <b>Path segment generation</b>
+
+    The path segment generator determines the cell that contains the starting position, and
+    calculates the first wall of the cell that will be crossed. The path length \f$\Delta s\f$ is
+    determined and the current position is moved to a new position along this path, a tiny fraction
+    further than \f$\Delta s\f$, so that the new position is within the next cell. To determine that
+    next cell, the generator follows the link to the neighbor across the crossed wall. If the
+    neighbor turns out to have children of its own (because the tree is more refined on the other
+    side of the wall), the generator descends into the neighbor until it reaches the leaf containing
+    the new position. A top-down search starting at the root node is used to determine the initial
+    cell and as a fall-back in rare cases where numerical inaccuracies would otherwise result in an
+    inconsistent state. If the path specifies the cell containing its initial position (see the
+    PathSegmentGenerator class), and the top-down search would indeed end in the corresponding leaf
+    node, the generator starts from that node without searching, which yields the same path.
+
+    The quantities that depend only on the direction of the path, i.e. the reciprocal of each
+    direction component and the walls that the path can cross, are calculated just once for each
+    path. The nodes of a large tree are usually not in the processor cache, so that waiting for the
+    next node to arrive from memory dominates the cost of each step. To hide this latency, the
+    generator asks the processor to prefetch the (up to) three nodes that the path can move to next
+    while it is still working on the current node (see the Prefetch namespace).
+
+    A path that runs exactly along a cell boundary (for example, a path parallel to a coordinate
+    axis through a position on a splitting plane) is ambiguous: the cells on either side of the
+    boundary are equally valid choices. In such cases, the generator consistently selects the cell
+    on the upper side of a splitting plane, as it does when locating the cell that contains a given
+    position.
+
+    The search and the path segment generator are implemented once, as a class template that is
+    instantiated for the selection rule of each tree type, so that selecting a child does not
+    involve a function call in the inner loop. This base class supports binary trees and octtrees,
+    i.e. subclasses with 2 or 8 children per node. */
 class TreeSpatialGrid : public BoxSpatialGrid, public BoxCellDensityMixIn
 {
     ITEM_ABSTRACT(TreeSpatialGrid, BoxSpatialGrid, "a hierarchical tree spatial grid")
@@ -100,9 +142,8 @@ public:
         nonleaf node are consecutive in the array, so a node stores just the index of its first
         child. The class has no virtual functions.
 
-        The class is public only so that the implementation files of the subclasses can use it in
-        local functions. Other classes cannot obtain the nodes of a tree, because the nodes()
-        function is protected.
+        The class is public only so that the implementation files of the tree grid classes can use
+        it in local functions. Other classes cannot obtain the nodes of a tree.
 
         The six walls of a node are numbered such that wall \f$2a\f$ is the lower and wall
         \f$2a+1\f$ the upper wall perpendicular to axis \f$a\f$, with \f$a=0,1,2\f$ for x, y, and
@@ -261,20 +302,18 @@ public:
         preceding node, recursively, in a depth-first traversal of the tree. */
     void writeTopology(TextOutFile* outfile) const;
 
+    /** This function returns the index of the cell that contains the position \f${\bf{r}}\f$, or -1
+        if the position is outside of the domain. It performs a top-down search as described in the
+        class header. */
+    int cellIndex(Position bfr) const override;
+
+    /** This function creates and hands over ownership of a path segment generator (an instance of
+        a PathSegmentGenerator subclass) appropriate for this grid, implemented as a
+        PathSegmentGenerator subclass local to the implementation file. The algorithm is described
+        in the class header. */
+    std::unique_ptr<PathSegmentGenerator> createPathSegmentGenerator() const override;
+
 protected:
-    /** This function returns the array of nodes; the first node is the root node. It is intended
-        for use by subclasses, after setup has been completed. */
-    const vector<Node>& nodes() const { return _nodev; }
-
-    /** This function returns, for each cell index, the index of the corresponding leaf node in the
-        array returned by the nodes() function. It is intended for use by subclasses, after setup
-        has been completed. */
-    const vector<int>& cellNodeIndices() const { return _idv; }
-
-    /** This function returns a small distance relative to the spatial extent of the grid, used by
-        the path segment generator to move a position just across a cell wall. */
-    double eps() const { return _eps; }
-
     /** This function writes the intersection of the grid with the xy plane to the specified
         SpatialGridPlotFile object. */
     void write_xy(SpatialGridPlotFile* outfile) const override;

@@ -27,31 +27,8 @@
 
     <b>Path segment generation</b>
 
-    The path segment generator determines the cell that contains the starting position, and
-    calculates the first wall of the cell that will be crossed. The path length \f$\Delta s\f$ is
-    determined and the current position is moved to a new position along this path, a tiny fraction
-    further than \f$\Delta s\f$, so that the new position is within the next cell. To determine that
-    next cell, the generator follows the link to the neighbor across the crossed wall. If the
-    neighbor turns out to have children of its own (because the tree is more refined on the other
-    side of the wall), the generator descends into the neighbor until it reaches the leaf containing
-    the new position. A top-down search starting at the root node is used to determine the initial
-    cell and as a fall-back in rare cases where numerical inaccuracies would otherwise result in an
-    inconsistent state. If the path specifies the cell containing its initial position (see the
-    PathSegmentGenerator class), and the top-down search would indeed end in the corresponding leaf
-    node, the generator starts from that node without searching, which yields the same path.
-
-    The quantities that depend only on the direction of the path, i.e. the reciprocal of each
-    direction component and the walls that the path can cross, are calculated just once for each
-    path. The nodes of a large tree are usually not in the processor cache, so that waiting for the
-    next node to arrive from memory dominates the cost of each step. To hide this latency, the
-    generator asks the processor to prefetch the (up to) three nodes that the path can move to next
-    while it is still working on the current node (see the Prefetch namespace).
-
-    A path that runs exactly along a cell boundary (for example, a path parallel to a coordinate
-    axis through a position on a splitting plane) is ambiguous: the cells on either side of the
-    boundary are equally valid choices. In such cases, the generator consistently selects the cell
-    on the upper side of a splitting plane, as it does when locating the cell that contains a given
-    position. */
+    Locating the cell containing a given position and generating path segments are implemented by
+    the TreeSpatialGrid base class for both tree types. */
 class OctTreeSpatialGrid : public TreeSpatialGrid
 {
     ITEM_CONCRETE(OctTreeSpatialGrid, TreeSpatialGrid, "an octtree spatial grid (8 children per node)")
@@ -76,22 +53,6 @@ protected:
     /** This function establishes the neighbor links for all nodes in the specified array, as
         described in the class header. */
     void linkNeighbors(vector<Node>& nodes) const override;
-
-    //======================== Other Functions =======================
-
-public:
-    /** This function returns the index of the cell that contains the position \f${\bf{r}}\f$. The
-        search algorithm starts at the root node and selects the child node that contains the
-        position. This procedure is repeated until the node is childless, i.e. until it is a leaf
-        node that corresponds to an actual spatial cell. A position on a splitting plane is
-        assigned to the child on the upper side of the plane. */
-    int cellIndex(Position bfr) const override;
-
-    /** This function creates and hands over ownership of a path segment generator (an instance of
-        a PathSegmentGenerator subclass) appropriate for this grid, implemented as a
-        PathSegmentGenerator subclass local to the implementation file. The algorithm is described
-        in the class header. */
-    std::unique_ptr<PathSegmentGenerator> createPathSegmentGenerator() const override;
 };
 
 //////////////////////////////////////////////////////////////////////
