@@ -72,6 +72,7 @@ void PhotonPacket::launchEmissionPeelOff(const PhotonPacket* pp, Direction bfk)
     _historyIndex = pp->_historyIndex;
     _nscatt = 0;
     setPosition(pp->position());
+    setInitialCellIndex(pp->initialCellIndex());
     setDirection(bfk);
     if (pp->_bvi) _lambda = shiftedEmissionWavelength(_lambda0, bfk, pp->_bvi->velocity());
     if (pp->_adi) applyBias(pp->_adi->probabilityForDirection(bfk));
@@ -94,6 +95,7 @@ void PhotonPacket::launchScatteringPeelOff(const PhotonPacket* pp, Direction bfk
     _historyIndex = pp->_historyIndex;
     _nscatt = pp->_nscatt + 1;
     setPosition(pp->position());
+    setInitialCellIndex(pp->initialCellIndex());
     setDirection(bfk);
     setUnpolarized();
     _scatteringInfo.clear();
@@ -105,6 +107,14 @@ void PhotonPacket::propagate(double s)
 {
     propagatePosition(s);
     _D += s;
+}
+
+////////////////////////////////////////////////////////////////////
+
+void PhotonPacket::propagateToInteractionPoint()
+{
+    propagate(interactionDistance());
+    setInitialCellIndex(interactionCellIndex());
 }
 
 ////////////////////////////////////////////////////////////////////

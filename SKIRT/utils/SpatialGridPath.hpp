@@ -31,7 +31,13 @@ class Box;
     explicit absorption) or both a scattering and absorption optical depth (for forced-scattering
     photon life cycles \em with explicit absorption). The interaction point information includes
     the spatial cell index, the cumulative distance, and the cumulative absorption optical depth
-    (for the second type of photon cycle). */
+    (for the second type of photon cycle).
+
+    Finally, a SpatialGridPath object can hold the index of the spatial cell containing its initial
+    position, if this cell is known, for example because the initial position is the interaction
+    point of a previous path. A path segment generator can use this information to avoid searching
+    for the cell containing the initial position. Any change to the initial position resets this
+    cell index to -1 (unknown); see the initialCellIndex() function for more information. */
 class SpatialGridPath
 {
 public:
@@ -46,21 +52,54 @@ public:
         setDirection() functions to set these properties to appropriate values. */
     SpatialGridPath();
 
-    /** This function sets the initial position of the path to a new value. */
-    void setPosition(Position bfr) { _bfr = bfr; }
+    /** This function sets the initial position of the path to a new value. It resets the initial
+        cell index to -1 (unknown). */
+    void setPosition(Position bfr)
+    {
+        _bfr = bfr;
+        _initialCellIndex = -1;
+    }
 
     /** This function sets the propagation direction along the path to a new value. */
     void setDirection(Direction bfk) { _bfk = bfk; }
 
     /** This function propagates the initial position of the path over a distance \f$s\f$. In other
-        words, it updates the position from \f${\bf{r}}\f$ to \f${\bf{r}}+s\,{\bf{k}}\f$. */
-    void propagatePosition(double s) { _bfr += s * _bfk; }
+        words, it updates the position from \f${\bf{r}}\f$ to \f${\bf{r}}+s\,{\bf{k}}\f$. It resets
+        the initial cell index to -1 (unknown). */
+    void propagatePosition(double s)
+    {
+        _bfr += s * _bfk;
+        _initialCellIndex = -1;
+    }
+
+    /** This function sets the index of the spatial cell containing the initial position of the
+        path, or -1 if this cell is unknown. Because any change to the initial position resets the
+        initial cell index, this function must be called after the initial position has been set.
+        See the initialCellIndex() function for more information. */
+    void setInitialCellIndex(int m) { _initialCellIndex = m; }
 
     /** This function returns the initial position of the path. */
     Position position() const { return _bfr; }
 
     /** This function returns the propagation direction along the path. */
     Direction direction() const { return _bfk; }
+
+    /** This function returns the index of the spatial cell containing the initial position of the
+        path, or -1 if this cell is unknown. A nonnegative value refers to a cell of the spatial
+        grid of the medium system; it is set by the photon life cycle for the paths that start at
+        the interaction point of a previous path, or at a position generated in a known cell.
+
+        The initial position is guaranteed to be inside this cell only up to rounding errors. For
+        example, a position propagated to an interaction point near a cell wall may lie just across
+        that wall, because the interaction point is calculated from the cumulative length of the
+        path segments. A path segment generator using this information must therefore verify that
+        the initial position is inside the cell, and otherwise search for the cell containing the
+        initial position as usual.
+
+        The initial cell index is reset to -1 by any function that changes the initial position
+        (including the constructors), and it is not affected by changing the propagation
+        direction. */
+    int initialCellIndex() const { return _initialCellIndex; }
 
     // ------- Adding path segments -------
 
@@ -173,6 +212,7 @@ public:
 private:
     Position _bfr;
     Direction _bfk;
+    int _initialCellIndex{-1};
     vector<Segment> _segments;
     double _s{0.};
     int _interactionCellIndex{-1};

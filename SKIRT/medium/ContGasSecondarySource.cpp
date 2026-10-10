@@ -235,6 +235,9 @@ void ContGasSecondarySource::launch(PhotonPacket* pp, size_t historyIndex, doubl
 
     // launch the photon packet with isotropic direction
     pp->launch(historyIndex, lambda, L * ws * w, bfr, _random->direction(), bvi);
+
+    // remember the spatial cell containing the launch position, so that the path need not search for it
+    pp->setInitialCellIndex(static_cast<int>(m));
 }
 
 ////////////////////////////////////////////////////////////////////

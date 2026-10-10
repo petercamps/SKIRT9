@@ -189,7 +189,7 @@ namespace
 void LineGasSecondarySource::launch(PhotonPacket* pp, size_t historyIndex, double L) const
 {
     // select the spatial cell from which to launch based on the history index of this photon packet
-    auto m = std::upper_bound(_Iv.cbegin(), _Iv.cend(), historyIndex) - _Iv.cbegin() - 1;
+    int m = std::upper_bound(_Iv.cbegin(), _Iv.cend(), historyIndex) - _Iv.cbegin() - 1;
 
     // calculate the weight related to biased source selection
     // (if the cell has zero launch weight, its luminosity must be zero as well, so the result is zero)
@@ -235,6 +235,9 @@ void LineGasSecondarySource::launch(PhotonPacket* pp, size_t historyIndex, doubl
 
     // launch the photon packet with isotropic direction
     pp->launch(historyIndex, _centers[index], L * ws * w, bfr, _random->direction(), bvi);
+
+    // remember the spatial cell containing the launch position, so that the path need not search for it
+    pp->setInitialCellIndex(m);
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -86,7 +86,9 @@ public:
         The emission origin is set to an invalid value, which should be overridden by calling the
         setPrimaryOrigin() or the setSecondaryOrigin() function. The number of scattering events is
         set to zero. The current path is invalidated, and all information about the previous life
-        cycle is lost. */
+        cycle is lost. The initial cell index of the path is reset to -1 (unknown); if the launch
+        position has been generated in a known spatial cell, the caller should set it after the
+        launch through the setInitialCellIndex() function. */
     void launch(size_t historyIndex, double lambda, double L, Position bfr, Direction bfk,
                 VelocityInterface* bvi = nullptr, AngularDistributionInterface* adi = nullptr,
                 PolarizationProfileInterface* ppi = nullptr);
@@ -128,7 +130,8 @@ public:
         ensuring consistent arrival times in TimeInstrument observers.
 
         The current path of the peel off photon packet is invalidated, and all information about
-        its previous life cycle is lost. The base photon packet remains unchanged. */
+        its previous life cycle is lost. The initial cell index of the path is copied from the base
+        photon packet. The base photon packet remains unchanged. */
     void launchEmissionPeelOff(const PhotonPacket* pp, Direction bfk);
 
     /** This function initializes a peel off photon packet being sent to an instrument for a
@@ -145,14 +148,23 @@ public:
         The peel off photon packet is initialized to an unpolarized state; the polarization state
         should be properly updated after the launch through the StokesVector class functions. The
         current path of the peel off photon packet is invalidated, and all information about its
-        previous life cycle is lost. The base photon packet remains unchanged. */
+        previous life cycle is lost. The initial cell index of the path is copied from the base
+        photon packet. The base photon packet remains unchanged. */
     void launchScatteringPeelOff(const PhotonPacket* pp, Direction bfk, Vec bfv, double lambda, double w);
 
     /** This function causes the propagation of the photon packet over a physical distance \f$s\f$.
         It updates the position from \f${\bf{r}}\f$ to \f${\bf{r}}+s\,{\bf{k}}\f$, where
         \f${\bf{k}}\f$ is the propagation direction of the photon packet, invalidating the current
-        path. */
+        path. The initial cell index of the path is reset to -1 (unknown). */
     void propagate(double s);
+
+    /** This function causes the propagation of the photon packet to the interaction point most
+        recently set by one of the findInteractionPoint() or setInteractionPoint() functions. It
+        propagates the photon packet over the interaction distance (see the propagate() function),
+        and then sets the initial cell index of the path to the index of the cell containing the
+        interaction point, so that the next path starting at this position does not need to search
+        for this cell (see SpatialGridPath::initialCellIndex()). */
+    void propagateToInteractionPoint();
 
     /** This function scatters the photon packet into the new direction \f${\bf{k}}\f$ with the new
         wavelength \f$\lambda\f$ measured in a local frame with bulk velocity \f${\bf{v}}\f$. It

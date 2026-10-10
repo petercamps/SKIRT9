@@ -147,6 +147,19 @@ public:
                    && z <= _wallv[5];
         }
 
+        /** This function returns true if the top-down search for the leaf node containing the
+            specified position, which assigns a position on a splitting plane to the child on the
+            upper side, would end in this leaf node. In other words, it returns true if the
+            position is inside the node, including its lower walls and excluding its upper walls,
+            except for upper walls on the boundary of the domain (i.e. without a neighbor), which
+            are included. */
+        bool owns(double x, double y, double z) const
+        {
+            return x >= _wallv[0] && (x < _wallv[1] || (x == _wallv[1] && _neighborv[1] < 0)) && y >= _wallv[2]
+                   && (y < _wallv[3] || (y == _wallv[3] && _neighborv[3] < 0)) && z >= _wallv[4]
+                   && (z < _wallv[5] || (z == _wallv[5] && _neighborv[5] < 0));
+        }
+
         /** This function returns true if the node is a leaf node, i.e. a spatial cell without
             children. */
         bool isLeaf() const { return _child < 0; }
@@ -252,6 +265,11 @@ protected:
     /** This function returns the array of nodes; the first node is the root node. It is intended
         for use by subclasses, after setup has been completed. */
     const vector<Node>& nodes() const { return _nodev; }
+
+    /** This function returns, for each cell index, the index of the corresponding leaf node in the
+        array returned by the nodes() function. It is intended for use by subclasses, after setup
+        has been completed. */
+    const vector<int>& cellNodeIndices() const { return _idv; }
 
     /** This function returns a small distance relative to the spatial extent of the grid, used by
         the path segment generator to move a position just across a cell wall. */

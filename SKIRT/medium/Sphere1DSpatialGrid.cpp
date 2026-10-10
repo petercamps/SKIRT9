@@ -107,6 +107,8 @@ public:
     {
         switch (state())
         {
+            // locating the initial cell is cheap, so a known initial cell is treated like an unknown one
+            case State::KnownCell:
             case State::Unknown:
             {
                 // try moving the path inside the grid, if necessary

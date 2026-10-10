@@ -202,6 +202,8 @@ public:
     {
         switch (state())
         {
+            // locating the initial cell is cheap, so a known initial cell is treated like an unknown one
+            case State::KnownCell:
             case State::Unknown:
             {
                 // initialize radial path direction

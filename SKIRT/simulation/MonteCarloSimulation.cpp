@@ -765,8 +765,8 @@ void MonteCarloSimulation::simulateForcedPropagation(PhotonPacket* pp)
         pp->applyBias(-expm1(-taupath) * albedo);
     }
 
-    // advance the photon packet position
-    pp->propagate(pp->interactionDistance());
+    // advance the photon packet position to the interaction point, remembering the cell containing it
+    pp->propagateToInteractionPoint();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -802,8 +802,8 @@ bool MonteCarloSimulation::simulateNonForcedPropagation(PhotonPacket* pp)
         pp->applyBias(albedo);
     }
 
-    // advance the photon packet position
-    pp->propagate(pp->interactionDistance());
+    // advance the photon packet position to the interaction point, remembering the cell containing it
+    pp->propagateToInteractionPoint();
     return true;
 }
 

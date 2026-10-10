@@ -342,6 +342,8 @@ public:
     {
         switch (state())
         {
+            // a known initial cell is not used; the initial cell is located as usual
+            case State::KnownCell:
             case State::Unknown:
             {
                 // try moving the photon packet inside the grid; if this is impossible, return an empty path

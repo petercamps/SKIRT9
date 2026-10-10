@@ -133,27 +133,44 @@ namespace
     // This class implements the path segment generator for a binary tree grid, as described in the class header.
     class SegmentGenerator : public PathSegmentGenerator
     {
-        Box _extent;                 // the spatial domain of the grid
-        double _eps{0.};             // a small distance relative to the extent of the grid
-        const vector<Node>& _nodes;  // the array of nodes in the tree
-        int _n{-1};                  // index of the leaf node containing the current position
+        Box _extent;                    // the spatial domain of the grid
+        double _eps{0.};                // a small distance relative to the extent of the grid
+        const vector<Node>& _nodes;     // the array of nodes in the tree
+        const vector<int>& _cellNodes;  // the index of the leaf node for each cell
+        int _n{-1};                     // index of the leaf node containing the current position
 
         // the distance to the wall of a node that the path can cross along each axis is
         // (wall - position) * inverse + bias; these values depend only on the direction of the path,
-        // and are set up once for each path (see next())
+        // and are set up once for each path (see initializeDirection())
         std::array<int, 3> _wallv{{1, 3, 5}};        // the wall (0-5) of a node through which the path can leave it
         std::array<double, 3> _invv{{0., 0., 0.}};   // the reciprocal of the direction component
         std::array<double, 3> _biasv{{0., 0., 0.}};  // zero, or a huge distance for a component that is zero
 
     public:
-        SegmentGenerator(const Box& extent, double eps, const vector<Node>& nodes)
-            : _extent(extent), _eps(eps), _nodes(nodes)
+        SegmentGenerator(const Box& extent, double eps, const vector<Node>& nodes, const vector<int>& cellNodes)
+            : _extent(extent), _eps(eps), _nodes(nodes), _cellNodes(cellNodes)
         {}
 
         bool next() override
         {
             switch (state())
             {
+                case State::KnownCell:
+                {
+                    // if the top-down search would end in the leaf node for the known initial cell, start from that
+                    // node without searching, and determine the first segment
+                    int n = _cellNodes[initialCellIndex()];
+                    if (_nodes[n].owns(rx(), ry(), rz()))
+                    {
+                        _n = n;
+                        initializeDirection();
+                        setState(State::Inside);
+                        return nextInside();
+                    }
+                }
+
+                // otherwise, search for the initial cell as usual
+                // intentionally falls through
                 case State::Unknown:
                 {
                     // try moving the photon packet inside the grid; if this is impossible, return an empty path
@@ -161,23 +178,7 @@ namespace
 
                     // get the node containing the current location
                     _n = locate(_nodes, rx(), ry(), rz());
-
-                    // The path can leave a node through the upper wall along each axis if the direction component
-                    // is positive, or through the lower wall otherwise, at a distance (wall - position) / component.
-                    // To avoid a division and any special cases in each step, we calculate the reciprocal of each
-                    // component just once for the path. A path parallel to an axis never crosses the walls
-                    // perpendicular to that axis. We represent this by a zero reciprocal and a huge offset, so that
-                    // the distance to such a wall is a constant that is never the shortest one. This avoids dividing
-                    // by zero (which would yield a negative infinity for a negative zero component and not-a-number
-                    // for a position on the wall).
-                    const std::array<double, 3> kv{{kx(), ky(), kz()}};
-                    for (int a = 0; a != 3; ++a)
-                    {
-                        bool nonzero = fabs(kv[a]) > 1e-300;
-                        _wallv[a] = 2 * a + (kv[a] > 0. ? 1 : 0);
-                        _invv[a] = nonzero ? 1. / kv[a] : 0.;
-                        _biasv[a] = nonzero ? 0. : DBL_MAX;
-                    }
+                    initializeDirection();
 
                     // if the photon packet started outside the grid, return the corresponding nonzero-length
                     // segment; otherwise fall through to determine the first actual segment
@@ -187,58 +188,7 @@ namespace
                 // intentionally falls through
                 case State::Inside:
                 {
-                    // determine the segment from the current position to the first cell wall
-                    // and adjust the position and cell indices accordingly
-                    const Node& node = _nodes[_n];
-
-                    // The next node is one of the three nodes across the walls through which the path can leave
-                    // this node. Fetching a node from memory takes long compared to the calculations below, and the
-                    // nodes of a large tree are usually not in the cache. So we ask for all three candidates to be
-                    // loaded right now, so that this wait overlaps with the calculations. A wall on the boundary of
-                    // the domain has no neighbor (-1), in which case we harmlessly prefetch the root node instead.
-                    for (int a = 0; a != 3; ++a) Prefetch::object(&_nodes[std::max(node.neighbor(_wallv[a]), 0)]);
-
-                    double dsx = (node.wall(_wallv[0]) - rx()) * _invv[0] + _biasv[0];
-                    double dsy = (node.wall(_wallv[1]) - ry()) * _invv[1] + _biasv[1];
-                    double dsz = (node.wall(_wallv[2]) - rz()) * _invv[2] + _biasv[2];
-
-                    double ds;
-                    int wall;
-                    if (dsx <= dsy && dsx <= dsz)
-                    {
-                        ds = dsx;
-                        wall = _wallv[0];
-                    }
-                    else if (dsy <= dsx && dsy <= dsz)
-                    {
-                        ds = dsy;
-                        wall = _wallv[1];
-                    }
-                    else
-                    {
-                        ds = dsz;
-                        wall = _wallv[2];
-                    }
-                    propagater(ds + _eps);
-                    setSegment(node.cell(), ds);
-
-                    // find the new node by following the link across the crossed wall; this should not fail unless
-                    // the new location is outside the grid, however on rare occasions it fails due to rounding
-                    // errors (e.g. in a corner), in which case the function falls back to top-down search
-                    int oldn = _n;
-                    _n = locateAcross(_nodes, oldn, wall, rx(), ry(), rz());
-
-                    // if we're stuck in the same node,
-                    // try to escape by advancing the position to the next representable coordinates
-                    if (_n == oldn)
-                    {
-                        propagateToNextAfter();
-                        _n = locate(_nodes, rx(), ry(), rz());
-                    }
-
-                    // if we're outside the domain or still stuck in the same node, terminate the path
-                    if (_n < 0 || _n == oldn) setState(State::Outside);
-                    return true;
+                    return nextInside();
                 }
 
                 case State::Outside:
@@ -246,6 +196,84 @@ namespace
                 }
             }
             return false;
+        }
+
+    private:
+        // This function sets up the quantities that depend only on the direction of the path.
+        void initializeDirection()
+        {
+            // The path can leave a node through the upper wall along each axis if the direction component
+            // is positive, or through the lower wall otherwise, at a distance (wall - position) / component.
+            // To avoid a division and any special cases in each step, we calculate the reciprocal of each
+            // component just once for the path. A path parallel to an axis never crosses the walls
+            // perpendicular to that axis. We represent this by a zero reciprocal and a huge offset, so that
+            // the distance to such a wall is a constant that is never the shortest one. This avoids dividing
+            // by zero (which would yield a negative infinity for a negative zero component and not-a-number
+            // for a position on the wall).
+            const std::array<double, 3> kv{{kx(), ky(), kz()}};
+            for (int a = 0; a != 3; ++a)
+            {
+                bool nonzero = fabs(kv[a]) > 1e-300;
+                _wallv[a] = 2 * a + (kv[a] > 0. ? 1 : 0);
+                _invv[a] = nonzero ? 1. / kv[a] : 0.;
+                _biasv[a] = nonzero ? 0. : DBL_MAX;
+            }
+        }
+
+        // This function determines the segment from the current position to the first wall of the current node,
+        // adjusts the position and the current node accordingly, and returns true.
+        bool nextInside()
+        {
+            const Node& node = _nodes[_n];
+
+            // The next node is one of the three nodes across the walls through which the path can leave
+            // this node. Fetching a node from memory takes long compared to the calculations below, and the
+            // nodes of a large tree are usually not in the cache. So we ask for all three candidates to be
+            // loaded right now, so that this wait overlaps with the calculations. A wall on the boundary of
+            // the domain has no neighbor (-1), in which case we harmlessly prefetch the root node instead.
+            for (int a = 0; a != 3; ++a) Prefetch::object(&_nodes[std::max(node.neighbor(_wallv[a]), 0)]);
+
+            double dsx = (node.wall(_wallv[0]) - rx()) * _invv[0] + _biasv[0];
+            double dsy = (node.wall(_wallv[1]) - ry()) * _invv[1] + _biasv[1];
+            double dsz = (node.wall(_wallv[2]) - rz()) * _invv[2] + _biasv[2];
+
+            double ds;
+            int wall;
+            if (dsx <= dsy && dsx <= dsz)
+            {
+                ds = dsx;
+                wall = _wallv[0];
+            }
+            else if (dsy <= dsx && dsy <= dsz)
+            {
+                ds = dsy;
+                wall = _wallv[1];
+            }
+            else
+            {
+                ds = dsz;
+                wall = _wallv[2];
+            }
+            propagater(ds + _eps);
+            setSegment(node.cell(), ds);
+
+            // find the new node by following the link across the crossed wall; this should not fail unless
+            // the new location is outside the grid, however on rare occasions it fails due to rounding
+            // errors (e.g. in a corner), in which case the function falls back to top-down search
+            int oldn = _n;
+            _n = locateAcross(_nodes, oldn, wall, rx(), ry(), rz());
+
+            // if we're stuck in the same node,
+            // try to escape by advancing the position to the next representable coordinates
+            if (_n == oldn)
+            {
+                propagateToNextAfter();
+                _n = locate(_nodes, rx(), ry(), rz());
+            }
+
+            // if we're outside the domain or still stuck in the same node, terminate the path
+            if (_n < 0 || _n == oldn) setState(State::Outside);
+            return true;
         }
     };
 }
@@ -262,7 +290,7 @@ int BinTreeSpatialGrid::cellIndex(Position bfr) const
 
 std::unique_ptr<PathSegmentGenerator> BinTreeSpatialGrid::createPathSegmentGenerator() const
 {
-    return std::make_unique<SegmentGenerator>(extent(), eps(), nodes());
+    return std::make_unique<SegmentGenerator>(extent(), eps(), nodes(), cellNodeIndices());
 }
 
 ////////////////////////////////////////////////////////////////////

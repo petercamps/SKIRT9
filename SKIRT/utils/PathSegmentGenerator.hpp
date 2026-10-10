@@ -20,7 +20,16 @@
     In addition to the public interface, the PathSegmentGenerator class also offers facilities for
     use by subclasses. These include functions to access the position and direction of the path, to
     set the cell index and path length for the next segment, and to help track the state of the
-    generator. */
+    generator.
+
+    If the path passed to the start() function holds the index of the cell containing its initial
+    position (see SpatialGridPath::initialCellIndex()), the generator starts in the KnownCell state
+    rather than in the Unknown state. A subclass can then avoid searching for the cell containing
+    the initial position. Because the initial position is guaranteed to be inside the specified
+    cell only up to rounding errors, the subclass must first verify that the initial position is
+    inside the cell according to the same rule as the regular search, so that the outcome is
+    identical, and otherwise proceed as for the Unknown state. A subclass for which locating the
+    initial cell is cheap can simply treat the KnownCell state like the Unknown state. */
 class PathSegmentGenerator
 {
     // ------- Constructing and destructing -------
@@ -39,10 +48,13 @@ public:
     /** This function initializes path segment generation for the starting position \f${\bf{r}}\f$
         and the direction \f${\bf{k}}\f$ specified by the SpatialGridPath instance passed as an
         argument. The function \em must be called before calling the next() function for the first
-        time, or to re-initialize the generator for a fresh path. */
+        time, or to re-initialize the generator for a fresh path. If the path holds the index of the
+        cell containing its initial position, the state is set to KnownCell; otherwise it is set to
+        Unknown. */
     void start(const SpatialGridPath* path)
     {
-        _state = State::Unknown;
+        _initialCellIndex = path->initialCellIndex();
+        _state = _initialCellIndex >= 0 ? State::KnownCell : State::Unknown;
         path->position().cartesian(_rx, _ry, _rz);
         path->direction().cartesian(_kx, _ky, _kz);
     }
@@ -53,6 +65,7 @@ public:
         */
     void start(Position bfr, Direction bfk)
     {
+        _initialCellIndex = -1;
         _state = State::Unknown;
         bfr.cartesian(_rx, _ry, _rz);
         bfk.cartesian(_kx, _ky, _kz);
@@ -80,11 +93,17 @@ public:
 
 protected:
     /** This enumeration lists the states that are passed through by most path segment generators.
-        The start() function sets the state to Unknown. */
-    enum class State { Unknown, Inside, Outside };
+        The start() function sets the state to KnownCell if the index of the cell containing the
+        initial position is known (see the class header), and to Unknown otherwise. */
+    enum class State { Unknown, KnownCell, Inside, Outside };
 
     /** This function returns the current state of the generator. */
     State state() const { return _state; }
+
+    /** This function returns the index of the cell containing the initial position of the path as
+        specified by the path passed to the start() function, or -1 if this cell is unknown. A
+        nonnegative value is guaranteed only up to rounding errors (see the class header). */
+    int initialCellIndex() const { return _initialCellIndex; }
 
     /** This function sets the current state of the generator to the specified value. */
     void setState(State state) { _state = state; }
@@ -207,6 +226,7 @@ private:
     double _kz{0.};
     double _ds{0.};
     int _m{-1};
+    int _initialCellIndex{-1};
 };
 
 //////////////////////////////////////////////////////////////////////

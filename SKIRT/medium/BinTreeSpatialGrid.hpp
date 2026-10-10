@@ -41,7 +41,9 @@
     side of the wall), the generator descends into the neighbor until it reaches the leaf containing
     the new position. A top-down search starting at the root node is used to determine the initial
     cell and as a fall-back in rare cases where numerical inaccuracies would otherwise result in an
-    inconsistent state.
+    inconsistent state. If the path specifies the cell containing its initial position (see the
+    PathSegmentGenerator class), and the top-down search would indeed end in the corresponding leaf
+    node, the generator starts from that node without searching, which yields the same path.
 
     The quantities that depend only on the direction of the path, i.e. the reciprocal of each
     direction component and the walls that the path can cross, are calculated just once for each

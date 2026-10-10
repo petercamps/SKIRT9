@@ -515,7 +515,7 @@ void DustSecondarySource::launch(PhotonPacket* pp, size_t historyIndex, double L
 {
     // select the spatial cell from which to launch based on the history index of this photon packet
     auto p = std::upper_bound(_Iv.cbegin(), _Iv.cend(), historyIndex) - _Iv.cbegin() - 1;
-    auto m = _mv[p];
+    int m = _mv[p];
 
     // calculate the weight related to biased source selection
     // (if the cell has zero launch weight, its luminosity must be zero as well, so the result is zero)
@@ -581,7 +581,11 @@ void DustSecondarySource::launch(PhotonPacket* pp, size_t historyIndex, double L
         bfk = _random->direction();
     }
 
+    // launch the photon packet
     pp->launch(historyIndex, lambda, L * ws * w, bfr, bfk, bvi, dpe, dpe);
+
+    // remember the spatial cell containing the launch position, so that the path need not search for it
+    pp->setInitialCellIndex(m);
 }
 
 ////////////////////////////////////////////////////////////////////

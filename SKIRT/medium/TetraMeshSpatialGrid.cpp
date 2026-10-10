@@ -667,134 +667,138 @@ public:
 
     bool next() override
     {
-        if (state() == State::Unknown)
+        switch (state())
         {
-            // try moving the photon packet inside the grid; if this is impossible, return an empty path
-            if (!moveInside(_grid->extent(), _grid->_eps)) return false;
-
-            // get the index of the cell containing the current position
-            _mr = _grid->cellIndex(r());
-            _enteringFace = -1;
-
-            // very rare edge case where no cell is found at domain boundary
-            if (_mr == -1) return false;
-
-            // if the photon packet started outside the grid, return the corresponding nonzero-length segment;
-            // otherwise fall through to determine the first actual segment
-            if (ds() > 0.) return true;
-        }
-
-        // inside convex hull
-        if (state() == State::Inside)
-        {
-            // loop in case no exit point was found (which should happen only rarely)
-            while (true)
+            // a known initial cell is not used; the initial cell is located as usual
+            case State::KnownCell:
+            case State::Unknown:
             {
-                const Tetra tetra = _grid->_tetrahedra[_mr];
-                const FourFaces& faces = tetra.faces();
-                Position pos = r();
-                Direction dir = k();
+                // try moving the photon packet inside the grid; if this is impossible, return an empty path
+                if (!moveInside(_grid->extent(), _grid->_eps)) return false;
 
-                int leavingFace = -1;
-                double ds = DBL_MAX;
+                // get the index of the cell containing the current position
+                _mr = _grid->cellIndex(r());
+                _enteringFace = -1;
 
-                // find entering face using a single Plücker product
-                if (_enteringFace == -1) _enteringFace = tetra.findEnteringFace(pos, dir);
+                // very rare edge case where no cell is found at domain boundary
+                if (_mr == -1) return false;
 
-                // the translated Plücker moment in the local coordinate system
-                Vec moment = Vec::cross(dir, pos - tetra.vertex(_enteringFace));
+                // if the photon packet started outside the grid, return the corresponding nonzero-length segment;
+                // otherwise fall through to determine the first actual segment
+                if (ds() > 0.) return true;
+            }
 
-                // clockwise vertices around entering face
-                auto cv = clockwiseVertices(_enteringFace);
-
-                // determine orientations for use in the decision tree
-                double prod0 = Vec::dot(moment, tetra.edge(cv[0], _enteringFace));
-                int clock0 = prod0 < 0;
-                // if clockwise move clockwise else move counterclockwise
-                int i = clock0 ? 1 : 2;
-                double prodi = Vec::dot(moment, tetra.edge(cv[i], _enteringFace));
-                int cclocki = prodi >= 0;
-
-                // use plane intersection algorithm if Plücker products are ambiguous
-                // this is actually more strict than the algorithm described by Maria (2017)
-                // but these edge cases are incredibly rare and can cause issues
-                if (prod0 == 0. || prodi == 0.)
+            // intentionally falls through
+            case State::Inside:
+            {
+                // inside the convex hull; loop in case no exit point was found (which should happen only rarely)
+                while (true)
                 {
-                    for (int face : cv)
+                    const Tetra tetra = _grid->_tetrahedra[_mr];
+                    const FourFaces& faces = tetra.faces();
+                    Position pos = r();
+                    Direction dir = k();
+
+                    int leavingFace = -1;
+                    double ds = DBL_MAX;
+
+                    // find entering face using a single Plücker product
+                    if (_enteringFace == -1) _enteringFace = tetra.findEnteringFace(pos, dir);
+
+                    // the translated Plücker moment in the local coordinate system
+                    Vec moment = Vec::cross(dir, pos - tetra.vertex(_enteringFace));
+
+                    // clockwise vertices around entering face
+                    auto cv = clockwiseVertices(_enteringFace);
+
+                    // determine orientations for use in the decision tree
+                    double prod0 = Vec::dot(moment, tetra.edge(cv[0], _enteringFace));
+                    int clock0 = prod0 < 0;
+                    // if clockwise move clockwise else move counterclockwise
+                    int i = clock0 ? 1 : 2;
+                    double prodi = Vec::dot(moment, tetra.edge(cv[i], _enteringFace));
+                    int cclocki = prodi >= 0;
+
+                    // use plane intersection algorithm if Plücker products are ambiguous
+                    // this is actually more strict than the algorithm described by Maria (2017)
+                    // but these edge cases are incredibly rare and can cause issues
+                    if (prod0 == 0. || prodi == 0.)
                     {
-                        const Vec& n = faces[face]._normal;
-                        double ndotk = Vec::dot(n, dir);
-                        if (ndotk > 0)
+                        for (int face : cv)
                         {
-                            const Vec& v = tetra.vertex(_enteringFace);
-                            double dq = Vec::dot(n, v - pos) / ndotk;
-                            if (dq < ds)
+                            const Vec& n = faces[face]._normal;
+                            double ndotk = Vec::dot(n, dir);
+                            if (ndotk > 0)
                             {
-                                ds = dq;
-                                leavingFace = face;
+                                const Vec& v = tetra.vertex(_enteringFace);
+                                double dq = Vec::dot(n, v - pos) / ndotk;
+                                if (dq < ds)
+                                {
+                                    ds = dq;
+                                    leavingFace = face;
+                                }
                             }
                         }
                     }
-                }
-                // use Maria (2017) algorithm otherwise
-                else
-                {
-                    // decision table for clock0 and cclocki
-                    // 1 1 -> 2
-                    // 0 0 -> 1
-                    // 1 0 -> 0
-                    // 0 1 -> 0
-                    static constexpr int dtable[2][2] = {{1, 0}, {0, 2}};  // must be static
-                    leavingFace = cv[dtable[clock0][cclocki]];
-                    // plane intersection to leaving face
-                    const Vec& n = faces[leavingFace]._normal;
-                    const Vec& v = tetra.vertex(_enteringFace);
-                    double ndotk = Vec::dot(n, dir);
-                    ds = Vec::dot(n, v - pos) / ndotk;
-                }
-
-                // if no exit point was found, advance the current point by a small distance,
-                // recalculate the cell index, and return to the start of the loop
-                if (leavingFace == -1 || ds < _grid->_eps)
-                {
-                    propagater(_grid->_eps);
-                    _mr = _grid->cellIndex(r());
-
-                    if (_mr < 0)
-                    {
-                        setState(State::Outside);
-                        return false;
-                    }
+                    // use Maria (2017) algorithm otherwise
                     else
                     {
-                        _enteringFace = -1;
+                        // decision table for clock0 and cclocki
+                        // 1 1 -> 2
+                        // 0 0 -> 1
+                        // 1 0 -> 0
+                        // 0 1 -> 0
+                        static constexpr int dtable[2][2] = {{1, 0}, {0, 2}};  // must be static
+                        leavingFace = cv[dtable[clock0][cclocki]];
+                        // plane intersection to leaving face
+                        const Vec& n = faces[leavingFace]._normal;
+                        const Vec& v = tetra.vertex(_enteringFace);
+                        double ndotk = Vec::dot(n, dir);
+                        ds = Vec::dot(n, v - pos) / ndotk;
                     }
-                }
-                // otherwise set the current point to the exit point and return the path segment
-                else
-                {
-                    propagater(ds);
-                    setSegment(_mr, ds);
-                    _mr = faces[leavingFace]._ntetra;
 
-                    if (_mr < 0)
+                    // if no exit point was found, advance the current point by a small distance,
+                    // recalculate the cell index, and return to the start of the loop
+                    if (leavingFace == -1 || ds < _grid->_eps)
                     {
-                        setState(State::Outside);
-                        return false;
+                        propagater(_grid->_eps);
+                        _mr = _grid->cellIndex(r());
+
+                        if (_mr < 0)
+                        {
+                            setState(State::Outside);
+                            return false;
+                        }
+                        else
+                        {
+                            _enteringFace = -1;
+                        }
                     }
+                    // otherwise set the current point to the exit point and return the path segment
                     else
                     {
-                        _enteringFace = faces[leavingFace]._nface;
-                        return true;
+                        propagater(ds);
+                        setSegment(_mr, ds);
+                        _mr = faces[leavingFace]._ntetra;
+
+                        if (_mr < 0)
+                        {
+                            setState(State::Outside);
+                            return false;
+                        }
+                        else
+                        {
+                            _enteringFace = faces[leavingFace]._nface;
+                            return true;
+                        }
                     }
                 }
             }
-        }
 
-        if (state() == State::Outside)
-        {
+            case State::Outside:
+            {
+            }
         }
-
         return false;
     }
 };
