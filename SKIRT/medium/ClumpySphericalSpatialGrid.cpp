@@ -341,8 +341,24 @@ public:
     {
         switch (state())
         {
-            // locating the initial cell is cheap, so a known initial cell is treated like an unknown one
             case State::KnownCell:
+            {
+                // if the known initial cell is a clump, and the initial position is inside that clump, farther from
+                // its surface than a small margin, start in that clump without searching; because the clumps do not
+                // overlap or touch, the regular search would find the same clump
+                int m = initialCellIndex();
+                if (m < _grid->_numClumps && _grid->_clumps[m].containsWithMargin(r(), _eps))
+                {
+                    _clump = m;
+                    setState(State::Inside);
+                    return nextInside();
+                }
+
+                // otherwise, search for the initial cell as usual (for a known structured cell, the search would
+                // still have to exclude a clump containing the position, so knowing the cell saves little)
+            }
+
+            // intentionally falls through
             case State::Unknown:
             {
                 // if necessary, try moving the path inside the grid
@@ -371,146 +387,7 @@ public:
             // intentionally falls through
             case State::Inside:
             {
-                // if currently inside a clump, the segment ends at the sphere boundary
-                if (_clump >= 0)
-                {
-                    const Clump& c = _grid->_clumps[_clump];
-                    double ds = Quadrics::firstIntersectionSphere(r(), k(), c.center(), c.radius());
-                    if (ds <= 0.) return abortPath();
-                    setSegment(_clump, ds);
-                    propagater(ds + _eps);
-                    _clump = -1;
-
-                    // the clump may have carried the path across a structured-cell wall while
-                    // inside it, so the cell indices cannot be trusted and must be recomputed
-                    if (!setCellIndices()) return abortPath();
-                    return true;
-                }
-
-                // if we're not inside the real or artificial hole, proceed to the next boundary in the regular way
-                if (_i >= 0)
-                {
-                    // remember the indices of the current cell
-                    int icur = _i;
-                    int jcur = _j;
-                    int kcur = _k;
-
-                    // calculate the distance travelled inside the cell by considering the potential
-                    // exit points for each of the six cell boundaries; the smallest positive
-                    // intersection "distance" wins
-                    double ds = DBL_MAX;
-
-                    // inner radial boundary (always nonzero)
-                    {
-                        double s = firstIntersectionRadialBoundary(icur);
-                        if (s > 0 && s < ds)
-                        {
-                            ds = s;
-                            _i = icur - 1;  // may be decremented to -1 (inside the innermost boundary)
-                            _j = jcur;
-                            _k = kcur;
-                        }
-                    }
-
-                    // outer radial boundary
-                    {
-                        double s = firstIntersectionRadialBoundary(icur + 1);
-                        if (s > 0 && s < ds)
-                        {
-                            ds = s;
-                            _i = icur + 1;  // may be incremented to Nr (beyond the outermost boundary)
-                            _j = jcur;
-                            _k = kcur;
-                        }
-                    }
-
-                    // upper angular boundary (not applicable to uppermost cell)
-                    if (jcur > 0)
-                    {
-                        double s = firstIntersectionCone(jcur);
-                        if (s > 0 && s < ds)
-                        {
-                            ds = s;
-                            _i = icur;
-                            _j = jcur - 1;
-                            _k = kcur;
-                        }
-                    }
-
-                    // lower angular boundary (not applicable to lowest cell)
-                    if (jcur < _grid->_Ntheta - 1)
-                    {
-                        double s = firstIntersectionCone(jcur + 1);
-                        if (s > 0 && s < ds)
-                        {
-                            ds = s;
-                            _i = icur;
-                            _j = jcur + 1;
-                            _k = kcur;
-                        }
-                    }
-
-                    // clockwise azimuthal boundary
-                    {
-                        double s = intersectionMeridionalPlane(kcur);
-                        if (s > 0. && s < ds)
-                        {
-                            ds = s;
-                            _i = icur;
-                            _j = jcur;
-                            _k = kcur > 0 ? kcur - 1 : _grid->_Nphi - 1;  // scroll from -pi to pi
-                        }
-                    }
-
-                    // anticlockwise azimuthal boundary
-                    {
-                        double s = intersectionMeridionalPlane(kcur + 1);
-                        if (s > 0. && s < ds)
-                        {
-                            ds = s;
-                            _i = icur;
-                            _j = jcur;
-                            _k = (kcur + 1) % _grid->_Nphi;  // scroll from pi to -pi
-                        }
-                    }
-
-                    // if no exit point was found, abort the path
-                    if (ds == DBL_MAX) return abortPath();
-
-                    // check whether a clump is entered before this structured-cell boundary is reached;
-                    // bounding the BVH search by ds both prunes the search and means "no clump found"
-                    // and "found beyond the cell boundary" collapse into the same outcome
-                    double dsClump = ds;
-                    int clumpHit = _grid->_bvh->nearestClumpAlongRay(r(), k(), dsClump);
-                    if (clumpHit >= 0)
-                    {
-                        // the segment up to the clump entry belongs to the current structured cell;
-                        // the tentative (i,j,k) computed above never actually apply since that
-                        // boundary is not reached -- they are simply recomputed from scratch once
-                        // the clump is exited, so there is no need to restore them here
-                        setSegment(_grid->_numClumps + _grid->index(icur, jcur, kcur), dsClump);
-                        propagater(dsClump + _eps);
-                        _clump = clumpHit;
-                    }
-                    else
-                    {
-                        setSegment(_grid->_numClumps + _grid->index(icur, jcur, kcur), ds);
-                        propagater(ds + _eps);
-                        if (_i >= _grid->_Nr) setState(State::Outside);
-                    }
-                }
-
-                // if we're inside the hole, skip to the hole radius in one empty segment step
-                // and recalculate the bin indices (the phi bin index changes when crossing the origin)
-                else
-                {
-                    double ds = firstIntersectionRadialBoundary(0);
-                    if (ds <= 0.) return abortPath();
-                    setEmptySegment(ds);
-                    propagater(ds + _eps);
-                    if (!setCellIndices()) return abortPath();
-                }
-                return true;
+                return nextInside();
             }
 
             case State::Outside:
@@ -518,6 +395,153 @@ public:
             }
         }
         return false;
+    }
+
+private:
+    // This function determines the next segment for a path inside the grid, adjusts the position and the current
+    // cell accordingly, and returns true, or returns false if there are no more segments.
+    bool nextInside()
+    {
+        // if currently inside a clump, the segment ends at the sphere boundary
+        if (_clump >= 0)
+        {
+            const Clump& c = _grid->_clumps[_clump];
+            double ds = Quadrics::firstIntersectionSphere(r(), k(), c.center(), c.radius());
+            if (ds <= 0.) return abortPath();
+            setSegment(_clump, ds);
+            propagater(ds + _eps);
+            _clump = -1;
+
+            // the clump may have carried the path across a structured-cell wall while
+            // inside it, so the cell indices cannot be trusted and must be recomputed
+            if (!setCellIndices()) return abortPath();
+            return true;
+        }
+
+        // if we're not inside the real or artificial hole, proceed to the next boundary in the regular way
+        if (_i >= 0)
+        {
+            // remember the indices of the current cell
+            int icur = _i;
+            int jcur = _j;
+            int kcur = _k;
+
+            // calculate the distance travelled inside the cell by considering the potential
+            // exit points for each of the six cell boundaries; the smallest positive
+            // intersection "distance" wins
+            double ds = DBL_MAX;
+
+            // inner radial boundary (always nonzero)
+            {
+                double s = firstIntersectionRadialBoundary(icur);
+                if (s > 0 && s < ds)
+                {
+                    ds = s;
+                    _i = icur - 1;  // may be decremented to -1 (inside the innermost boundary)
+                    _j = jcur;
+                    _k = kcur;
+                }
+            }
+
+            // outer radial boundary
+            {
+                double s = firstIntersectionRadialBoundary(icur + 1);
+                if (s > 0 && s < ds)
+                {
+                    ds = s;
+                    _i = icur + 1;  // may be incremented to Nr (beyond the outermost boundary)
+                    _j = jcur;
+                    _k = kcur;
+                }
+            }
+
+            // upper angular boundary (not applicable to uppermost cell)
+            if (jcur > 0)
+            {
+                double s = firstIntersectionCone(jcur);
+                if (s > 0 && s < ds)
+                {
+                    ds = s;
+                    _i = icur;
+                    _j = jcur - 1;
+                    _k = kcur;
+                }
+            }
+
+            // lower angular boundary (not applicable to lowest cell)
+            if (jcur < _grid->_Ntheta - 1)
+            {
+                double s = firstIntersectionCone(jcur + 1);
+                if (s > 0 && s < ds)
+                {
+                    ds = s;
+                    _i = icur;
+                    _j = jcur + 1;
+                    _k = kcur;
+                }
+            }
+
+            // clockwise azimuthal boundary
+            {
+                double s = intersectionMeridionalPlane(kcur);
+                if (s > 0. && s < ds)
+                {
+                    ds = s;
+                    _i = icur;
+                    _j = jcur;
+                    _k = kcur > 0 ? kcur - 1 : _grid->_Nphi - 1;  // scroll from -pi to pi
+                }
+            }
+
+            // anticlockwise azimuthal boundary
+            {
+                double s = intersectionMeridionalPlane(kcur + 1);
+                if (s > 0. && s < ds)
+                {
+                    ds = s;
+                    _i = icur;
+                    _j = jcur;
+                    _k = (kcur + 1) % _grid->_Nphi;  // scroll from pi to -pi
+                }
+            }
+
+            // if no exit point was found, abort the path
+            if (ds == DBL_MAX) return abortPath();
+
+            // check whether a clump is entered before this structured-cell boundary is reached;
+            // bounding the BVH search by ds both prunes the search and means "no clump found"
+            // and "found beyond the cell boundary" collapse into the same outcome
+            double dsClump = ds;
+            int clumpHit = _grid->_bvh->nearestClumpAlongRay(r(), k(), dsClump);
+            if (clumpHit >= 0)
+            {
+                // the segment up to the clump entry belongs to the current structured cell;
+                // the tentative (i,j,k) computed above never actually apply since that
+                // boundary is not reached -- they are simply recomputed from scratch once
+                // the clump is exited, so there is no need to restore them here
+                setSegment(_grid->_numClumps + _grid->index(icur, jcur, kcur), dsClump);
+                propagater(dsClump + _eps);
+                _clump = clumpHit;
+            }
+            else
+            {
+                setSegment(_grid->_numClumps + _grid->index(icur, jcur, kcur), ds);
+                propagater(ds + _eps);
+                if (_i >= _grid->_Nr) setState(State::Outside);
+            }
+        }
+
+        // if we're inside the hole, skip to the hole radius in one empty segment step
+        // and recalculate the bin indices (the phi bin index changes when crossing the origin)
+        else
+        {
+            double ds = firstIntersectionRadialBoundary(0);
+            if (ds <= 0.) return abortPath();
+            setEmptySegment(ds);
+            propagater(ds + _eps);
+            if (!setCellIndices()) return abortPath();
+        }
+        return true;
     }
 };
 

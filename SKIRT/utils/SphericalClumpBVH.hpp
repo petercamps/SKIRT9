@@ -41,6 +41,14 @@ public:
 
         /** This function returns the Cartesian bounding box of the clump. */
         Box bounds() const { return Box(_x - _r, _y - _r, _z - _r, _x + _r, _y + _r, _z + _r); }
+
+        /** This function returns true if the specified position is inside the clump, at a distance
+            larger than the specified margin from its surface, and false otherwise. */
+        bool containsWithMargin(Vec bfr, double margin) const
+        {
+            double r = _r - margin;
+            return r > 0. && (bfr - center()).norm2() < r * r;
+        }
     };
 
     /** This function bulk-loads the specified clumps into the BVH, replacing any previous content.
