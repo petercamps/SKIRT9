@@ -87,9 +87,7 @@ public:
     /** This function returns the index of the spatial cell containing the initial position of the
         path, or -1 if this cell is unknown. A nonnegative value refers to a cell of the spatial
         grid of the medium system; it is set by the photon life cycle for the paths that start at
-        the interaction point of a previous path, at a position generated in a known cell, or at the
-        launch position of a primary photon packet whose peel-offs are emitted (in which case the
-        cell is located once for the peel-offs and the packet itself).
+        the interaction point of a previous path, or at a position generated in a known cell.
 
         The initial position is guaranteed to be inside this cell only up to rounding errors. For
         example, a position propagated to an interaction point near a cell wall may lie just across

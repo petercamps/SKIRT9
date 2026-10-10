@@ -541,10 +541,6 @@ void MonteCarloSimulation::performLifeCycle(size_t firstIndex, size_t numIndices
     // scratch space for the detection information of the instruments in a sight-line group during peel-off
     vector<Instrument::Detection> detections(peel ? _instrumentSystem->instruments().size() : 0);
 
-    // for a primary packet whose peel-offs are emitted, find the cell containing the launch position just once,
-    // so that the emission peel-offs and the packet's first path can all skip that search
-    bool locateLaunchCell = primary && peel && _config->hasMedium();
-
     // loop over the history indices, with interruptions for progress logging
     while (numIndices)
     {
@@ -558,8 +554,6 @@ void MonteCarloSimulation::performLifeCycle(size_t firstIndex, size_t numIndices
                 _secondarySourceSystem->launch(&pp, historyIndex);
             if (pp.luminosity() > 0)
             {
-                // emit peel-offs, after finding the cell containing the launch position if requested
-                if (locateLaunchCell) pp.setInitialCellIndex(mediumSystem()->grid()->cellIndex(pp.position()));
                 if (peel) peelOffEmission(&pp, &ppp, detections);
 
                 // trace the packet through the media, if any
