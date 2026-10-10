@@ -27,9 +27,14 @@
     rather than in the Unknown state. A subclass can then avoid searching for the cell containing
     the initial position. Because the initial position is guaranteed to be inside the specified
     cell only up to rounding errors, the subclass must first verify that the initial position is
-    inside the cell according to the same rule as the regular search, so that the outcome is
-    identical, and otherwise proceed as for the Unknown state. A subclass for which locating the
-    initial cell is cheap can simply treat the KnownCell state like the Unknown state. */
+    inside the cell at a distance larger than a small margin from each of its walls, and otherwise
+    proceed as for the Unknown state. The margin is the small distance by which the generator
+    steps past a wall when moving to the next cell, i.e. a tiny fraction of the extent of the
+    domain. A position accepted in this way is strictly inside the spatial domain, so that the
+    regular procedure would not move it (see the moveInside() function), and strictly inside the
+    cell, so that the regular search would find that same cell. As a result, the generated path is
+    identical to the one generated without knowing the initial cell. A subclass for which locating
+    the initial cell is cheap can simply treat the KnownCell state like the Unknown state. */
 class PathSegmentGenerator
 {
     // ------- Constructing and destructing -------

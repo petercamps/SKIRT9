@@ -145,6 +145,10 @@ private:
             It first checks if the position is inside the bounding box of the tetrahedron. */
         bool contains(Position bfr) const;
 
+        /** This function returns true if the specified position is inside the tetrahedron, at a
+            distance larger than the specified margin from each of its faces, and false otherwise. */
+        bool containsWithMargin(Position bfr, double margin) const;
+
         /** This function generates three random barycentric coordinates for uniformly sampling
             inside this tetrahedron. The fourth coordinate is calculated by ensuring their sum
             equals 1, i.e. r=1-s-t-u.

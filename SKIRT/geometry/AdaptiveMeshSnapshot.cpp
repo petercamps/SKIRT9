@@ -342,8 +342,21 @@ public:
     {
         switch (state())
         {
-            // a known initial cell is not used; the initial cell is located as usual
             case State::KnownCell:
+            {
+                // if the initial position is inside the leaf node for the known initial cell, farther from its walls
+                // than a small margin, start from that node without searching, and determine the first segment
+                const Node* node = _grid->_cells[initialCellIndex()];
+                if (node->containsWithMargin(r(), _grid->_eps))
+                {
+                    _node = node;
+                    setState(State::Inside);
+                    return nextInside();
+                }
+            }
+
+            // otherwise, search for the initial cell as usual
+            // intentionally falls through
             case State::Unknown:
             {
                 // try moving the photon packet inside the grid; if this is impossible, return an empty path
@@ -360,52 +373,7 @@ public:
             // intentionally falls through
             case State::Inside:
             {
-                // determine the segment from the current position to the first cell wall
-                // and adjust the position and cell indices accordingly
-                double xnext = (kx() < 0.0) ? _node->xmin() : _node->xmax();
-                double ynext = (ky() < 0.0) ? _node->ymin() : _node->ymax();
-                double znext = (kz() < 0.0) ? _node->zmin() : _node->zmax();
-                double dsx = (fabs(kx()) > 1e-15) ? (xnext - rx()) / kx() : DBL_MAX;
-                double dsy = (fabs(ky()) > 1e-15) ? (ynext - ry()) / ky() : DBL_MAX;
-                double dsz = (fabs(kz()) > 1e-15) ? (znext - rz()) / kz() : DBL_MAX;
-
-                double ds;
-                Node::Wall wall;
-                if (dsx <= dsy && dsx <= dsz)
-                {
-                    ds = dsx;
-                    wall = (kx() < 0.0) ? Node::BACK : Node::FRONT;
-                }
-                else if (dsy <= dsx && dsy <= dsz)
-                {
-                    ds = dsy;
-                    wall = (ky() < 0.0) ? Node::LEFT : Node::RIGHT;
-                }
-                else
-                {
-                    ds = dsz;
-                    wall = (kz() < 0.0) ? Node::BOTTOM : Node::TOP;
-                }
-                propagater(ds + _grid->_eps);
-                setSegment(_node->cellIndex(), ds);
-
-                // try the most likely neighbor of the current node, and use top-down search as a fall-back
-                const Node* oldnode = _node;
-                _node = _node->neighbor(wall, r());
-                if (!_node) _node = _grid->_root->leaf(r());
-
-                // if we're stuck in the same node,
-                // try to escape by advancing the position to the next representable coordinates
-                if (_node == oldnode)
-                {
-                    // try to escape by advancing the position to the next representable coordinates
-                    propagateToNextAfter();
-                    _node = _grid->_root->leaf(r());
-                }
-
-                // if we're outside the domain or still stuck in the same node, terminate the path
-                if (!_node || _node == oldnode) setState(State::Outside);
-                return true;
+                return nextInside();
             }
 
             case State::Outside:
@@ -413,6 +381,59 @@ public:
             }
         }
         return false;
+    }
+
+private:
+    // This function determines the next segment for a path inside the grid, adjusts the position and the current
+    // cell accordingly, and returns true, or returns false if there are no more segments.
+    bool nextInside()
+    {
+        // determine the segment from the current position to the first cell wall
+        // and adjust the position and cell indices accordingly
+        double xnext = (kx() < 0.0) ? _node->xmin() : _node->xmax();
+        double ynext = (ky() < 0.0) ? _node->ymin() : _node->ymax();
+        double znext = (kz() < 0.0) ? _node->zmin() : _node->zmax();
+        double dsx = (fabs(kx()) > 1e-15) ? (xnext - rx()) / kx() : DBL_MAX;
+        double dsy = (fabs(ky()) > 1e-15) ? (ynext - ry()) / ky() : DBL_MAX;
+        double dsz = (fabs(kz()) > 1e-15) ? (znext - rz()) / kz() : DBL_MAX;
+
+        double ds;
+        Node::Wall wall;
+        if (dsx <= dsy && dsx <= dsz)
+        {
+            ds = dsx;
+            wall = (kx() < 0.0) ? Node::BACK : Node::FRONT;
+        }
+        else if (dsy <= dsx && dsy <= dsz)
+        {
+            ds = dsy;
+            wall = (ky() < 0.0) ? Node::LEFT : Node::RIGHT;
+        }
+        else
+        {
+            ds = dsz;
+            wall = (kz() < 0.0) ? Node::BOTTOM : Node::TOP;
+        }
+        propagater(ds + _grid->_eps);
+        setSegment(_node->cellIndex(), ds);
+
+        // try the most likely neighbor of the current node, and use top-down search as a fall-back
+        const Node* oldnode = _node;
+        _node = _node->neighbor(wall, r());
+        if (!_node) _node = _grid->_root->leaf(r());
+
+        // if we're stuck in the same node,
+        // try to escape by advancing the position to the next representable coordinates
+        if (_node == oldnode)
+        {
+            // try to escape by advancing the position to the next representable coordinates
+            propagateToNextAfter();
+            _node = _grid->_root->leaf(r());
+        }
+
+        // if we're outside the domain or still stuck in the same node, terminate the path
+        if (!_node || _node == oldnode) setState(State::Outside);
+        return true;
     }
 };
 

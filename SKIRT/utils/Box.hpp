@@ -108,6 +108,14 @@ public:
         return x >= _xmin && x <= _xmax && y >= _ymin && y <= _ymax && z >= _zmin && z <= _zmax;
     }
 
+    /** This function returns true if the position \f${\bf{r}}\f$ is inside the box, at a distance
+        larger than the specified margin from each of its walls, and false otherwise. */
+    inline bool containsWithMargin(Vec r, double margin) const
+    {
+        return r.x() - _xmin > margin && _xmax - r.x() > margin && r.y() - _ymin > margin && _ymax - r.y() > margin
+               && r.z() - _zmin > margin && _zmax - r.z() > margin;
+    }
+
     /** This function returns true if the given box is inside this box, false otherwise. */
     inline bool contains(const Box& box) const
     {

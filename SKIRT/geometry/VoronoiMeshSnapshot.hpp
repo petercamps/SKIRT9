@@ -334,6 +334,14 @@ public:
         cellIndex() function causes undefined behavior. */
     int cellIndex(Position bfr) const;
 
+private:
+    /** This function returns true if the specified position is inside the cell with index
+        \f$m\f$, at a distance larger than the specified margin from each of its walls, and false
+        otherwise. The walls of a cell are the planes bisecting its site and the site of each of
+        its neighbors, and the walls of the domain. The function also returns false for a cell
+        without neighbor information. */
+    bool cellContainsWithMargin(int m, Vec bfr, double margin) const;
+
 protected:
     /** This function returns a reference to an array containing the imported properties (in column
         order) for the cell with index \f$0\le m \le N_\mathrm{ent}-1\f$. If the index is out of

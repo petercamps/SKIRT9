@@ -81,9 +81,10 @@ class TextOutFile;
     side of the wall), the generator descends into the neighbor until it reaches the leaf containing
     the new position. A top-down search starting at the root node is used to determine the initial
     cell and as a fall-back in rare cases where numerical inaccuracies would otherwise result in an
-    inconsistent state. If the path specifies the cell containing its initial position (see the
-    PathSegmentGenerator class), and the top-down search would indeed end in the corresponding leaf
-    node, the generator starts from that node without searching, which yields the same path.
+    inconsistent state. If the path specifies the cell containing its initial position, and that
+    position is inside the cell at a distance larger than a small margin from each of its walls
+    (see the PathSegmentGenerator class), the generator starts from the corresponding leaf node
+    without searching, which yields the same path.
 
     The quantities that depend only on the direction of the path, i.e. the reciprocal of each
     direction component and the walls that the path can cross, are calculated just once for each
@@ -188,17 +189,12 @@ public:
                    && z <= _wallv[5];
         }
 
-        /** This function returns true if the top-down search for the leaf node containing the
-            specified position, which assigns a position on a splitting plane to the child on the
-            upper side, would end in this leaf node. In other words, it returns true if the
-            position is inside the node, including its lower walls and excluding its upper walls,
-            except for upper walls on the boundary of the domain (i.e. without a neighbor), which
-            are included. */
-        bool owns(double x, double y, double z) const
+        /** This function returns true if the specified position is inside the node, at a distance
+            larger than the specified margin from each of its walls, and false otherwise. */
+        bool containsWithMargin(double x, double y, double z, double margin) const
         {
-            return x >= _wallv[0] && (x < _wallv[1] || (x == _wallv[1] && _neighborv[1] < 0)) && y >= _wallv[2]
-                   && (y < _wallv[3] || (y == _wallv[3] && _neighborv[3] < 0)) && z >= _wallv[4]
-                   && (z < _wallv[5] || (z == _wallv[5] && _neighborv[5] < 0));
+            return x - _wallv[0] > margin && _wallv[1] - x > margin && y - _wallv[2] > margin && _wallv[3] - y > margin
+                   && z - _wallv[4] > margin && _wallv[5] - z > margin;
         }
 
         /** This function returns true if the node is a leaf node, i.e. a spatial cell without

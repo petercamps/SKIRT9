@@ -332,10 +332,11 @@ namespace
             {
                 case State::KnownCell:
                 {
-                    // if the top-down search would end in the leaf node for the known initial cell, start from that
-                    // node without searching, and determine the first segment
+                    // if the initial position is inside the leaf node for the known initial cell, farther from its
+                    // walls than a small margin, start from that node without searching, and determine the first
+                    // segment
                     int n = _cellNodes[initialCellIndex()];
-                    if (_nodes[n].owns(rx(), ry(), rz()))
+                    if (_nodes[n].containsWithMargin(rx(), ry(), rz(), _eps))
                     {
                         _n = n;
                         initializeDirection();

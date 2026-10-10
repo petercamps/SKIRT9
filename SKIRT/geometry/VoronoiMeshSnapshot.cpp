@@ -1045,6 +1045,34 @@ int VoronoiMeshSnapshot::cellIndex(Position bfr) const
 
 ////////////////////////////////////////////////////////////////////
 
+bool VoronoiMeshSnapshot::cellContainsWithMargin(int m, Vec bfr, double margin) const
+{
+    // reject a cell without neighbor information
+    const auto& neighbors = _cells[m]->neighbors();
+    if (neighbors.empty()) return false;
+
+    // the position must be farther than the margin from each wall of the domain
+    if (!_extent.containsWithMargin(bfr, margin)) return false;
+
+    // the position must be farther than the margin from the plane bisecting the site of the cell and the site of each
+    // neighbor (the walls of the domain have negative neighbor indices); for squared distances dm and dn from the
+    // position to these sites, the distance to the plane is (dn - dm) / (2 |pn - pm|), so that the condition can be
+    // tested without taking a square root
+    Vec pm = _cells[m]->position();
+    double dm = _cells[m]->squaredDistanceTo(bfr);
+    for (int n : neighbors)
+    {
+        if (n >= 0)
+        {
+            double diff = _cells[n]->squaredDistanceTo(bfr) - dm;
+            if (!(diff > 0. && diff * diff > 4. * margin * margin * (_cells[n]->position() - pm).norm2())) return false;
+        }
+    }
+    return true;
+}
+
+////////////////////////////////////////////////////////////////////
+
 const Array& VoronoiMeshSnapshot::properties(int m) const
 {
     return _cells[m]->properties();
@@ -1071,8 +1099,20 @@ public:
     {
         switch (state())
         {
-            // a known initial cell is not used; the initial cell is located as usual
             case State::KnownCell:
+            {
+                // if the initial position is inside the known initial cell, farther from its walls than a small margin,
+                // start from that cell without searching, and determine the first segment
+                if (_grid->cellContainsWithMargin(initialCellIndex(), r(), _grid->_eps))
+                {
+                    _mr = initialCellIndex();
+                    setState(State::Inside);
+                    return nextInside();
+                }
+            }
+
+            // otherwise, search for the initial cell as usual
+            // intentionally falls through
             case State::Unknown:
             {
                 // try moving the photon packet inside the grid; if this is impossible, return an empty path
@@ -1089,100 +1129,7 @@ public:
             // intentionally falls through
             case State::Inside:
             {
-                // loop in case no exit point was found (which should happen only rarely)
-                while (true)
-                {
-                    // get the site position for this cell
-                    Vec pr = _grid->_cells[_mr]->position();
-
-                    // initialize the smallest nonnegative intersection distance and corresponding index
-                    double sq = DBL_MAX;  // very large, but not infinity (so that infinite si values are discarded)
-                    const int NO_INDEX = -99;  // meaningless cell index
-                    int mq = NO_INDEX;
-
-                    // loop over the list of neighbor indices
-                    const vector<int>& mv = _grid->_cells[_mr]->neighbors();
-                    int n = mv.size();
-                    for (int i = 0; i < n; i++)
-                    {
-                        int mi = mv[i];
-
-                        // declare the intersection distance for this neighbor (init to a value that will be rejected)
-                        double si = 0;
-
-                        // --- intersection with neighboring cell
-                        if (mi >= 0)
-                        {
-                            // get the site position for this neighbor
-                            Vec pi = _grid->_cells[mi]->position();
-
-                            // calculate the (unnormalized) normal on the bisecting plane
-                            Vec n = pi - pr;
-
-                            // calculate the denominator of the intersection quotient
-                            double ndotk = Vec::dot(n, k());
-
-                            // if the denominator is negative the intersection distance is negative,
-                            // so don't calculate it
-                            if (ndotk > 0)
-                            {
-                                // calculate a point on the bisecting plane
-                                Vec p = 0.5 * (pi + pr);
-
-                                // calculate the intersection distance
-                                si = Vec::dot(n, p - r()) / ndotk;
-                            }
-                        }
-
-                        // --- intersection with domain wall
-                        else
-                        {
-                            switch (mi)
-                            {
-                                case -1: si = (_grid->extent().xmin() - rx()) / kx(); break;
-                                case -2: si = (_grid->extent().xmax() - rx()) / kx(); break;
-                                case -3: si = (_grid->extent().ymin() - ry()) / ky(); break;
-                                case -4: si = (_grid->extent().ymax() - ry()) / ky(); break;
-                                case -5: si = (_grid->extent().zmin() - rz()) / kz(); break;
-                                case -6: si = (_grid->extent().zmax() - rz()) / kz(); break;
-                                default: throw FATALERROR("Invalid neighbor ID");
-                            }
-                        }
-
-                        // remember the smallest nonnegative intersection point
-                        if (si > 0 && si < sq)
-                        {
-                            sq = si;
-                            mq = mi;
-                        }
-                    }
-
-                    // if no exit point was found, advance the current point by a small distance,
-                    // recalculate the cell index, and return to the start of the loop
-                    if (mq == NO_INDEX)
-                    {
-                        propagater(_grid->_eps);
-                        _mr = _grid->cellIndex(r());
-
-                        // if we're outside the domain, terminate the path without returning a path segment
-                        if (_mr < 0)
-                        {
-                            setState(State::Outside);
-                            return false;
-                        }
-                    }
-                    // otherwise set the current point to the exit point and return the path segment
-                    else
-                    {
-                        propagater(sq + _grid->_eps);
-                        setSegment(_mr, sq);
-                        _mr = mq;
-
-                        // if we're outside the domain, terminate the path after returning this path segment
-                        if (_mr < 0) setState(State::Outside);
-                        return true;
-                    }
-                }
+                return nextInside();
             }
 
             case State::Outside:
@@ -1190,6 +1137,107 @@ public:
             }
         }
         return false;
+    }
+
+private:
+    // This function determines the next segment for a path inside the grid, adjusts the position and the current
+    // cell accordingly, and returns true, or returns false if there are no more segments.
+    bool nextInside()
+    {
+        // loop in case no exit point was found (which should happen only rarely)
+        while (true)
+        {
+            // get the site position for this cell
+            Vec pr = _grid->_cells[_mr]->position();
+
+            // initialize the smallest nonnegative intersection distance and corresponding index
+            double sq = DBL_MAX;       // very large, but not infinity (so that infinite si values are discarded)
+            const int NO_INDEX = -99;  // meaningless cell index
+            int mq = NO_INDEX;
+
+            // loop over the list of neighbor indices
+            const vector<int>& mv = _grid->_cells[_mr]->neighbors();
+            int n = mv.size();
+            for (int i = 0; i < n; i++)
+            {
+                int mi = mv[i];
+
+                // declare the intersection distance for this neighbor (init to a value that will be rejected)
+                double si = 0;
+
+                // --- intersection with neighboring cell
+                if (mi >= 0)
+                {
+                    // get the site position for this neighbor
+                    Vec pi = _grid->_cells[mi]->position();
+
+                    // calculate the (unnormalized) normal on the bisecting plane
+                    Vec n = pi - pr;
+
+                    // calculate the denominator of the intersection quotient
+                    double ndotk = Vec::dot(n, k());
+
+                    // if the denominator is negative the intersection distance is negative,
+                    // so don't calculate it
+                    if (ndotk > 0)
+                    {
+                        // calculate a point on the bisecting plane
+                        Vec p = 0.5 * (pi + pr);
+
+                        // calculate the intersection distance
+                        si = Vec::dot(n, p - r()) / ndotk;
+                    }
+                }
+
+                // --- intersection with domain wall
+                else
+                {
+                    switch (mi)
+                    {
+                        case -1: si = (_grid->extent().xmin() - rx()) / kx(); break;
+                        case -2: si = (_grid->extent().xmax() - rx()) / kx(); break;
+                        case -3: si = (_grid->extent().ymin() - ry()) / ky(); break;
+                        case -4: si = (_grid->extent().ymax() - ry()) / ky(); break;
+                        case -5: si = (_grid->extent().zmin() - rz()) / kz(); break;
+                        case -6: si = (_grid->extent().zmax() - rz()) / kz(); break;
+                        default: throw FATALERROR("Invalid neighbor ID");
+                    }
+                }
+
+                // remember the smallest nonnegative intersection point
+                if (si > 0 && si < sq)
+                {
+                    sq = si;
+                    mq = mi;
+                }
+            }
+
+            // if no exit point was found, advance the current point by a small distance,
+            // recalculate the cell index, and return to the start of the loop
+            if (mq == NO_INDEX)
+            {
+                propagater(_grid->_eps);
+                _mr = _grid->cellIndex(r());
+
+                // if we're outside the domain, terminate the path without returning a path segment
+                if (_mr < 0)
+                {
+                    setState(State::Outside);
+                    return false;
+                }
+            }
+            // otherwise set the current point to the exit point and return the path segment
+            else
+            {
+                propagater(sq + _grid->_eps);
+                setSegment(_mr, sq);
+                _mr = mq;
+
+                // if we're outside the domain, terminate the path after returning this path segment
+                if (_mr < 0) setState(State::Outside);
+                return true;
+            }
+        }
     }
 };
 
