@@ -69,10 +69,23 @@ double Sphere2DSpatialGrid::diagonal(int m) const
 
 //////////////////////////////////////////////////////////////////////
 
+namespace
+{
+    // This function returns the radius and the polar angle of the specified position, calculated as in
+    // Position::spherical(), but without the azimuth, which the 2D spherical grid does not need.
+    void radiusAndPolarAngle(Position bfr, double& r, double& theta)
+    {
+        r = bfr.radius();
+        theta = r == 0 ? 0 : acos(bfr.z() / r);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
+
 int Sphere2DSpatialGrid::cellIndex(Position bfr) const
 {
-    double r, theta, phi;
-    bfr.spherical(r, theta, phi);
+    double r, theta;
+    radiusAndPolarAngle(bfr, r, theta);
 
     int i = NR::locateFail(_rv, r);
     if (i < 0) return -1;
@@ -128,8 +141,8 @@ public:
     // returns true if the position is inside rmax, false if it is outside rmax
     bool setCellIndices()
     {
-        double radius, theta, phi;
-        r().spherical(radius, theta, phi);
+        double radius, theta;
+        radiusAndPolarAngle(r(), radius, theta);
         _i = NR::locate(_grid->_rv, radius);
         _j = NR::locateClip(_grid->_thetav, theta);
         return _i < _grid->_Nr;
