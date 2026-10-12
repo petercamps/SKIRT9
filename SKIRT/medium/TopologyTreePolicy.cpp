@@ -5,12 +5,10 @@
 
 #include "TopologyTreePolicy.hpp"
 #include "FatalError.hpp"
-#include "FilePaths.hpp"
 #include "Log.hpp"
-#include "System.hpp"
+#include "TextInFile.hpp"
 #include "TreeNodeEvaluation.hpp"
 #include "TreeSpatialGrid.hpp"
-#include <fstream>
 
 ////////////////////////////////////////////////////////////////////
 
@@ -22,20 +20,21 @@ void TopologyTreePolicy::setupSelfBefore()
     _grid = find<TreeSpatialGrid>(false);
     _extent = _grid->extent();
 
-    // open the input file
-    string filepath = find<FilePaths>()->inputFile(filename());
-    std::ifstream infile = System::ifstream(filepath);
-    if (!infile) throw FATALERROR("Could not open the tree topology data file " + filepath);
-    auto log = find<Log>();
-    log->info(type() + " reads tree topology from text file " + filepath + "...");
+    // open the input file, which is a column text file with a single dimensionless column
+    TextInFile infile(this, filename(), "tree topology");
+    infile.addColumn("number of children per nonleaf node, followed by the subdivision flag for each node");
 
-    // skip any header lines
-    string line;
-    while (infile.peek() == '#') getline(infile, line);
+    // this function returns the next value in the file, or -1 if there are no more values or if the value is not
+    // one of the integers that can occur in the file
+    Array row;
+    auto readValue = [&infile, &row]() {
+        if (!infile.readRow(row)) return -1;
+        double value = row[0];
+        return value == 0. || value == 1. || value == 2. || value == 8. ? static_cast<int>(value) : -1;
+    };
 
     // verify the number of children
-    int numChildren = -1;
-    infile >> numChildren;
+    int numChildren = readValue();
     if (numChildren != 0 && numChildren != 2 && numChildren != 8)
         throw FATALERROR("Tree topology data file has improper format and/or missing data");
     if (numChildren != 0 && numChildren != _grid->numChildren())
@@ -54,8 +53,7 @@ void TopologyTreePolicy::setupSelfBefore()
         stack.pop_back();
         depth = max(depth, level);
 
-        int flag = -1;
-        infile >> flag;
+        int flag = readValue();
         if (flag == 1 && numChildren != 0)
         {
             int firstChild = static_cast<int>(_childv.size());
@@ -66,8 +64,9 @@ void TopologyTreePolicy::setupSelfBefore()
         else if (flag != 0)
             throw FATALERROR("Tree topology data file has improper format and/or missing data");
     }
-    log->info("Done reading tree topology with " + std::to_string(_childv.size()) + " nodes and depth "
-              + std::to_string(depth));
+    infile.close();
+    auto log = find<Log>();
+    log->info("  Tree topology has " + std::to_string(_childv.size()) + " nodes and depth " + std::to_string(depth));
 
     // warn if the grid cannot reproduce the recorded tree because its maximum level is too small
     if (depth > _grid->maxLevel())

@@ -32,7 +32,8 @@ class TreeSpatialGrid;
     recorded tree can also be refined by configuring other policies alongside this one, because a
     node is subdivided as soon as one of the policies asks for it.
 
-    After a brief descriptive header (lines starting with a # character), the input file contains
+    The input file is a column text file with a single dimensionless column (see the TextInFile
+    class). After a brief descriptive header (lines starting with a # character), the file contains
     lines with just a single integer number. The first line specifies the number of children for
     each nonleaf node (2 for a binary tree, 8 for an octtree, or 0 if the root node is not
     subdivided). The second line contains 1 if the root node is subdivided, or 0 if not. The
