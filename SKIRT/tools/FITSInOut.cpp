@@ -17,7 +17,7 @@
 void FITSInOut::read(const SimulationItem* item, const string& filename, Array& data, int& nx, int& ny, int& nz)
 {
     // Determine the path of the input FITS file
-    string filepath = item->find<FilePaths>()->input(filename);
+    string filepath = item->find<FilePaths>()->inputFile(filename);
 
     // Read the input data
     FITSInOut::read(filepath, data, nx, ny, nz);

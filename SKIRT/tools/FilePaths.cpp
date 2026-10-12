@@ -5,6 +5,7 @@
 
 #include "FilePaths.hpp"
 #include "FatalError.hpp"
+#include "H5Lib.hpp"
 #include "StringUtils.hpp"
 #include "System.hpp"
 #include <mutex>
@@ -180,10 +181,72 @@ void FilePaths::setupSelfBefore()
 
 ////////////////////////////////////////////////////////////////////
 
+namespace
+{
+    // If the specified path refers to an HDF5 file, this function returns the portion of the path up to and including
+    // the name of the HDF5 file, and the portion that follows the colon after that name, with leading and trailing
+    // slashes removed. Otherwise, it returns two empty strings. A path refers to an HDF5 file if it contains the HDF5
+    // filename extension followed by a colon or, if the second argument is true, if it ends with that extension.
+    std::pair<string, string> splitHdf5Reference(const string& path, bool allowAtEnd)
+    {
+        const string extension = ".hdf5";
+        string filePath;
+        string objectPath;
+        if (auto pos = path.find(extension + ":"); pos != string::npos)
+        {
+            filePath = path.substr(0, pos + extension.length());
+            objectPath = path.substr(pos + extension.length() + 1);
+            while (StringUtils::startsWith(objectPath, "/")) objectPath.erase(0, 1);
+            while (StringUtils::endsWith(objectPath, "/")) objectPath.pop_back();
+        }
+        else if (allowAtEnd && StringUtils::endsWith(path, extension))
+        {
+            filePath = path;
+        }
+        return {filePath, objectPath};
+    }
+
+    // returns the absolute canonical path of the specified directory, ending with a single (forward or backward) slash
+    string canonicalDirPath(const string& dirPath)
+    {
+        string result = System::canonicalPath(dirPath);
+        if (!StringUtils::endsWith(result, "/") && !StringUtils::endsWith(result, "\\")) result += "/";
+        return result;
+    }
+
+    // throws a fatal error if the code was built without HDF5 support; the arguments describe and specify the path
+    // that refers to an HDF5 file
+    void requireHdf5(const string& description, const string& path)
+    {
+        if (!H5Lib::available())
+            throw FATALERROR(description + " '" + path + "' refers to an HDF5 file, but this version of the code was "
+                             + "built without HDF5\n(enable the BUILD_HDF5 build option and rebuild the code)");
+    }
+}
+
+////////////////////////////////////////////////////////////////////
+
 void FilePaths::setInputPath(const string& value)
 {
-    if (!System::isDir(value)) throw FATALERROR("Input path does not exist or is not a directory: " + value);
-    _inputPath = System::canonicalPath(value) + "/";
+    string dirPath = value;
+    string hdf5Name;
+    _inputSuite.clear();
+
+    // unless the value is an existing directory, it may include an HDF5 file and a suite after the directory
+    if (!System::isDir(value))
+    {
+        auto [hdf5Path, suite] = splitHdf5Reference(value, true);
+        if (hdf5Path.empty()) throw FATALERROR("Input path does not exist or is not a directory: " + value);
+        requireHdf5("Input path", value);
+
+        dirPath = StringUtils::dirPath(hdf5Path);
+        if (!System::isDir(dirPath)) throw FATALERROR("Input path does not exist or is not a directory: " + dirPath);
+        if (!System::isFile(hdf5Path)) throw FATALERROR("Input HDF5 file does not exist: " + hdf5Path);
+        hdf5Name = StringUtils::filename(hdf5Path);
+        _inputSuite = suite;
+    }
+    _inputPath = canonicalDirPath(dirPath);
+    _inputHdf5Path = hdf5Name.empty() ? string() : _inputPath + hdf5Name;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -195,10 +258,41 @@ string FilePaths::inputPath() const
 
 ////////////////////////////////////////////////////////////////////
 
-string FilePaths::input(string name) const
+std::pair<string, string> FilePaths::input(const string& name) const
 {
-    if (StringUtils::isAbsolutePath(name)) return name;
-    return _inputPath + name;
+    // if the name embeds a reference to a bundle in an HDF5 file, there is no regular file candidate
+    if (auto [hdf5Path, bundlePath] = splitHdf5Reference(name, false); !hdf5Path.empty())
+    {
+        requireHdf5("Input file name", name);
+        if (!StringUtils::isAbsolutePath(hdf5Path)) hdf5Path = _inputPath + hdf5Path;
+        return {string(), hdf5Path + ":" + bundlePath};
+    }
+
+    // an absolute path refers to a regular file, and has no bundle candidate
+    if (StringUtils::isAbsolutePath(name)) return {name, string()};
+
+    // otherwise, the name is relative to the input directory, and to the HDF5 file and suite in the input path, if any
+    string bundlePath;
+    if (!_inputHdf5Path.empty()) bundlePath = _inputHdf5Path + ":" + StringUtils::joinPaths(_inputSuite, name);
+    return {_inputPath + name, bundlePath};
+}
+
+////////////////////////////////////////////////////////////////////
+
+string FilePaths::inputFile(const string& name) const
+{
+    string filePath = input(name).first;
+    if (filePath.empty())
+        throw FATALERROR("This type of input file cannot be read from a bundle in an HDF5 file: " + name);
+    return filePath;
+}
+
+////////////////////////////////////////////////////////////////////
+
+bool FilePaths::isAbsolutePath(const string& path)
+{
+    string hdf5Path = splitHdf5Reference(path, true).first;
+    return StringUtils::isAbsolutePath(hdf5Path.empty() ? path : hdf5Path);
 }
 
 ////////////////////////////////////////////////////////////////////

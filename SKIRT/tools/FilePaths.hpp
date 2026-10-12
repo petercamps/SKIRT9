@@ -20,6 +20,40 @@
     FilePaths instance held by the simulation, so that the simulation hierarchy can easily access
     it.
 
+    <b>Input from HDF5 files</b>
+
+    Input files can also be provided as \em bundles in an HDF5 file, as described for the H5Lib
+    class. To this end, the input path specified by the client program can include up to three
+    components:
+
+        <dir>/<hdf>:<suite>
+
+    where <tt>\<dir\></tt> is the input directory; <tt>\<hdf\></tt> is the name of an HDF5 file
+    located in that directory, including the mandatory <tt>.hdf5</tt> filename extension; and
+    <tt>\<suite\></tt> is the path of a group in that HDF5 file, with nested groups separated by
+    forward slashes. Only the directory is required, and a suite can be specified only together
+    with an HDF5 file.
+
+    If only a directory is given, every input file is expected to be a regular file in that
+    directory. If an HDF5 file is given as well, an input file is first sought as a regular file
+    in the directory, and if there is no such file, as a bundle in the HDF5 file, with a name that
+    matches the name of the input file. If a suite is given, the bundle is sought in that suite
+    rather than in the root group of the HDF5 file. This makes it possible to store the input for
+    several simulations in a single HDF5 file, each in its own suite.
+
+    Furthermore, the name of an input file, as configured for example in a ski file, can itself
+    embed a reference to a bundle in an HDF5 file, in the form
+
+        <hdf>:<suite>/<bundle>
+
+    In that case, the input file is always read from the specified bundle, regardless of the HDF5
+    file and suite that may be included in the input path. A relative path for the HDF5 file is
+    interpreted relative to the input directory.
+
+    The input() function implements these rules by returning two candidate locations for an input
+    file, a regular file and a bundle. It is up to the caller to try the regular file first, and to
+    fall back to the bundle only if that file does not exist.
+
     <b>Resource files</b>
 
     The FilePaths class also offers static functions for locating the resource files used by the
@@ -85,16 +119,57 @@ protected:
     //======== Input and output file paths and names =======
 
 public:
-    /** Sets the (absolute or relative) path for input files. An empty string (the default value)
-        means the current directory. */
+    /** This function sets the location of the input files. The argument is the (absolute or
+        relative) path of the input directory, optionally followed by the name of an HDF5 file in
+        that directory and by a suite in that file, in the form <tt>\<dir\>/\<hdf\>:\<suite\></tt>
+        described in the class header. An empty string (the default value) means the current
+        directory. The function throws a fatal error if the directory or the HDF5 file does not
+        exist, or if the argument refers to an HDF5 file while the code was built without HDF5
+        support. It does not verify that the HDF5 file can be opened or that the suite exists. */
     void setInputPath(const string& value);
 
-    /** Returns the (absolute or relative) path for input files. */
+    /** This function returns the absolute canonical path of the input directory, with a trailing
+        slash, or the empty string if the input path has not been set. */
     string inputPath() const;
 
-    /** This function returns the absolute canonical path for an input file with the specified
-        name, relative to the input path returned by inputPath(). */
-    string input(string name) const;
+    /** This function determines the candidate locations for the input file with the specified
+        name, as described in the class header. It returns a pair of strings.
+
+        The first string is the absolute path of a regular file, formed by interpreting the
+        specified name relative to the input directory (or the specified name itself if it is an
+        absolute path).
+
+        The second string is the path of a bundle in an HDF5 file, in the form
+        <tt>\<filepath\>:\<suite\>/\<bundle\></tt> expected by the H5Lib::openBundle() function.
+        It is formed by using the specified name as the name of a bundle in the HDF5 file and
+        suite included in the input path, if any.
+
+        Either string is empty if there is no corresponding candidate. Specifically, the second
+        string is empty if the input path does not include an HDF5 file, or if the specified name
+        is an absolute path. If the specified name embeds a reference to a bundle in an HDF5 file,
+        in the form <tt>\<hdf\>:\<suite\>/\<bundle\></tt>, the first string is empty and the
+        second string is formed from that reference, with a relative HDF5 file path interpreted
+        relative to the input directory. In that case, the function throws a fatal error if the
+        code was built without HDF5 support.
+
+        The function performs no input/output operations, so a nonempty string does not guarantee
+        that the file or bundle exists. The caller is expected to try the regular file first, and
+        to fall back to the bundle only if that file does not exist. */
+    std::pair<string, string> input(const string& name) const;
+
+    /** This function returns the absolute path of the regular input file with the specified name,
+        i.e. the first of the candidate locations returned by the input() function. It is intended
+        for the types of input file that cannot be read from a bundle in an HDF5 file. If the
+        specified name embeds a reference to a bundle in an HDF5 file, so that there is no regular
+        file candidate, the function throws a fatal error. */
+    string inputFile(const string& name) const;
+
+    /** This function returns true if the specified input path is absolute, and false if it is
+        relative. The path can have the form <tt>\<dir\>/\<hdf\>:\<suite\></tt> described in the
+        class header, in which case only the portion up to and including the name of the HDF5 file
+        is considered. In contrast, the StringUtils::isAbsolutePath() function considers any path
+        containing a colon to be absolute. */
+    static bool isAbsolutePath(const string& path);
 
     /** Sets the (absolute or relative) path for output files. An empty string (the default value)
         means the current directory. */
@@ -161,7 +236,9 @@ public:
     //======================== Data Members ========================
 
 private:
-    string _inputPath;
+    string _inputPath;      // absolute canonical path of the input directory, with trailing slash
+    string _inputHdf5Path;  // absolute path of the HDF5 file included in the input path, or empty if there is none
+    string _inputSuite;     // path of the suite in that HDF5 file, without leading or trailing slash, or empty
     string _outputPath;
     string _outputPrefix;
 };

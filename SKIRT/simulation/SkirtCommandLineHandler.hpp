@@ -22,7 +22,7 @@ simulations in the ski files specified on the command line according to the foll
 \verbatim
  skirt [-t <threads>] [-s <simulations>]
        [-b] [-v] [-m] [-e]
-       [-k] [-i <dirpath>] [-o <dirpath>]
+       [-k] [-i <dirpath>[/<hdf5file>[:<suite>]]] [-o <dirpath>]
        [-r] {<filepath>}*
 \endverbatim
 
@@ -51,7 +51,21 @@ simulations in the ski files specified on the command line according to the foll
   to the current directory. This is useful, for example, when processing multiple ski files organized in a nested
   directory hierarchy (see the -r option).
 
-- The -i option specifies the absolute or relative path for simulation input files.
+- The -i option specifies the absolute or relative path of the directory containing the simulation
+  input files. If the code was built with HDF5 support (the \c BUILD_HDF5 build option), the
+  directory path can be followed by the name of an HDF5 file located in that directory, including
+  the mandatory ".hdf5" filename extension, and optionally by a colon and the path of a group in
+  that file, called a suite. An input file that is not found as a regular file in the directory is
+  then read from the HDF5 file instead, from the bundle (an HDF5 group holding the contents of the
+  file) with the same name as the input file, located in the specified suite or in the root group
+  of the HDF5 file if no suite is specified. Nested groups in the suite path are separated by
+  forward slashes on all platforms. For example, with <tt>-i in</tt> all input files are regular
+  files in the \c in directory; with <tt>-i in/data.hdf5</tt> input files missing from that
+  directory are read from the bundles in the root group of \c in/data.hdf5; and with <tt>-i
+  in/data.hdf5:campaign7/galaxy042</tt> they are read from the bundles in the group
+  \c campaign7/galaxy042 of that file, which allows storing the input for many simulations in a
+  single HDF5 file. Independently of this option, the name of an input file configured in a ski
+  file can itself refer to a bundle in an HDF5 file. See the FilePaths class for more information.
 
 - The -o option specifies the absolute or relative path for simulation output files.
 

@@ -68,7 +68,7 @@ TextInFile::TextInFile(const SimulationItem* item, const string& filename, const
 
     // get the full path for the resource or for the input file
     _isResource = resource;
-    string filepath = resource ? FilePaths::resource(filename) : item->find<FilePaths>()->input(filename);
+    string filepath = resource ? FilePaths::resource(filename) : item->find<FilePaths>()->inputFile(filename);
 
     // if the file is in SKIRT stored column format, open a binary file
     if (StringUtils::endsWith(filepath, ".scol"))

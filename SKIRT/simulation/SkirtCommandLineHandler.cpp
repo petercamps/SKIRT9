@@ -317,7 +317,7 @@ void SkirtCommandLineHandler::doSimulation(size_t index)
         string base = _args.isPresent("-k") ? StringUtils::dirPath(skipath) : "";
         string inpath = _args.value("-i");
         string outpath = _args.value("-o");
-        if (!StringUtils::isAbsolutePath(inpath)) inpath = StringUtils::joinPaths(base, inpath);
+        if (!FilePaths::isAbsolutePath(inpath)) inpath = StringUtils::joinPaths(base, inpath);
         if (!StringUtils::isAbsolutePath(outpath)) outpath = StringUtils::joinPaths(base, outpath);
         simulation->filePaths()->setInputPath(inpath);
         simulation->filePaths()->setOutputPath(outpath);
@@ -428,7 +428,7 @@ void SkirtCommandLineHandler::printHelp()
     _console.warning("");
     _console.warning("  skirt [-t <threads>] [-s <simulations>]");
     _console.warning("        [-b] [-v] [-m] [-e]");
-    _console.warning("        [-k] [-i <dirpath>] [-o <dirpath>]");
+    _console.warning("        [-k] [-i <dirpath>[/<hdf5file>[:<suite>]]] [-o <dirpath>]");
     _console.warning("        [-r] {<filepath>}*");
     _console.warning("");
     _console.warning("  -t <threads> : the number of parallel threads for each simulation");
@@ -439,6 +439,9 @@ void SkirtCommandLineHandler::printHelp()
     _console.warning("  -e : run the simulation in emulation mode to get an estimate of the memory consumption");
     _console.warning("  -k : make the input/output paths relative to the ski file being processed");
     _console.warning("  -i <dirpath> : the relative or absolute path for simulation input files");
+    _console.warning(
+        "  -i <dirpath>/<hdf5file>[:<suite>] : also look for input files that are missing in the directory");
+    _console.warning("               in the specified HDF5 file inside that directory, and in the specified suite");
     _console.warning("  -o <dirpath> : the relative or absolute path for simulation output files");
     _console.warning("  -r : cause recursive directory descent for all specified ski file paths");
     _console.warning("  <filepath> : the relative or absolute file path for a ski file");

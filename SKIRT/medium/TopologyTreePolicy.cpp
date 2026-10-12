@@ -23,7 +23,7 @@ void TopologyTreePolicy::setupSelfBefore()
     _extent = _grid->extent();
 
     // open the input file
-    string filepath = find<FilePaths>()->input(filename());
+    string filepath = find<FilePaths>()->inputFile(filename());
     std::ifstream infile = System::ifstream(filepath);
     if (!infile) throw FATALERROR("Could not open the tree topology data file " + filepath);
     auto log = find<Log>();
