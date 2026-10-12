@@ -4,7 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "ReadFits3DGeometry.hpp"
-#include "FITSInOut.hpp"
+#include "FITSInOutFile.hpp"
 #include "FatalError.hpp"
 #include "NR.hpp"
 #include "Random.hpp"
@@ -16,7 +16,7 @@ void ReadFits3DGeometry::setupSelfBefore()
     GenGeometry::setupSelfBefore();
 
     // Read in the datacube
-    FITSInOut::read(this, _filename, _datacube, _nx, _ny, _nz);
+    FITSInOutFile::read(this, _filename, _datacube, _nx, _ny, _nz);
 
     // Verify maximum size:
     //   we use NR::locate() on the cumulative distribution of the pixels, which returns an int,

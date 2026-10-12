@@ -4,7 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "ReadFitsGeometry.hpp"
-#include "FITSInOut.hpp"
+#include "FITSInOutFile.hpp"
 #include "FatalError.hpp"
 #include "NR.hpp"
 #include "Random.hpp"
@@ -16,7 +16,7 @@ void ReadFitsGeometry::setupSelfBefore()
     GenGeometry::setupSelfBefore();
 
     // Read the input file
-    FITSInOut::read(this, _filename, _image, _nx, _ny, _nz);
+    FITSInOutFile::read(this, _filename, _image, _nx, _ny, _nz);
 
     // Verify the image properties
     if (_numPixelsX != _nx || _numPixelsY != _ny)

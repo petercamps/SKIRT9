@@ -12,19 +12,17 @@ class SimulationItem;
 ////////////////////////////////////////////////////////////////////
 
 /** The FITSInOut class offers static functions to read/write a 2D or 3D data stream from/to a
-    standard FITS file, with support for a basic set of metadata in the header. */
+    standard FITS file, with support for a basic set of metadata in the header. To read a genuine
+    input file in the context of a simulation item hierarchy, use the FITSInOutFile class instead;
+    it locates the file relative to the input path of the simulation, and also supports input
+    provided as a bundle in an HDF5 file. */
 class FITSInOut final
 {
-public:
-    // ================== Read/write in the context of an item hierarchy ==================
+    // allow the FITSInOutFile class to delegate to the basic read function
+    friend class FITSInOutFile;
 
-    /** This function reads data from a FITS file in the context of the simulation item hierarchy
-        specified through the first argument. This allows the function to issue log messages and to
-        determine a full path from the input filename specified as the second argument, relative to
-        the simulation's input path. The input filename should include the filename extension. The
-        remaining arguments of this function are the same as those described for the basic read()
-        function in this class. */
-    static void read(const SimulationItem* item, const string& filename, Array& data, int& nx, int& ny, int& nz);
+public:
+    // ================== Write in the context of an item hierarchy ==================
 
     /** This basic data structure holds information on the observer associated with a data cube
         being written. These fields are included in the FITS header as a convenience to the user.

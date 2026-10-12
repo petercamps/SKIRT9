@@ -14,23 +14,6 @@
 
 ////////////////////////////////////////////////////////////////////
 
-void FITSInOut::read(const SimulationItem* item, const string& filename, Array& data, int& nx, int& ny, int& nz)
-{
-    // Determine the path of the input FITS file
-    string filepath = item->find<FilePaths>()->inputFile(filename);
-
-    // Read the input data
-    FITSInOut::read(filepath, data, nx, ny, nz);
-
-    // Log the file path and the data dimensions
-    Log* log = item->find<Log>();
-    log->info(item->typeAndName() + " read FITS file " + filepath);
-    if (nz > 1) log->info("  Data cube has " + std::to_string(nz) + " frames");
-    log->info("  Frame dimensions are " + std::to_string(nx) + " x " + std::to_string(ny));
-}
-
-////////////////////////////////////////////////////////////////////
-
 void FITSInOut::write(const SimulationItem* item, const string& description, const string& filename, const Array& data,
                       const string& dataUnits, int nx, int ny, double incx, double incy, double xc, double yc,
                       const string& xyUnits, const Array& z, const string& zUnits, const ObserverInfo* obsInfo)
