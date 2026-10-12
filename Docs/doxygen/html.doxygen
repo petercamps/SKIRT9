@@ -2290,6 +2290,7 @@ INCLUDE_PATH           = SMILE/schema \
                           SKIRT/fitsio \
                           SKIRT/geometry \
                           SKIRT/grain \
+                          SKIRT/h5 \
                           SKIRT/instrument \
                           SKIRT/material \
                           SKIRT/medium \

@@ -1,0 +1,64 @@
+/*//////////////////////////////////////////////////////////////////
+////     The SKIRT project -- advanced radiative transfer       ////
+////       © Astronomical Observatory, Ghent University         ////
+///////////////////////////////////////////////////////////////// */
+
+#include "H5Lib.hpp"
+#include "FatalError.hpp"
+#include "H5Core.hpp"
+#include "StringUtils.hpp"
+
+////////////////////////////////////////////////////////////////////
+
+namespace
+{
+    // the filename extension that identifies an HDF5 file in a path
+    constexpr char EXTENSION[] = ".hdf5";
+
+    // splits the specified path of the form <filepath>:<objectpath> into its two portions, removing any leading and
+    // trailing slashes from the object path; the object path is empty if the path ends with the filename extension
+    // or with the colon; throws a fatal error if the path is malformed
+    std::pair<string, string> splitPath(const string& path)
+    {
+        string filePath = path;
+        string objectPath;
+        if (!StringUtils::endsWith(path, EXTENSION))
+        {
+            auto pos = path.find(string(EXTENSION) + ":");
+            if (pos == string::npos) throw FATALERROR("Path does not refer to an HDF5 file: " + path);
+            pos += string(EXTENSION).length();
+            filePath = path.substr(0, pos);
+            objectPath = path.substr(pos + 1);
+        }
+
+        while (StringUtils::startsWith(objectPath, "/")) objectPath.erase(0, 1);
+        while (StringUtils::endsWith(objectPath, "/")) objectPath.pop_back();
+        return {filePath, objectPath};
+    }
+}
+
+////////////////////////////////////////////////////////////////////
+
+bool H5Lib::available()
+{
+    return H5Core::available();
+}
+
+////////////////////////////////////////////////////////////////////
+
+H5SuiteR H5Lib::openSuite(const string& path)
+{
+    auto [filePath, suitePath] = splitPath(path);
+    return H5SuiteR(H5Core::openGroup(filePath, suitePath), filePath + ":" + suitePath);
+}
+
+////////////////////////////////////////////////////////////////////
+
+H5BundleR H5Lib::openBundle(const string& path)
+{
+    auto [filePath, bundlePath] = splitPath(path);
+    if (bundlePath.empty()) throw FATALERROR("Path does not refer to a bundle in an HDF5 file: " + path);
+    return H5BundleR(H5Core::openGroup(filePath, bundlePath), filePath + ":" + bundlePath);
+}
+
+////////////////////////////////////////////////////////////////////
