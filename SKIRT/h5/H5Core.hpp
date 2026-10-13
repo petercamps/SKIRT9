@@ -43,6 +43,12 @@ namespace H5Core
         file or the group cannot be opened. */
     std::int64_t openGroup(const string& filePath, const string& groupPath);
 
+    /** This function returns true if the HDF5 file with the specified file path exists and holds
+        a group with the specified path, and false if the file does not exist or does not hold
+        such a group. The function throws a fatal error if the file exists but cannot be opened as
+        an HDF5 file. */
+    bool hasGroup(const string& filePath, const string& groupPath);
+
     /** This function opens the group with the specified name inside the specified parent group
         and returns a handle for it. The function throws a fatal error if there is no such group. */
     std::int64_t openGroup(std::int64_t group, const string& name, const string& context);

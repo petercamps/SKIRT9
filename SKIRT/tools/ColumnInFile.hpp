@@ -34,6 +34,9 @@ class TextInFile;
     - Otherwise, if there is a candidate location for a bundle (because the input path or the
       filename itself refers to an HDF5 file), that bundle is read as described below.
 
+    If the input file is found at neither of two candidate locations, the fatal error that reports
+    this mentions both the regular file and the bundle.
+
     This class is intended for user input files only; a resource file is never provided as a bundle
     and must be read through the TextInFile class.
 

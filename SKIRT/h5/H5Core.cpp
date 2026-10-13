@@ -65,6 +65,24 @@ namespace
         }
     };
 
+    // opens the HDF5 file with the specified path for reading and returns its identifier, which must be released by
+    // the caller; throws a fatal error if the file does not exist or cannot be opened as an HDF5 file
+    hid_t openFile(const string& filePath)
+    {
+        // on a file system that does not support file locking, proceed without locking
+        Id access(H5Pcreate(H5P_FILE_ACCESS), H5Pclose);
+#    if H5_VERSION_GE(1, 12, 1) || (H5_VERSION_GE(1, 10, 7) && !H5_VERSION_GE(1, 12, 0))
+        H5Pset_file_locking(access.get(), true, true);
+#    endif
+        Id file(H5Fopen(filePath.c_str(), H5F_ACC_RDONLY, access.get()), H5Fclose);
+        if (!file.valid())
+        {
+            if (!System::isFile(filePath)) throw FATALERROR("HDF5 file does not exist: " + filePath);
+            throw FATALERROR("File cannot be opened as an HDF5 file: " + filePath);
+        }
+        return file.release();
+    }
+
     // opens the attribute with the specified name of the specified object, verifies that it holds a single value,
     // and returns its identifier, which must be released by the caller
     hid_t openScalarAttribute(hid_t object, const string& name, const string& context)
@@ -138,22 +156,23 @@ std::int64_t H5Core::openGroup(const string& filePath, const string& groupPath)
 {
     Lock lock;
 
-    // open the file for reading; on a file system that does not support file locking, proceed without locking
-    Id access(H5Pcreate(H5P_FILE_ACCESS), H5Pclose);
-#    if H5_VERSION_GE(1, 12, 1) || (H5_VERSION_GE(1, 10, 7) && !H5_VERSION_GE(1, 12, 0))
-    H5Pset_file_locking(access.get(), true, true);
-#    endif
-    Id file(H5Fopen(filePath.c_str(), H5F_ACC_RDONLY, access.get()), H5Fclose);
-    if (!file.valid())
-    {
-        if (!System::isFile(filePath)) throw FATALERROR("HDF5 file does not exist: " + filePath);
-        throw FATALERROR("File cannot be opened as an HDF5 file: " + filePath);
-    }
-
-    // open the group; the library keeps the file open as long as the group is open
+    // open the file and the group; the library keeps the file open as long as the group is open
+    Id file(openFile(filePath), H5Fclose);
     Id group(H5Gopen2(file.get(), ("/" + groupPath).c_str(), H5P_DEFAULT), H5Gclose);
     if (!group.valid()) throw FATALERROR("HDF5 file " + filePath + " has no group '" + groupPath + "'");
     return group.release();
+}
+
+////////////////////////////////////////////////////////////////////
+
+bool H5Core::hasGroup(const string& filePath, const string& groupPath)
+{
+    Lock lock;
+
+    if (!System::isFile(filePath)) return false;
+    Id file(openFile(filePath), H5Fclose);
+    Id group(H5Gopen2(file.get(), ("/" + groupPath).c_str(), H5P_DEFAULT), H5Gclose);
+    return group.valid();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -456,6 +475,13 @@ bool H5Core::available()
 ////////////////////////////////////////////////////////////////////
 
 std::int64_t H5Core::openGroup(const string& /*filePath*/, const string& /*groupPath*/)
+{
+    throwUnavailable();
+}
+
+////////////////////////////////////////////////////////////////////
+
+bool H5Core::hasGroup(const string& /*filePath*/, const string& /*groupPath*/)
 {
     throwUnavailable();
 }

@@ -96,6 +96,15 @@ public:
         without HDF5 support, if the path is malformed, or if the file or the bundle cannot be
         opened. */
     static H5BundleR openBundle(const string& path);
+
+    /** This function returns true if there is a bundle at the specified path, i.e. if the HDF5
+        file exists and holds a group at the location of the bundle, and false if the file does
+        not exist or does not hold such a group. The path has the same form as for the
+        openBundle() function. The function throws a fatal error if the code was built without
+        HDF5 support, if the path is malformed, or if the file exists but cannot be opened as an
+        HDF5 file. It allows a caller to report a missing input file in its own words, for example
+        to mention a regular file that is missing as well. */
+    static bool hasBundle(const string& path);
 };
 
 ////////////////////////////////////////////////////////////////////

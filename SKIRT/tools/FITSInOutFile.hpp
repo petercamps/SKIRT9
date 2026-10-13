@@ -24,7 +24,9 @@ class SimulationItem;
     file candidate and the file exists, the data is read from that FITS file. Otherwise, the data
     is read from the HDF5 bundle candidate, if there is one. This candidate exists if the input
     path of the simulation includes an HDF5 file, or if the specified file name embeds a reference
-    to a bundle in an HDF5 file. See the FilePaths class for more information.
+    to a bundle in an HDF5 file. See the FilePaths class for more information. If the input file
+    is found at neither of two candidate locations, the fatal error that reports this mentions
+    both the regular file and the bundle.
 
     <b>FITS file bundle</b>
 

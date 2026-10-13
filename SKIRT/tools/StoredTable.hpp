@@ -196,9 +196,12 @@ public:
         A stored table input file can also be provided as a stored table bundle in an HDF5 file.
         If there is no regular file at the candidate location for a regular file, and there is a
         candidate location for a bundle (because the input path of the simulation or the filename
-        itself refers to an HDF5 file), the table is loaded from that bundle. Because the name of
-        the bundle is the name of the file it replaces, it ends with the ".stab" extension as
-        well. A stored table bundle holds a one-dimensional dataset for each axis, named for the
+        itself refers to an HDF5 file), the table is loaded from that bundle. If the file is found
+        at neither of two candidate locations, the fatal error that reports this mentions both the
+        regular file and the bundle. Because the name of the bundle is the name of the file it
+        replaces, it ends with the ".stab" extension as well.
+
+        A stored table bundle holds a one-dimensional dataset for each axis, named for the
         axis, with the attributes \em axis (the zero-based index of the axis), \em unit (the unit
         string), and \em log (a Boolean that is true for logarithmic interpolation); and a dataset
         for each tabulated quantity, named for the quantity, with a dimension for each axis in the

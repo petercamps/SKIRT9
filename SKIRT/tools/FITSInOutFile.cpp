@@ -36,6 +36,11 @@ void FITSInOutFile::read(const SimulationItem* item, const string& filename, Arr
     }
     else
     {
+        // if there is no bundle either, report both locations
+        if (!filePath.empty() && !H5Lib::hasBundle(bundlePath))
+            throw FATALERROR("Could not find the FITS input file " + filename + ": there is no regular file " + filePath
+                             + " and no bundle " + bundlePath);
+
         H5DatasetR dataset = H5Lib::openBundle(bundlePath).getDataset("data");
 
         // the dimensions are stored with the index that varies least rapidly listed first

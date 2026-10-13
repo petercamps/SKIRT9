@@ -62,3 +62,12 @@ H5BundleR H5Lib::openBundle(const string& path)
 }
 
 ////////////////////////////////////////////////////////////////////
+
+bool H5Lib::hasBundle(const string& path)
+{
+    auto [filePath, bundlePath] = splitPath(path);
+    if (bundlePath.empty()) throw FATALERROR("Path does not refer to a bundle in an HDF5 file: " + path);
+    return H5Core::hasGroup(filePath, bundlePath);
+}
+
+////////////////////////////////////////////////////////////////////

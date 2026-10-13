@@ -93,9 +93,12 @@ void ColumnInFile::open()
                 _text->addColumn(declaration.first, declaration.quantity, declaration.unit);
         }
     }
-    // otherwise read from the bundle
+    // otherwise read from the bundle; if there is no bundle either, report both locations
     else
     {
+        if (!filePath.empty() && !H5Lib::hasBundle(bundlePath))
+            throw FATALERROR("Could not find the " + _description + " input file " + _filename
+                             + ": there is no regular file " + filePath + " and no bundle " + bundlePath);
         _bundlePath = bundlePath;
         openBundle();
     }
