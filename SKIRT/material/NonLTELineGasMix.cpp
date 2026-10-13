@@ -4,6 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "NonLTELineGasMix.hpp"
+#include "ColumnInFile.hpp"
 #include "Configuration.hpp"
 #include "Constants.hpp"
 #include "DisjointWavelengthGrid.hpp"
@@ -12,7 +13,6 @@
 #include "MaterialState.hpp"
 #include "NR.hpp"
 #include "StringUtils.hpp"
-#include "TextInFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -485,7 +485,7 @@ void NonLTELineGasMix::setupSelfBefore()
     // load the initial relative level populations if the user provided a filename
     if (!initialLevelPopsFilename().empty())
     {
-        TextInFile infile(this, initialLevelPopsFilename(), "initial level populations");
+        ColumnInFile infile(this, initialLevelPopsFilename(), "initial level populations");
         infile.addColumn("cell index");
         for (int p = 0; p != _model.numLevels(); ++p)
             infile.addColumn("population of level " + std::to_string(p), "numbervolumedensity", "1/cm3");

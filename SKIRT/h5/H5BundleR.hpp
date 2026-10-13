@@ -33,6 +33,11 @@ private:
     //======================== Other Functions =======================
 
 public:
+    /** This function returns the names of the datasets that are located directly in this bundle,
+        in alphabetical order. This allows a client to discover the datasets in a bundle whose
+        dataset names are not fixed, such as the columns of a text column file bundle. */
+    vector<string> getDatasetNames() const;
+
     /** This function returns true if the bundle contains a dataset with the specified name, and
         false otherwise. */
     bool hasDataset(const string& name) const;

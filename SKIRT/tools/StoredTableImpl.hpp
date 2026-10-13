@@ -19,13 +19,18 @@ namespace StoredTable_Impl
 {
     //============= Open and close =============
 
-    /** This function performs the open() operation as described for the function with the same name in the
-        StoredTable class template. It receives references or pointers to all data members of the
-        stored table instance, in addition to the input parameters of the open() function. */
+    /** This function performs the open() operation as described for the function with the same
+        name in the StoredTable class template. It receives references or pointers to all data
+        members of the stored table instance, in addition to the input parameters of the open()
+        function. If the table is memory mapped from a file, the function stores the canonical
+        path of that file in the \em filePath argument and leaves the \em storage argument empty.
+        If the table is loaded from a bundle, the function stores the data in the \em storage
+        argument, to which the other output parameters then point, and leaves the \em filePath
+        argument empty. */
     void open(size_t numAxes, const SimulationItem* item,   // input parameters
               string filename, bool resource,               //   "
               const string& axes, const string& quantity,   //   "
-              string& filePath,                             // output parameter by reference
+              string& filePath, vector<double>& storage,    // output parameters by reference
               const double** axBeg, const double** qtyBeg,  // output parameters via pointers
               size_t* axLen, size_t* qtyStep,               //   "
               bool* axLog, bool* qtyLog);                   //   "

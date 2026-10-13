@@ -4,9 +4,9 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "TopologyTreePolicy.hpp"
+#include "ColumnInFile.hpp"
 #include "FatalError.hpp"
 #include "Log.hpp"
-#include "TextInFile.hpp"
 #include "TreeNodeEvaluation.hpp"
 #include "TreeSpatialGrid.hpp"
 
@@ -21,7 +21,7 @@ void TopologyTreePolicy::setupSelfBefore()
     _extent = _grid->extent();
 
     // open the input file, which is a column text file with a single dimensionless column
-    TextInFile infile(this, filename(), "tree topology");
+    ColumnInFile infile(this, filename(), "tree topology");
     infile.addColumn("number of children per nonleaf node, followed by the subdivision flag for each node");
 
     // this function returns the next value in the file, or -1 if there are no more values or if the value is not

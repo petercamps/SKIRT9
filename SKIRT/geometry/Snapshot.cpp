@@ -4,12 +4,12 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "Snapshot.hpp"
+#include "ColumnInFile.hpp"
 #include "EntityCollection.hpp"
 #include "Log.hpp"
 #include "NR.hpp"
 #include "Random.hpp"
 #include "StringUtils.hpp"
-#include "TextInFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -18,25 +18,29 @@ Snapshot::Snapshot() {}
 
 ////////////////////////////////////////////////////////////////////
 
-Snapshot::~Snapshot()
-{
-    delete _infile;
-}
+Snapshot::~Snapshot() {}
 
 ////////////////////////////////////////////////////////////////////
 
 void Snapshot::open(const SimulationItem* item, const string& filename, const string& description)
 {
-    _infile = new TextInFile(item, filename, description);
+    _infile = createInFile(item, filename, description);
     setContext(item);
+}
+
+////////////////////////////////////////////////////////////////////
+
+std::unique_ptr<ColumnInFile> Snapshot::createInFile(const SimulationItem* item, const string& filename,
+                                                     const string& description)
+{
+    return std::make_unique<ColumnInFile>(item, filename, description);
 }
 
 ////////////////////////////////////////////////////////////////////
 
 void Snapshot::close()
 {
-    delete _infile;
-    _infile = nullptr;
+    _infile.reset();
 }
 
 ////////////////////////////////////////////////////////////////////

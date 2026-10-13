@@ -169,28 +169,47 @@ std::int64_t H5Core::openGroup(std::int64_t group, const string& name, const str
 
 ////////////////////////////////////////////////////////////////////
 
+namespace
+{
+    // returns the names of the objects of the specified type that are located directly inside the specified group,
+    // in alphabetical order; the caller must hold the lock
+    vector<string> memberNames(hid_t group, H5I_type_t type, const string& context)
+    {
+        H5G_info_t info;
+        if (H5Gget_info(group, &info) < 0) throw FATALERROR("Cannot list the contents of " + context);
+
+        vector<string> names;
+        for (hsize_t index = 0; index != info.nlinks; ++index)
+        {
+            // get the name of the link with this index, in two steps because the length of the name is not known
+            ssize_t length = H5Lget_name_by_idx(group, ".", H5_INDEX_NAME, H5_ITER_INC, index, nullptr, 0, H5P_DEFAULT);
+            if (length < 0) throw FATALERROR("Cannot list the contents of " + context);
+            string name(static_cast<size_t>(length) + 1, '\0');  // includes room for the terminating null character
+            H5Lget_name_by_idx(group, ".", H5_INDEX_NAME, H5_ITER_INC, index, &name[0], name.size(), H5P_DEFAULT);
+            name.resize(static_cast<size_t>(length));
+
+            // include the name only if it refers to an object of the requested type
+            Id object(H5Oopen(group, name.c_str(), H5P_DEFAULT), H5Oclose);
+            if (object.valid() && H5Iget_type(object.get()) == type) names.push_back(name);
+        }
+        return names;
+    }
+}
+
+////////////////////////////////////////////////////////////////////
+
 vector<string> H5Core::groupNames(std::int64_t group, const string& context)
 {
     Lock lock;
+    return memberNames(group, H5I_GROUP, context);
+}
 
-    H5G_info_t info;
-    if (H5Gget_info(group, &info) < 0) throw FATALERROR("Cannot list the contents of " + context);
+////////////////////////////////////////////////////////////////////
 
-    vector<string> names;
-    for (hsize_t index = 0; index != info.nlinks; ++index)
-    {
-        // get the name of the link with this index, in two steps because the length of the name is not known
-        ssize_t length = H5Lget_name_by_idx(group, ".", H5_INDEX_NAME, H5_ITER_INC, index, nullptr, 0, H5P_DEFAULT);
-        if (length < 0) throw FATALERROR("Cannot list the contents of " + context);
-        string name(static_cast<size_t>(length) + 1, '\0');  // includes room for the terminating null character
-        H5Lget_name_by_idx(group, ".", H5_INDEX_NAME, H5_ITER_INC, index, &name[0], name.size(), H5P_DEFAULT);
-        name.resize(static_cast<size_t>(length));
-
-        // include the name only if it refers to a group
-        Id object(H5Oopen(group, name.c_str(), H5P_DEFAULT), H5Oclose);
-        if (object.valid() && H5Iget_type(object.get()) == H5I_GROUP) names.push_back(name);
-    }
-    return names;
+vector<string> H5Core::datasetNames(std::int64_t group, const string& context)
+{
+    Lock lock;
+    return memberNames(group, H5I_DATASET, context);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -451,6 +470,13 @@ std::int64_t H5Core::openGroup(std::int64_t /*group*/, const string& /*name*/, c
 ////////////////////////////////////////////////////////////////////
 
 vector<string> H5Core::groupNames(std::int64_t /*group*/, const string& /*context*/)
+{
+    throwUnavailable();
+}
+
+////////////////////////////////////////////////////////////////////
+
+vector<string> H5Core::datasetNames(std::int64_t /*group*/, const string& /*context*/)
 {
     throwUnavailable();
 }

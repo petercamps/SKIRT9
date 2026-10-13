@@ -4,14 +4,14 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "FileTimeGrid.hpp"
-#include "TextInFile.hpp"
+#include "ColumnInFile.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
 void FileTimeGrid::getTimeBins(vector<Bin>& bins) const
 {
     // setup the columns for the input file
-    TextInFile infile(this, _filename, "time grid");
+    ColumnInFile infile(this, _filename, "time grid");
     infile.addColumn("time", "timelag", "s");
     infile.addColumn("left", "timelag", "s");
     infile.addColumn("right", "timelag", "s");

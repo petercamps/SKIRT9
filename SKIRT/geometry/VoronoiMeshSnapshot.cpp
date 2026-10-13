@@ -4,6 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "VoronoiMeshSnapshot.hpp"
+#include "ColumnInFile.hpp"
 #include "EntityCollection.hpp"
 #include "FatalError.hpp"
 #include "Log.hpp"
@@ -18,7 +19,6 @@
 #include "SpatialGridPlotFile.hpp"
 #include "StringUtils.hpp"
 #include "Table.hpp"
-#include "TextInFile.hpp"
 #include <set>
 #include "container.hh"
 
@@ -412,7 +412,7 @@ VoronoiMeshSnapshot::VoronoiMeshSnapshot(const SimulationItem* item, const Box& 
                                          bool relax)
 {
     // read the input file
-    TextInFile in(item, filename, "Voronoi sites");
+    ColumnInFile in(item, filename, "Voronoi sites");
     in.addColumn("position x", "length", "pc");
     in.addColumn("position y", "length", "pc");
     in.addColumn("position z", "length", "pc");

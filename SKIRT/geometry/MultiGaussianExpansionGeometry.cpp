@@ -4,11 +4,11 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "MultiGaussianExpansionGeometry.hpp"
+#include "ColumnInFile.hpp"
 #include "FatalError.hpp"
 #include "NR.hpp"
 #include "Random.hpp"
 #include "StringUtils.hpp"
-#include "TextInFile.hpp"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -17,7 +17,7 @@ void MultiGaussianExpansionGeometry::setupSelfBefore()
     AxGeometry::setupSelfBefore();
 
     // read the file with the raw MGE parameters
-    TextInFile infile(this, _filename, "multi-gaussian expansion parameters");
+    ColumnInFile infile(this, _filename, "multi-gaussian expansion parameters");
     infile.addColumn("count or weight");
     infile.addColumn("scalelength in pixels");
     infile.addColumn("apparent flattening");

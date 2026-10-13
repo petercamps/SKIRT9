@@ -4,9 +4,9 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "AtPositionsForm.hpp"
+#include "ColumnInFile.hpp"
 #include "ProbeFormBridge.hpp"
 #include "StringUtils.hpp"
-#include "TextInFile.hpp"
 #include "TextOutFile.hpp"
 #include "Units.hpp"
 
@@ -30,7 +30,7 @@ void AtPositionsForm::writeQuantity(const ProbeFormBridge* bridge) const
     vector<double> columns(numValues + 3);
 
     // open the input file
-    TextInFile infile(this, filename(), "positions");
+    ColumnInFile infile(this, filename(), "positions");
     infile.useColumns(useColumns());
     infile.addColumn("position x", "length", "pc");
     infile.addColumn("position y", "length", "pc");

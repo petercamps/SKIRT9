@@ -11,19 +11,20 @@
 #include "Direction.hpp"
 #include "Position.hpp"
 #include "SnapshotParameter.hpp"
+class ColumnInFile;
 class EntityCollection;
 class Log;
 class Random;
 class SimulationItem;
-class TextInFile;
 class Units;
 
 ////////////////////////////////////////////////////////////////////
 
 /** Snapshot is an abstract base class for representing snapshot data that is imported from a
-    column text file and is used to define the properties of primary sources or transfer media.
+    column text file, or from the corresponding bundle in an HDF5 file (see the ColumnInFile
+    class), and is used to define the properties of primary sources or transfer media.
     This base class offers facilities to handle the input options, such as determining which
-    columns are to be imported from the text file, and defines a common interface for all snapshot
+    columns are to be imported from the file, and defines a common interface for all snapshot
     types, for example to obtain the density at a given position. The actual implementation must be
     provided in a derived class for each snapshot type.
 
@@ -61,9 +62,10 @@ public:
     //========== Input file and context ==========
 
 public:
-    /** This function creates an input file object corresponding to the specified file and opens it
-        for reading; if the file can't be opened, a FatalError is thrown. It must be called \em
-        before invoking any of the configuration functions(). This function takes several
+    /** This function creates an input file object corresponding to the specified file. The file
+        is actually opened when the first data is read from it, i.e. by the readAndClose()
+        function; if the file can't be opened, a FatalError is thrown at that time. This function
+        must be called \em before invoking any of the configuration functions(). It takes several
         arguments: (1) \em item specifies a simulation item in the hierarchy of the caller (usually
         the caller itself) used to retrieve context such as an appropriate logger; (2) \em
         filename specifies the name of the file, including filename extension but excluding path
@@ -87,9 +89,16 @@ protected:
         use in subclasses that support use cases where the open() function is never invoked. */
     void setContext(const SimulationItem* item);
 
+    /** This function creates and returns the input file object for the specified file. It is
+        called by the open() function, with the same arguments. The implementation in this base
+        class creates a ColumnInFile object. A subclass can override this function to create an
+        object of a class derived from ColumnInFile that offers extra functionality. */
+    virtual std::unique_ptr<ColumnInFile> createInFile(const SimulationItem* item, const string& filename,
+                                                       const string& description);
+
     /** This function returns a pointer to the input file object. It is intended for use in
         subclasses. */
-    TextInFile* infile() { return _infile; }
+    ColumnInFile* infile() { return _infile.get(); }
 
     /** This function returns a pointer to an appropriate log object. It is intended for use in
         subclasses. */
@@ -579,7 +588,7 @@ public:
 
 private:
     // data members initialized during configuration
-    TextInFile* _infile{nullptr};
+    std::unique_ptr<ColumnInFile> _infile;
     Log* _log{nullptr};
     Units* _units{nullptr};
     Random* _random{nullptr};

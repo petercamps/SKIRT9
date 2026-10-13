@@ -4,16 +4,16 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "FileGrainSizeDistribution.hpp"
+#include "ColumnInFile.hpp"
 #include "FatalError.hpp"
 #include "NR.hpp"
-#include "TextInFile.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
 void FileGrainSizeDistribution::setupSelfBefore()
 {
     // read the sizes and number of grain values from the input file
-    TextInFile infile(this, _filename, "grain size distribution");
+    ColumnInFile infile(this, _filename, "grain size distribution");
     infile.addColumn("grain size", "grainsize", "micron");
     infile.addColumn("size distribution", "pergrainsize", "1/micron");
     infile.readAllColumns(_av, _dndav);

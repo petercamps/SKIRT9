@@ -4,13 +4,13 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "ParticleSnapshot.hpp"
+#include "ColumnInFile.hpp"
 #include "EntityCollection.hpp"
 #include "Log.hpp"
 #include "NR.hpp"
 #include "Random.hpp"
 #include "SmoothingKernel.hpp"
 #include "StringUtils.hpp"
-#include "TextInFile.hpp"
 
 ////////////////////////////////////////////////////////////////////
 

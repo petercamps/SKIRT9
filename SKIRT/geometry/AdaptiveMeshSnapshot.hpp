@@ -72,6 +72,10 @@ class SpatialGridPath;
     Note that the input file does not include the physical extent of the domain; this information
     must be provided as part of the user configuration for the snapshot.
 
+    Instead of a text column input file, the adaptive mesh can also be provided as a bundle in an
+    HDF5 file, which holds the same information in a set of datasets. See the AdaptiveMeshInFile
+    class for a description of this bundle.
+
     Below is an example of an adaptive mesh import file. For illustrative purposes:
 
       - the mesh is assumed to have a single cell in the z direction;
@@ -144,6 +148,12 @@ public:
         The function logs some statistical information about the imported snapshot and the
         resulting data structures. */
     void readAndClose() override;
+
+protected:
+    /** This function creates and returns an input file object for the specified file that
+        supports reading the structure of an adaptive mesh, i.e. an AdaptiveMeshInFile object. */
+    std::unique_ptr<ColumnInFile> createInFile(const SimulationItem* item, const string& filename,
+                                               const string& description) override;
 
     //========== Configuration ==========
 

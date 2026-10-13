@@ -8,17 +8,22 @@
 
 #include "Array.hpp"
 #include "CompileTimeUtils.hpp"
+#include "InputColumns.hpp"
 #include "StoredColumns.hpp"
 #include <fstream>
 class Log;
 class SimulationItem;
-class Units;
 
 ////////////////////////////////////////////////////////////////////
 
 /** This class allows reading a table of floating point values from a column text file with support
     for unit conversions. The filename is specified in the constructor, and information about the
     columns expected in the file is specified by calling the addColumn() function for each column.
+
+    This class reads resource files and regular column text files. A user input file can also be
+    provided as a bundle in an HDF5 file, and must therefore be read through the ColumnInFile
+    class, which offers the same functions as this class and which uses this class to read a
+    regular file.
 
     When reading a column text file, empty lines and lines starting with # are ignored, except for
     the unit specification header lines described below. Other lines must contain a predefined
@@ -96,8 +101,9 @@ public:
         file, including filename extension but excluding path and simulation prefix; (3) \em
         description describes the contents of the file for use in the log message issued after the
         file is successfully opened; (4) \em resource indicates whether the file is located in the
-        resources directory (true) or in the regular user input file directory (false, the default
-        value); (5) \em silent, if true, suppresses the log message normally issued when the file is
+        resources directory (true) or is a regular file located through the FilePaths::input()
+        function, i.e. relative to the user input file directory (false, the default value); (5)
+        \em silent, if true, suppresses the log message normally issued when the file is
         successfully opened. This is intended for callers that open a long, known series of files as
         part of a single logical operation and that issue their own single summary log message for
         the operation as a whole, rather than for every individual file.
@@ -287,19 +293,6 @@ public:
         assignColumns(0, result, columns...);
     }
 
-    //======================== Private helpers for column info handling ========================
-
-private:
-    /** This function returns the zero-based index of the column that has a file info description
-        equal to the given name, or an error value if there is no such column or if there are
-        multiple such columns. */
-    size_t indexForName(const string& name) const;
-
-    /** This function returns the logical index of the first logical column that is described as
-        "wavelength" and that both logically and physically precedes the current column, or the
-        error value if there is no such column. */
-    size_t waveIndexForSpecificQuantity() const;
-
     //======================== Private helpers for reading ========================
 
 private:
@@ -324,39 +317,14 @@ private:
     //======================== Data Members ========================
 
 private:
-    Units* _units{nullptr};  // the units system
-    Log* _log{nullptr};      // the logger
-    std::ifstream _in;       // the text input stream, if any
-    StoredColumns _scol;     // the binary input file, if any
-
-    // private type to store column info
-    class ColumnInfo
-    {
-    public:
-        size_t physColIndex{0};  // one-based physical index of this column in the file
-        string title;            // description specified in the file, used to remap columns
-        string description;      // official description provided by the program
-        string quantity;         // quantity, provided by the program
-        string unit;             // unit, provided by the program or specified in the file
-        double convFactor{1.};   // unit conversion factor from input to internal
-        double convPower{1.};    // unit conversion power (exponent) from input to internal
-        int waveExponent{0};     // wavelength exponent for converting "specific" quantities
-        size_t waveIndex{0};     // zero-based logical index of wavelength column for converting "specific" quantities
-    };
+    Log* _log{nullptr};     // the logger
+    std::ifstream _in;      // the text input stream, if any
+    StoredColumns _scol;    // the binary input file, if any
+    InputColumns _columns;  // the physical columns in the file and the logical columns expected by the program
 
     bool _hasTextOpen{false};    // true if a regular column text format file is currently open
     bool _hasBinaryOpen{false};  // true if a binary stored column format file is currently open
     bool _isResource{false};     // true if the file is a resource (as opposed to a user input file)
-    bool _hasFileInfo{false};    // becomes true if the file has column header info
-    bool _hasProgInfo{false};    // becomes true if the program has added at least one column
-    bool _doAutoCols{false};     // becomes true if the user requested automatic column assignment
-    bool _allowZeroCols{false};  // becomes true if the automatic column assignment allows zero columns
-    bool _haveZeroCols{false};   // becomes true if there is at least one (explicit or automatic) virtual zero column
-
-    vector<ColumnInfo> _colv;  // info for each column, derived from file info and/or program info
-    size_t _numLogCols{0};     // number of logical columns, or number of program columns added so far
-
-    vector<size_t> _logColIndices;  // zero-based index into _colv for each physical column to be read
 };
 
 ////////////////////////////////////////////////////////////////////

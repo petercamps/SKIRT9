@@ -4,7 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "FileBorderWavelengthGrid.hpp"
-#include "TextInFile.hpp"
+#include "ColumnInFile.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -13,7 +13,7 @@ void FileBorderWavelengthGrid::setupSelfBefore()
     DisjointWavelengthGrid::setupSelfBefore();
 
     // read the borders from the input file
-    TextInFile infile(this, _filename, "wavelength grid");
+    ColumnInFile infile(this, _filename, "wavelength grid");
     infile.addColumn("wavelength", "wavelength", "micron");
     Array wavelengths;
     infile.readAllColumns(wavelengths);

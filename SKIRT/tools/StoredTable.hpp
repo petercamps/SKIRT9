@@ -147,10 +147,12 @@ public:
     /** The move constructor transfers the association (if any) with a stored table resource file
         from another instance to this one, leaving the other instance unassociated. */
     StoredTable(StoredTable&& from) noexcept
-        : _filePath(std::move(from._filePath)), _axBeg(from._axBeg), _qtyBeg(from._qtyBeg), _axLen(from._axLen),
-          _qtyStep(from._qtyStep), _axLog(from._axLog), _qtyLog(from._qtyLog), _clamp(from._clamp)
+        : _filePath(std::move(from._filePath)), _storage(std::move(from._storage)), _axBeg(from._axBeg),
+          _qtyBeg(from._qtyBeg), _axLen(from._axLen), _qtyStep(from._qtyStep), _axLog(from._axLog),
+          _qtyLog(from._qtyLog), _clamp(from._clamp)
     {
         from._filePath.clear();
+        from._storage.clear();
     }
 
     /** The move assignment operator releases any association held by this instance and then
@@ -162,6 +164,7 @@ public:
         {
             StoredTable_Impl::close(_filePath);
             _filePath = std::move(from._filePath);
+            _storage = std::move(from._storage);
             _axBeg = from._axBeg;
             _qtyBeg = from._qtyBeg;
             _axLen = from._axLen;
@@ -170,6 +173,7 @@ public:
             _qtyLog = from._qtyLog;
             _clamp = from._clamp;
             from._filePath.clear();
+            from._storage.clear();
         }
         return *this;
     }
@@ -184,13 +188,28 @@ public:
 
         If the \em resource flag is true (the default value), the \em filename argument specifies
         the filename of the built-in resource, without any directory segments. If the \em resource
-        flag is false, the \em filename argument specifies the file path of the stored table input
-        file relative to the input path of the simulation. In both cases, the file must have the
-        ".stab" filename extension, which will be added to the specified filename if needed.
+        flag is false, the \em filename argument specifies the name of the stored table input file
+        as provided by the user, which is passed to the FilePaths::input() function to obtain the
+        candidate locations of the input file. In both cases, the file must have the ".stab"
+        filename extension, which will be added to the specified filename if needed.
 
-        The \em filename argument specifies the filename of the resource, without any directory
-        segments. The resource file must have the ".stab" filename extension, which will be added
-        to the specified filename if needed.
+        A stored table input file can also be provided as a stored table bundle in an HDF5 file.
+        If there is no regular file at the candidate location for a regular file, and there is a
+        candidate location for a bundle (because the input path of the simulation or the filename
+        itself refers to an HDF5 file), the table is loaded from that bundle. Because the name of
+        the bundle is the name of the file it replaces, it ends with the ".stab" extension as
+        well. A stored table bundle holds a one-dimensional dataset for each axis, named for the
+        axis, with the attributes \em axis (the zero-based index of the axis), \em unit (the unit
+        string), and \em log (a Boolean that is true for logarithmic interpolation); and a dataset
+        for each tabulated quantity, named for the quantity, with a dimension for each axis in the
+        order of the axes, and with the attributes \em unit and \em log. In a dataset name, a
+        vertical bar stands for a forward slash in the name of the axis or quantity. Because each
+        axis and each quantity is located by the name of its dataset, the names of the axes and
+        quantities of a table in a bundle must all differ from each other, which the stored table
+        file format does not require. A quantity with the name of an axis, or the second of two
+        quantities with the same name, cannot be read from a bundle. The data of a bundle cannot
+        be memory mapped. Instead, the grid points of the axes and the values of the requested
+        quantity are copied into memory owned by the stored table instance.
 
         First of all, the number of axes in this stored table resource file must match the template
         parameter \em N. Furthermore, the axes names in the resource file and the corresponding
@@ -213,25 +232,27 @@ public:
         axes) by passing a value of false to the optional \em clampFirstAxis flag. In that case,
         the quantity value for out-of-range first-axis values is considered to be zero.
 
-        In summary, this function (1) locates the specified stored table resource file, (2)
-        acquires a memory map on the file, (3) verifies that the stored table matches all
-        requirements, and (4) stores relevant information in data members. If any of these steps
-        fail, the function throws a fatal error. */
+        In summary, this function (1) locates the specified stored table resource file, input
+        file, or bundle, (2) acquires a memory map on the file or loads the data from the bundle,
+        (3) verifies that the stored table matches all requirements, and (4) stores relevant
+        information in data members. If any of these steps fail, the function throws a fatal
+        error. */
     void open(const SimulationItem* item, const string& filename, const string& axes, const string& quantity,
               bool clampFirstAxis = true, bool resource = true)
     {
-        StoredTable_Impl::open(N, item, filename, resource, axes, quantity, _filePath, &_axBeg[0], &_qtyBeg, &_axLen[0],
-                               &_qtyStep, &_axLog[0], &_qtyLog);
+        StoredTable_Impl::open(N, item, filename, resource, axes, quantity, _filePath, _storage, &_axBeg[0], &_qtyBeg,
+                               &_axLen[0], &_qtyStep, &_axLog[0], &_qtyLog);
         _clamp = clampFirstAxis;
     }
 
     /** This function returns true if the stored table instance has been opened, false if not (i.e.
         the instance was default constructed and open() has not yet been called). */
-    bool isOpen() const { return !_filePath.empty(); }
+    bool isOpen() const { return !_filePath.empty() || !_storage.empty(); }
 
     /** The destructor breaks the association with a stored table resource file established by the
         alternate constructor or the open() function, if there is any. In practice, this simply
-        means releasing the memory map on the associated file. */
+        means releasing the memory map on the associated file, or releasing the memory that holds
+        the data loaded from a bundle. */
     ~StoredTable() { StoredTable_Impl::close(_filePath); }
 
 private:
@@ -643,7 +664,8 @@ private:
     // ================== Data members ==================
 
 private:
-    string _filePath;                     // the canonical path to the associated stored table file
+    string _filePath;                     // the canonical path to the memory-mapped stored table file, if any
+    vector<double> _storage;              // the grid points and values loaded from a bundle, if any
     std::array<const double*, N> _axBeg;  // pointer to first grid point for each axis
     const double* _qtyBeg;                // pointer to first quantity value
     std::array<size_t, N> _axLen;         // number of grid points for each axis

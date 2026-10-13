@@ -4,7 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "FileWavelengthGrid.hpp"
-#include "TextInFile.hpp"
+#include "ColumnInFile.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -13,7 +13,7 @@ void FileWavelengthGrid::setupSelfBefore()
     DisjointWavelengthGrid::setupSelfBefore();
 
     // read the wavelengths from the input file
-    TextInFile infile(this, _filename, "wavelength grid");
+    ColumnInFile infile(this, _filename, "wavelength grid");
     infile.addColumn("wavelength", "wavelength", "micron");
     Array wavelengths;
     infile.readAllColumns(wavelengths);

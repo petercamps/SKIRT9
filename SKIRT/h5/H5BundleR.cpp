@@ -12,6 +12,13 @@ H5BundleR::H5BundleR(std::int64_t handle, string path) : H5ObjectR(handle, "HDF5
 
 ////////////////////////////////////////////////////////////////////
 
+vector<string> H5BundleR::getDatasetNames() const
+{
+    return H5Core::datasetNames(handle(), context());
+}
+
+////////////////////////////////////////////////////////////////////
+
 bool H5BundleR::hasDataset(const string& name) const
 {
     return H5Core::hasDataset(handle(), name);

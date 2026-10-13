@@ -157,13 +157,6 @@ public:
         to fall back to the bundle only if that file does not exist. */
     std::pair<string, string> input(const string& name) const;
 
-    /** This function returns the absolute path of the regular input file with the specified name,
-        i.e. the first of the candidate locations returned by the input() function. It is intended
-        for the types of input file that cannot be read from a bundle in an HDF5 file. If the
-        specified name embeds a reference to a bundle in an HDF5 file, so that there is no regular
-        file candidate, the function throws a fatal error. */
-    string inputFile(const string& name) const;
-
     /** This function returns true if the specified input path is absolute, and false if it is
         relative. The path can have the form <tt>\<dir\>/\<hdf\>:\<suite\></tt> described in the
         class header, in which case only the portion up to and including the name of the HDF5 file

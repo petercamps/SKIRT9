@@ -4,12 +4,12 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "CellSnapshot.hpp"
+#include "ColumnInFile.hpp"
 #include "EntityCollection.hpp"
 #include "Log.hpp"
 #include "NR.hpp"
 #include "Random.hpp"
 #include "StringUtils.hpp"
-#include "TextInFile.hpp"
 
 ////////////////////////////////////////////////////////////////////
 

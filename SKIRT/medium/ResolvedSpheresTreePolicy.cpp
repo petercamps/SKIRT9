@@ -5,8 +5,8 @@
 
 #include "ResolvedSpheresTreePolicy.hpp"
 #include "Array.hpp"
+#include "ColumnInFile.hpp"
 #include "Log.hpp"
-#include "TextInFile.hpp"
 #include "TreeNodeEvaluation.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -16,7 +16,7 @@ void ResolvedSpheresTreePolicy::setupSelfBefore()
     TreePolicy::setupSelfBefore();
 
     // read the spheres, applying the configured number of bins and reach unless overridden
-    TextInFile infile(this, filename(), "spheres");
+    ColumnInFile infile(this, filename(), "spheres");
     infile.addColumn("position x", "length", "pc");
     infile.addColumn("position y", "length", "pc");
     infile.addColumn("position z", "length", "pc");

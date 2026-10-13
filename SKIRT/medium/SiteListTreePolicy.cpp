@@ -5,11 +5,11 @@
 
 #include "SiteListTreePolicy.hpp"
 #include "Array.hpp"
+#include "ColumnInFile.hpp"
 #include "FatalError.hpp"
 #include "Log.hpp"
 #include "MediumSystem.hpp"
 #include "SiteListInterface.hpp"
-#include "TextInFile.hpp"
 #include "TreeNodeEvaluation.hpp"
 #include "TreeSpatialGrid.hpp"
 
@@ -44,7 +44,7 @@ void SiteListTreePolicy::setupSelfBefore()
     vector<Vec> sitev;
     if (!filename().empty())
     {
-        TextInFile infile(this, filename(), "site positions");
+        ColumnInFile infile(this, filename(), "site positions");
         infile.addColumn("position x", "length", "pc");
         infile.addColumn("position y", "length", "pc");
         infile.addColumn("position z", "length", "pc");

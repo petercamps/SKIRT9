@@ -4,6 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "AdaptiveMeshSnapshot.hpp"
+#include "AdaptiveMeshInFile.hpp"
 #include "EntityCollection.hpp"
 #include "FatalError.hpp"
 #include "Log.hpp"
@@ -11,7 +12,6 @@
 #include "PathSegmentGenerator.hpp"
 #include "Random.hpp"
 #include "SpatialGridPath.hpp"
-#include "TextInFile.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -26,7 +26,7 @@ public:
        following line in the specified input file. It then recursively constructs any child
        nodes. In addition to constructing the new node(s), the constructor also adds leaf node
        pointers to the vector held by the AdaptiveMeshSnapshot class. */
-    Node(const Box& extent, TextInFile* infile, vector<Node*>& leafnodes) : Box(extent)
+    Node(const Box& extent, AdaptiveMeshInFile* infile, vector<Node*>& leafnodes) : Box(extent)
     {
         // if this is a nonleaf line, process it
         if (infile->readNonLeaf(_Nx, _Ny, _Nz))
@@ -189,11 +189,19 @@ AdaptiveMeshSnapshot::~AdaptiveMeshSnapshot()
 
 ////////////////////////////////////////////////////////////////////
 
+std::unique_ptr<ColumnInFile> AdaptiveMeshSnapshot::createInFile(const SimulationItem* item, const string& filename,
+                                                                 const string& description)
+{
+    return std::make_unique<AdaptiveMeshInFile>(item, filename, description);
+}
+
+////////////////////////////////////////////////////////////////////
+
 void AdaptiveMeshSnapshot::readAndClose()
 {
-    // construct the root node, and recursively all other nodes;
-    // this also fills the _cells vector
-    _root = new Node(_extent, infile(), _cells);
+    // construct the root node, and recursively all other nodes; this also fills the _cells vector;
+    // the input file object was created by our createInFile() function, so it supports reading nonleaf nodes
+    _root = new Node(_extent, static_cast<AdaptiveMeshInFile*>(infile()), _cells);
 
     // verify that all data was read and close the file
     Array dummy;

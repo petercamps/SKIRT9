@@ -279,16 +279,6 @@ std::pair<string, string> FilePaths::input(const string& name) const
 
 ////////////////////////////////////////////////////////////////////
 
-string FilePaths::inputFile(const string& name) const
-{
-    string filePath = input(name).first;
-    if (filePath.empty())
-        throw FATALERROR("This type of input file cannot be read from a bundle in an HDF5 file: " + name);
-    return filePath;
-}
-
-////////////////////////////////////////////////////////////////////
-
 bool FilePaths::isAbsolutePath(const string& path)
 {
     string hdf5Path = splitHdf5Reference(path, true).first;

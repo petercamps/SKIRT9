@@ -4,6 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "TetraMeshSpatialGrid.hpp"
+#include "ColumnInFile.hpp"
 #include "FatalError.hpp"
 #include "Log.hpp"
 #include "MediumSystem.hpp"
@@ -11,7 +12,6 @@
 #include "Random.hpp"
 #include "SpatialGridPlotFile.hpp"
 #include "StringUtils.hpp"
-#include "TextInFile.hpp"
 #include "tetgen.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -317,7 +317,7 @@ void TetraMeshSpatialGrid::setupSelfBefore()
         case Policy::File:
         {
             // read the input file
-            TextInFile in(this, _filename, "tetrahedral vertices");
+            ColumnInFile in(this, _filename, "tetrahedral vertices");
             in.addColumn("position x", "length", "pc");
             in.addColumn("position y", "length", "pc");
             in.addColumn("position z", "length", "pc");

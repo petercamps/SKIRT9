@@ -52,6 +52,11 @@ namespace H5Core
         ignored. */
     vector<string> groupNames(std::int64_t group, const string& context);
 
+    /** This function returns the names of the datasets that are located directly inside the
+        specified group, in alphabetical order. Other objects in the group, such as groups, are
+        ignored. */
+    vector<string> datasetNames(std::int64_t group, const string& context);
+
     /** This function returns true if the specified group directly contains a dataset with the
         specified name, and false otherwise. */
     bool hasDataset(std::int64_t group, const string& name);

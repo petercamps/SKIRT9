@@ -4,6 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "SphericalCellSnapshot.hpp"
+#include "ColumnInFile.hpp"
 #include "EntityCollection.hpp"
 #include "FatalError.hpp"
 #include "Log.hpp"
@@ -11,7 +12,6 @@
 #include "Quadrics.hpp"
 #include "Random.hpp"
 #include "StringUtils.hpp"
-#include "TextInFile.hpp"
 
 ////////////////////////////////////////////////////////////////////
 

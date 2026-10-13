@@ -4,6 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "ClumpySphericalSpatialGrid.hpp"
+#include "ColumnInFile.hpp"
 #include "Configuration.hpp"
 #include "Log.hpp"
 #include "NR.hpp"
@@ -12,7 +13,6 @@
 #include "Random.hpp"
 #include "SpatialGridPlotFile.hpp"
 #include "StringUtils.hpp"
-#include "TextInFile.hpp"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -42,7 +42,7 @@ void ClumpySphericalSpatialGrid::setupSelfAfter()
 
     int numOutside = 0;
     {
-        TextInFile infile(this, _filename, "clump centers and radii");
+        ColumnInFile infile(this, _filename, "clump centers and radii");
         infile.addColumn("position x", "length", "pc");
         infile.addColumn("position y", "length", "pc");
         infile.addColumn("position z", "length", "pc");
