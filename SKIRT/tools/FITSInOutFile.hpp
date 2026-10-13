@@ -28,12 +28,12 @@ class SimulationItem;
 
     <b>FITS file bundle</b>
 
-    The bundle that corresponds to a FITS input file is an HDF5 group that contains a single
+    The bundle that corresponds to a FITS input file is an HDF5 group that contains the following
     dataset:
 
     | %Dataset | Dimensions | Type | Description |
     |--|--|--|--|
-    | \c image | (ny, nx) or (nz, ny, nx) | 64-bit float | Pixel or voxel values |
+    | \c data | (ny, nx) or (nz, ny, nx) | 64-bit float | Pixel or voxel values |
 
     Just as for a FITS file, the values are stored such that the index along the x-axis varies
     most rapidly, the index along the y-axis varies less rapidly, and the index along the z-axis
@@ -42,6 +42,11 @@ class SimulationItem;
     it can be chunked or compressed; the HDF5 library handles this transparently. The bundle needs
     no attributes. None of the metadata that a FITS file might carry (such as the pixel scale) is
     read from either type of file; this information is configured in the ski file.
+
+    Any other datasets in the bundle and all attributes are ignored. The bundle that corresponds
+    to a FITS output file holds its frame or data cube in a dataset with the same name and layout,
+    next to datasets with the coordinates of its axes. Such an output bundle can therefore be read
+    as input, just as a FITS file written by a previous simulation can.
 
     The name of a FITS file can be followed by the name of an extension between square brackets
     to select a data unit other than the first one (see the FITSInOut class). There is no

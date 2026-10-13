@@ -36,17 +36,17 @@ void FITSInOutFile::read(const SimulationItem* item, const string& filename, Arr
     }
     else
     {
-        H5DatasetR dataset = H5Lib::openBundle(bundlePath).getDataset("image");
+        H5DatasetR dataset = H5Lib::openBundle(bundlePath).getDataset("data");
 
         // the dimensions are stored with the index that varies least rapidly listed first
         vector<size_t> shape = dataset.shape();
         size_t rank = shape.size();
         if (rank != 2 && rank != 3)
-            throw FATALERROR("The image dataset in HDF5 bundle " + bundlePath
+            throw FATALERROR("The dataset 'data' in HDF5 bundle " + bundlePath
                              + " must have two or three dimensions rather than " + std::to_string(rank));
         for (size_t size : shape)
             if (size > static_cast<size_t>(INT_MAX))
-                throw FATALERROR("The image dataset in HDF5 bundle " + bundlePath + " is too large");
+                throw FATALERROR("The dataset 'data' in HDF5 bundle " + bundlePath + " is too large");
         nx = static_cast<int>(shape[rank - 1]);
         ny = static_cast<int>(shape[rank - 2]);
         nz = rank == 3 ? static_cast<int>(shape[0]) : 1;
