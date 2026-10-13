@@ -16,19 +16,23 @@ namespace
     constexpr char EXTENSION[] = ".hdf5";
 
     // splits the specified path of the form <filepath>:<objectpath> into its two portions, removing any leading and
-    // trailing slashes from the object path; the object path is empty if the path ends with the filename extension
-    // or with the colon; throws a fatal error if the path is malformed
+    // trailing slashes from the object path; the path is split at the first occurrence of the filename extension
+    // followed by a colon, so that the name of a group inside the file can end with that extension as well; without
+    // such an occurrence, the path must end with the filename extension, and the object path is empty; throws a
+    // fatal error if the path is malformed
     std::pair<string, string> splitPath(const string& path)
     {
         string filePath = path;
         string objectPath;
-        if (!StringUtils::endsWith(path, EXTENSION))
+        if (auto pos = path.find(string(EXTENSION) + ":"); pos != string::npos)
         {
-            auto pos = path.find(string(EXTENSION) + ":");
-            if (pos == string::npos) throw FATALERROR("Path does not refer to an HDF5 file: " + path);
             pos += string(EXTENSION).length();
             filePath = path.substr(0, pos);
             objectPath = path.substr(pos + 1);
+        }
+        else if (!StringUtils::endsWith(path, EXTENSION))
+        {
+            throw FATALERROR("Path does not refer to an HDF5 file: " + path);
         }
 
         while (StringUtils::startsWith(objectPath, "/")) objectPath.erase(0, 1);

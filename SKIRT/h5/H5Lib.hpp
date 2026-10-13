@@ -59,8 +59,10 @@
 
         /data/campaign7.hdf5:galaxy042/stars.txt
 
-    The colon that separates the two portions is the one immediately following the first
-    occurrence of the <tt>.hdf5</tt> filename extension.
+    The path is split at the first occurrence of the <tt>.hdf5</tt> filename extension that is
+    followed by a colon. The name of a suite or bundle can therefore end with that extension as
+    well. A path without such an occurrence must end with the extension; it refers to the root
+    group of the file.
 
     Combining the name of an input file with the input path and the HDF5 file specified by the
     user to construct such a path, and deciding whether to use a regular file or a bundle, is
