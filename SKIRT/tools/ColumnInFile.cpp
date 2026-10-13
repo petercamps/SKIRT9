@@ -72,6 +72,12 @@ void ColumnInFile::open()
     if (_isOpen || _isClosed) return;
     _isOpen = true;
 
+    // the binary stored columns format, recognized by its filename extension, is no longer supported
+    if (StringUtils::endsWith(_filename, ".scol"))
+        throw FATALERROR("The stored columns format of input file " + _filename
+                         + " is no longer supported; convert the file to a column text file or to a bundle in an "
+                           "HDF5 file with PTS, and refer to the result in the ski file");
+
     // determine the candidate locations for the input file: a regular file and a bundle in an HDF5 file
     auto [filePath, bundlePath] = _item->find<FilePaths>()->input(_filename);
 

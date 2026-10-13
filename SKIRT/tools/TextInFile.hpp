@@ -9,7 +9,6 @@
 #include "Array.hpp"
 #include "CompileTimeUtils.hpp"
 #include "InputColumns.hpp"
-#include "StoredColumns.hpp"
 #include <fstream>
 class Log;
 class SimulationItem;
@@ -70,24 +69,6 @@ class SimulationItem;
     the client class invoking TextInFile). However, some client classes offer a user-configurable
     \em useColumns property that allows column reordering, as described in the documentation for
     the TextInFile::useColumns() function.
-
-    Stored columns file format
-    --------------------------
-
-    Reading large text files can be very slow. Therefore, in certain cases, this class supports the
-    possibility to provide the input file in a much faster SKIRT-specific binary file format, i.e.
-    the stored columns format described in the StoredColumns class. This file format has the
-    following limitations:
-
-    - being a binary format, the files are not human readable.
-    - a (binary) file header with column names and unit strings must always be included.
-    - the column names and unit strings have a maximum length of 8 characters each.
-    - there is no support for non-leaf rows, so the format cannot be used for representing
-      adaptive mesh data.
-
-    If the input file provided to the TextInFile constructor has the \c .scol filename extension,
-    the implementation automatically switches to reading the binary file format instead of the
-    regular column text format. This is fully transparent to the caller of the TextInFile class.
 */
 class TextInFile
 {
@@ -106,11 +87,7 @@ public:
         \em silent, if true, suppresses the log message normally issued when the file is
         successfully opened. This is intended for callers that open a long, known series of files as
         part of a single logical operation and that issue their own single summary log message for
-        the operation as a whole, rather than for every individual file.
-
-        If the specified file has the \c .scol filename extension, the implementation automatically
-        switches to reading the binary SKIRT column file format instead of the regular column text
-        format. For more information, see the class header. */
+        the operation as a whole, rather than for every individual file. */
     TextInFile(const SimulationItem* item, const string& filename, const string& description, bool resource = false,
                bool silent = false);
 
@@ -318,13 +295,11 @@ private:
 
 private:
     Log* _log{nullptr};     // the logger
-    std::ifstream _in;      // the text input stream, if any
-    StoredColumns _scol;    // the binary input file, if any
+    std::ifstream _in;      // the text input stream
     InputColumns _columns;  // the physical columns in the file and the logical columns expected by the program
 
-    bool _hasTextOpen{false};    // true if a regular column text format file is currently open
-    bool _hasBinaryOpen{false};  // true if a binary stored column format file is currently open
-    bool _isResource{false};     // true if the file is a resource (as opposed to a user input file)
+    bool _hasTextOpen{false};  // true if the file is currently open
+    bool _isResource{false};   // true if the file is a resource (as opposed to a user input file)
 };
 
 ////////////////////////////////////////////////////////////////////

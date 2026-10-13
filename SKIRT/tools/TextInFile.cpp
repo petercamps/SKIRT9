@@ -70,59 +70,36 @@ TextInFile::TextInFile(const SimulationItem* item, const string& filename, const
     if (filepath.empty())
         throw FATALERROR("A column text file cannot be read from a bundle in an HDF5 file: " + filename);
 
-    // if the file is in SKIRT stored column format, open a binary file
-    if (StringUtils::endsWith(filepath, ".scol"))
+    // open the file
+    _in = System::ifstream(filepath);
+    if (!_in) throw FATALERROR("Could not open the " + description + " text file " + filepath);
+
+    // log "reading file" message
+    if (!silent) _log->info(item->typeAndName() + " reads " + description + " from text file " + filepath + "...");
+
+    // register the descriptions and units of the columns specified in any structured header lines
+    int index;  // one-based column index obtained from file info
+    string title;
+    string unit;
+    size_t numFileColumns = 0;
+    while (getNextInfoLine(_in, index, title, unit))
     {
-        _scol.open(filepath);
-
-        // log "reading file" message
-        if (!silent)
-            _log->info(item->typeAndName() + " reads " + description + " from binary file " + filepath + "...");
-
-        // register the names and units of the columns specified in the header
-        auto columnNames = _scol.columnNames();
-        auto columnUnits = _scol.columnUnits();
-        for (size_t index = 0; index != columnNames.size(); ++index)
-            _columns.addFileColumn(columnNames[index], columnUnits[index]);
-        _hasBinaryOpen = true;
+        numFileColumns++;
+        if (index != -1 && static_cast<size_t>(index) != numFileColumns)
+            throw FATALERROR("Incorrect column index in file header for column " + std::to_string(numFileColumns));
+        _columns.addFileColumn(title, unit);
     }
-
-    // otherwise open a regular text column file
-    else
-    {
-        _in = System::ifstream(filepath);
-        if (!_in) throw FATALERROR("Could not open the " + description + " text file " + filepath);
-
-        // log "reading file" message
-        if (!silent) _log->info(item->typeAndName() + " reads " + description + " from text file " + filepath + "...");
-
-        // register the descriptions and units of the columns specified in any structured header lines
-        int index;  // one-based column index obtained from file info
-        string title;
-        string unit;
-        size_t numFileColumns = 0;
-        while (getNextInfoLine(_in, index, title, unit))
-        {
-            numFileColumns++;
-            if (index != -1 && static_cast<size_t>(index) != numFileColumns)
-                throw FATALERROR("Incorrect column index in file header for column " + std::to_string(numFileColumns));
-            _columns.addFileColumn(title, unit);
-        }
-        _hasTextOpen = true;
-    }
+    _hasTextOpen = true;
 }
 
 ////////////////////////////////////////////////////////////////////
 
 void TextInFile::close()
 {
-    if (_hasTextOpen) _in.close();
-    if (_hasBinaryOpen) _scol.close();
-
-    if (_hasTextOpen || _hasBinaryOpen)
+    if (_hasTextOpen)
     {
+        _in.close();
         _hasTextOpen = false;
-        _hasBinaryOpen = false;
 
         // log "done" message, except if this is a resource file or after an exception has been thrown
         if (!_isResource && std::uncaught_exceptions() == 0) _log->info("Done reading");
@@ -154,7 +131,7 @@ void TextInFile::addColumn(const string& description, const string& quantity, st
 
 bool TextInFile::readRow(Array& values)
 {
-    // read next row in text file
+    // read next row
     if (_hasTextOpen)
     {
         // read new line until it is non-empty and non-comment
@@ -198,29 +175,6 @@ bool TextInFile::readRow(Array& values)
         }
     }
 
-    // read next row in binary file
-    else if (_hasBinaryOpen)
-    {
-        const double* row = _scol.nextRow();
-        if (row)
-        {
-            // resize result array if needed (we don't need it to be cleared)
-            size_t numLogCols = _columns.numLogicalColumns();
-            if (values.size() != numLogCols) values.resize(numLogCols);
-
-            // copy values from row into result array
-            for (size_t i : _columns.logicalIndices())  // i: zero-based logical index
-            {
-                // get the value
-                double value = *row++;
-
-                // if mapped to a logical column, convert from input units to internal units, and store the result
-                if (i != InputColumns::noIndex) values[i] = _columns.converted(i, value, values);
-            }
-            return true;
-        }
-    }
-
     // end of file was reached or no file is open
     return false;
 }
@@ -229,7 +183,7 @@ bool TextInFile::readRow(Array& values)
 
 bool TextInFile::readNonLeaf(int& nx, int& ny, int& nz)
 {
-    // read next non-leaf row in text file
+    // read next non-leaf row
     if (_hasTextOpen)
     {
         string line;
@@ -273,7 +227,7 @@ bool TextInFile::readNonLeaf(int& nx, int& ny, int& nz)
         }
     }
 
-    // unsupported binary file format, or no file is open
+    // no file is open
     return false;
 }
 

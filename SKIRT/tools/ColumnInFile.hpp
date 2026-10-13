@@ -37,6 +37,12 @@ class TextInFile;
     This class is intended for user input files only; a resource file is never provided as a bundle
     and must be read through the TextInFile class.
 
+    Previous versions of SKIRT also accepted a table in the binary "stored columns" format,
+    recognized by the ".scol" filename extension. This format is no longer supported. A filename
+    with that extension, whether it refers to a regular file or to a bundle, causes a fatal error
+    when the first row is read. Such a file must be converted to a regular column text file or to
+    a text column file bundle, for example with the conversion commands offered by PTS.
+
     Text column file bundle
     -----------------------
 
