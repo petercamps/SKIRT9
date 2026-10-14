@@ -691,6 +691,12 @@ QWidget* WizardEngine::createPane()
         }
         case Stage::ConstructHierarchy:
         {
+            // consider the new pane to be invalid until it reports otherwise; a pane with radio buttons
+            // reports that it is valid when one of its buttons is selected, but it never reports that it is
+            // invalid, so the wizard would otherwise keep the valid state of the previous pane, allowing
+            // the user to advance from a property that has no value yet (which fails for an item property)
+            _propertyValid = false;
+
             // single pane
             if (_lastPropertyIndex == _firstPropertyIndex)
             {

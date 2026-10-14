@@ -57,6 +57,10 @@ SubItemPropertyWizardPane::SubItemPropertyWizardPane(std::unique_ptr<PropertyHan
         }
     }
 
+    // the item being edited remains valid even if none of the buttons corresponds to its type,
+    // for example because that type is not displayed at the current user level
+    if (!buttonGroup->checkedButton()) emit propertyValidChanged(true);
+
     // connect the button group to ourselves
     connect(buttonGroup, SIGNAL(buttonClicked(QAbstractButton*)), this, SLOT(selectTypeFor(QAbstractButton*)));
 

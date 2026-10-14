@@ -102,6 +102,10 @@ ItemPropertyWizardPane::ItemPropertyWizardPane(std::unique_ptr<PropertyHandler> 
         }
     }
 
+    // a configured property remains valid even if none of the buttons corresponds to its current value,
+    // for example because the type of the current item is not displayed at the current user level
+    if (!buttonGroup->checkedButton() && hdlr->isConfigured()) emit propertyValidChanged(true);
+
     // connect the button group to ourselves
     connect(buttonGroup, SIGNAL(buttonClicked(QAbstractButton*)), this, SLOT(selectTypeFor(QAbstractButton*)));
 
