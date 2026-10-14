@@ -79,6 +79,10 @@ public:
     /** Returns the name of the item's type. */
     string type() const override;
 
+    /** Returns true if a value has been set for the specified property since the item was
+        created, and false otherwise. */
+    bool hasPropertyValue(const PropertyDef* property) const override;
+
     /** Returns the value of the specified string property. If the property does not exist, the
         function throws an error. */
     string getStringProperty(const PropertyDef* property) const override;

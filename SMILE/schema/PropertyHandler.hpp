@@ -136,6 +136,11 @@ public:
         otherwise returns false. */
     bool hasChanged() const;
 
+    /** Returns true if the target property has a value, and false otherwise; see
+        Item::hasPropertyValue(). A property of an item being edited in the wizard has no value
+        until the wizard or the user has set one. */
+    bool hasValue() const;
+
     // ================== Setters & Modifiers ==================
 
 protected:

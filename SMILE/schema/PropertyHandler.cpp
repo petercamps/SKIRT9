@@ -106,6 +106,13 @@ bool PropertyHandler::hasChanged() const
 
 ////////////////////////////////////////////////////////////////////
 
+bool PropertyHandler::hasValue() const
+{
+    return target()->hasPropertyValue(property());
+}
+
+////////////////////////////////////////////////////////////////////
+
 void PropertyHandler::setChanged()
 {
     _changed = true;
@@ -129,8 +136,11 @@ namespace
             // abort the recursion just before the target property in the target item
             if (item == targetItem && property == targetProperty) return false;
 
-            // insert the names for this property
+            // insert the names for this property; skip a property that has no value yet, which happens
+            // when the hierarchy contains an item list entry for which editing was left incomplete
+            // (for example, after replacing the entry by a new item of another type)
             auto handler = schema->createPropertyHandler(item, property, nameMgr);
+            if (!handler->hasValue()) continue;
             handler->insertNames();
 
             // recursively handle the properties of the item's children, if any

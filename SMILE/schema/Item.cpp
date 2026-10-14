@@ -175,6 +175,13 @@ void Item::removeFromItemListProperty(const PropertyDef* property, int index)
 
 ////////////////////////////////////////////////////////////////////
 
+bool Item::hasPropertyValue(const PropertyDef* /*property*/) const
+{
+    return true;
+}
+
+////////////////////////////////////////////////////////////////////
+
 string Item::getStringProperty(const PropertyDef* property) const
 {
     auto accessor = dynamic_cast<const TypedPropertyAccessor<string>*>(property->accessor());

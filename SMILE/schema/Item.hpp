@@ -196,6 +196,12 @@ public:
     // ================== Property Getters ==================
 
 public:
+    /** Returns true if the specified property has a value, i.e. if the getter corresponding to the
+        property's type would return a value rather than throw an error, and false otherwise. The
+        implementation in this class always returns true, because the properties of a regular item
+        always hold a value. */
+    virtual bool hasPropertyValue(const PropertyDef* property) const;
+
     /** Returns the value of the specified string property. If the property does not exist, the
         function throws an error. */
     virtual string getStringProperty(const PropertyDef* property) const;

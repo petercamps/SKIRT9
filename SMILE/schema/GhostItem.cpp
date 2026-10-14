@@ -108,6 +108,16 @@ string GhostItem::type() const
 
 ////////////////////////////////////////////////////////////////////
 
+bool GhostItem::hasPropertyValue(const PropertyDef* property) const
+{
+    string name = property->name();
+    return _stringProperties.count(name) || _boolProperties.count(name) || _intProperties.count(name)
+           || _enumProperties.count(name) || _doubleProperties.count(name) || _doubleListProperties.count(name)
+           || _itemProperties.count(name) || _itemListProperties.count(name);
+}
+
+////////////////////////////////////////////////////////////////////
+
 string GhostItem::getStringProperty(const PropertyDef* property) const
 {
     string name = property->name();
