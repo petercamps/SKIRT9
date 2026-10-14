@@ -268,6 +268,15 @@ void BasicChoiceWizardPane::updateChoiceInterface()
             _buttons << choice1 << choice2;
         }
 
+        // if no choice has been made yet, select creating a new dataset for the first schema,
+        // and pass this default choice to the target
+        if (_schemaName.empty())
+        {
+            _openExisting = false;
+            _schemaName = _schemaNames[0];
+            emit basicChoiceWasChanged(_openExisting, _libraryPath, _schemaName);
+        }
+
         // select the initial choice
         int buttonIndex = (StringUtils::indexOf(_schemaNames, _schemaName) << 1) + (_openExisting ? 1 : 0);
         auto selected = _buttonGroup->button(buttonIndex);

@@ -31,10 +31,12 @@ class BasicChoiceWizardPane : public QWidget
 public:
     /** The default (and only) constructor creates and initializes the GUI for this pane. The first
         two arguments specify the choice that will be selected when the pane is initially
-        displayed. If the schema name does not match any of the possible choices, no choices will
-        be selected. The third argument indicates the dirty state of the current simulation item
-        hierarchy. The last argument specifies the object that will be notified of changes in the
-        selection through invocation of the object's setBasicChoice() slot. */
+        displayed. If the schema name is empty (i.e. no choice has been made yet), the choice for
+        creating a new dataset with the first schema in the library is selected and passed to the
+        target object. If the schema name does not match any of the possible choices, no choices
+        will be selected. The third argument indicates the dirty state of the current simulation
+        item hierarchy. The last argument specifies the object that will be notified of changes in
+        the selection through invocation of the object's setBasicChoice() slot. */
     explicit BasicChoiceWizardPane(bool initialOpenExisting, string initialSchemaName, bool dirty, QObject* target);
 
     // ==================== Event Handling ====================
