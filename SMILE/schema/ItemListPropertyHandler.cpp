@@ -23,8 +23,13 @@ vector<Item*> ItemListPropertyHandler::children() const
 
 void ItemListPropertyHandler::insertNames()
 {
-    if (!value().empty()) nameManager()->insert(property()->name());
-    nameManager()->insertFromConditionalValue(property()->insert());
+    // an empty list inserts no names at all, consistent with the console and XML hierarchy creators,
+    // which cause names to be inserted for an item list property only when an item is added to it
+    if (!value().empty())
+    {
+        nameManager()->insert(property()->name());
+        nameManager()->insertFromConditionalValue(property()->insert());
+    }
 
     for (auto item : value())
     {
