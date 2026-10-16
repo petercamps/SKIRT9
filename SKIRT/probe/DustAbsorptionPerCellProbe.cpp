@@ -4,13 +4,13 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "DustAbsorptionPerCellProbe.hpp"
+#include "ColumnOutFile.hpp"
 #include "Configuration.hpp"
 #include "DisjointWavelengthGrid.hpp"
 #include "Indices.hpp"
 #include "InstrumentWavelengthGridProbe.hpp"
 #include "MediumSystem.hpp"
 #include "StringUtils.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -34,10 +34,10 @@ void DustAbsorptionPerCellProbe::probe()
             auto units = find<Units>();
 
             // create a text file
-            TextOutFile file(this, itemName() + "_Labs", "dust absorption per cell");
+            ColumnOutFile file(this, itemName() + "_Labs", "dust absorption per cell");
 
             // write the header
-            file.writeLine("# Spectral luminosity absorbed by dust per spatial cell");
+            file.setLongDescription("Spectral luminosity absorbed by dust per spatial cell");
             file.addColumn("spatial cell index", "", 'd');
             for (int ell : Indices(wavelengthGrid->numBins(), units->rwavelength()))
                 file.addColumn(units->smonluminosity() + "^abs at " + units->swavelength() + " = "
@@ -60,6 +60,7 @@ void DustAbsorptionPerCellProbe::probe()
                 }
                 file.writeRow(values);
             }
+            file.close();
         }
 
         // if requested, also output the wavelength grid

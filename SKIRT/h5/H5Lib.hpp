@@ -6,6 +6,7 @@
 #ifndef H5LIB_HPP
 #define H5LIB_HPP
 
+#include "H5BundleW.hpp"
 #include "H5SuiteR.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -19,7 +20,7 @@
     Support for HDF5 is optional. It is included when the \c BUILD_HDF5 build option is enabled,
     which requires the HDF5 C library to be installed on the system. Otherwise the code is built
     without any dependency on HDF5. In that case, the available() function returns false, and the
-    functions that open a suite or a bundle throw a fatal error.
+    functions that open or create a suite or a bundle throw a fatal error.
 
     <b>Concepts</b>
 
@@ -40,8 +41,25 @@
       files for a single simulation. This allows storing the input for several simulations in a
       single HDF5 file. A suite can be the root group of the file, or a group at any nesting level.
 
-    The names of these classes are suffixed with "R" (for read-only), so that future extensions
-    can differentiate between reading and writing.
+    The names of these classes are suffixed with "R" for reading. A bundle and a dataset also have
+    a class for writing, suffixed with "W" (H5BundleW and H5DatasetW, with the common base class
+    H5ObjectW). A suite has no class for writing, because writing always targets a specific bundle,
+    never a suite as a whole; the suites leading up to a bundle are created as needed.
+
+    <b>Writing</b>
+
+    The createBundle() function opens an HDF5 file for writing, creating the file if it does not
+    exist, and creates a new, empty bundle in it, replacing any existing bundle with the same path;
+    the rest of the file remains untouched. The datasets of the bundle are created and written
+    through the H5BundleW class. A new bundle automatically receives three standard attributes that
+    describe its origin: \c producer, the string specified through the setProducer() function;
+    \c format, the version of the bundle format (currently 1); and \c created, the date and time at
+    which the bundle was created, in ISO 8601 format with milliseconds.
+
+    Only a single process may write to an HDF5 file at any given time, and while it does, no other
+    process may read from it. A process may read from and write to the same HDF5 file, but not at
+    the same time: all objects obtained for reading must have been destroyed before the file is
+    opened for writing, and vice versa.
 
     <b>Paths</b>
 
@@ -107,6 +125,28 @@ public:
         HDF5 file. It allows a caller to report a missing input file in its own words, for example
         to mention a regular file that is missing as well. */
     static bool hasBundle(const string& path);
+
+    /** This function creates a new, empty bundle at the specified path for writing, and returns
+        the corresponding H5BundleW instance. The path has the same form as for the openBundle()
+        function. If the HDF5 file does not exist, it is created; otherwise it is opened, and an
+        existing bundle with the same path is removed, leaving the rest of the file untouched. Any
+        missing suites leading up to the bundle are created as well. Note that the HDF5 library
+        does not release the space occupied by a removed bundle.
+
+        The new bundle receives the standard attributes \c producer, \c format, and \c created
+        described in the class header.
+
+        The function throws a fatal error if the code was built without HDF5 support, if the path
+        is malformed, if the file cannot be opened or created for writing (for example because it
+        is not an HDF5 file, or because it is in use by another process), if the path refers to a
+        dataset or to a suite (a group that contains other groups), or if one of the suites leading
+        up to the bundle is a dataset or a bundle. */
+    static H5BundleW createBundle(const string& path);
+
+    /** This function sets the value of the \c producer attribute given to every bundle created
+        afterwards, normally the name and version of the program. The default value is "SKIRT". The
+        function should be called once, early in the program, before any bundle is created. */
+    static void setProducer(const string& producer);
 };
 
 ////////////////////////////////////////////////////////////////////

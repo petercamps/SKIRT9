@@ -4,6 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "ProbeFormBridge.hpp"
+#include "ColumnOutFile.hpp"
 #include "Configuration.hpp"
 #include "EntityCollection.hpp"
 #include "FatalError.hpp"
@@ -14,7 +15,6 @@
 #include "Snapshot.hpp"
 #include "SpatialGrid.hpp"
 #include "SpatialGridPath.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -514,7 +514,7 @@ bool ProbeFormBridge::isVector() const
 
 ////////////////////////////////////////////////////////////////////
 
-void ProbeFormBridge::addColumnDefinitions(TextOutFile& outfile) const
+void ProbeFormBridge::addColumnDefinitions(ColumnOutFile& outfile) const
 {
     switch (_type)
     {

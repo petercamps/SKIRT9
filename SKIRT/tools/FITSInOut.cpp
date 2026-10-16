@@ -22,7 +22,7 @@ void FITSInOut::write(const SimulationItem* item, const string& description, con
     if (ProcessManager::isRoot())
     {
         // Determine the path of the output FITS file
-        string filepath = item->find<FilePaths>()->output(filename + ".fits");
+        string filepath = item->find<FilePaths>()->output(filename + ".fits").first;
 
         // Write the FITS file
         FITSInOut::write(filepath, data, dataUnits, nx, ny, incx, incy, xc, yc, xyUnits, z, zUnits, obsInfo);
@@ -42,7 +42,7 @@ void FITSInOut::writeMap(const SimulationItem* item, const string& description, 
     if (ProcessManager::isRoot())
     {
         // Determine the path of the output FITS file
-        string filepath = item->find<FilePaths>()->output(filename + ".fits");
+        string filepath = item->find<FilePaths>()->output(filename + ".fits").first;
 
         // Write the FITS file
         FITSInOut::writeMap(filepath, data, dataUnits, x, y, xUnits, yUnits, obsInfo);

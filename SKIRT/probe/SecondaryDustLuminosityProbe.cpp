@@ -4,6 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "SecondaryDustLuminosityProbe.hpp"
+#include "ColumnOutFile.hpp"
 #include "Configuration.hpp"
 #include "DisjointWavelengthGrid.hpp"
 #include "Indices.hpp"
@@ -11,7 +12,6 @@
 #include "ProbeFormBridge.hpp"
 #include "SpecialFunctions.hpp"
 #include "StringUtils.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -54,7 +54,7 @@ void SecondaryDustLuminosityProbe::probe()
     }
 
     // define the call-back function to add column definitions
-    auto addColumnDefinitions = [axis, units](TextOutFile& outfile) {
+    auto addColumnDefinitions = [axis, units](ColumnOutFile& outfile) {
         for (double outwave : axis)
         {
             // we assume that text files always contain values at a given position;

@@ -42,11 +42,11 @@ void FileLog::open()
     string filepath;
     if (ProcessManager::isRoot())
     {
-        filepath = find<FilePaths>()->output("log.txt");
+        filepath = find<FilePaths>()->output("log.txt").first;
     }
     else
     {
-        filepath = find<FilePaths>()->output("log" + processName() + ".txt");
+        filepath = find<FilePaths>()->output("log" + processName() + ".txt").first;
     }
 
     _out = System::ofstream(filepath);

@@ -4,6 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "LuminosityProbe.hpp"
+#include "ColumnOutFile.hpp"
 #include "Configuration.hpp"
 #include "Indices.hpp"
 #include "Parallel.hpp"
@@ -11,7 +12,6 @@
 #include "ProcessManager.hpp"
 #include "SourceSystem.hpp"
 #include "Table.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -42,7 +42,7 @@ void LuminosityProbe::probe()
     ProcessManager::sumToAll(Llambdavv.data());
 
     // create a text file and add the columns
-    TextOutFile file(this, itemName() + "_luminosities", "primary source luminosities");
+    ColumnOutFile file(this, itemName() + "_luminosities", "primary source luminosities");
     file.addColumn("wavelength; " + units->swavelength(), units->uwavelength());
     file.addColumn("specific luminosity; " + units->smonluminosity(), units->umonluminosity());
     file.addColumn("luminosity in bin", units->ubolluminosity());
@@ -62,6 +62,7 @@ void LuminosityProbe::probe()
         for (int i = 0; i != numSources; ++i) row.push_back(Llambdatot > 0 ? Llambdavv(ell, i) / Llambdatot : 0);
         file.writeRow(row);
     }
+    file.close();
 }
 
 ////////////////////////////////////////////////////////////////////

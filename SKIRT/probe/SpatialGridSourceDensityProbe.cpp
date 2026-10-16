@@ -4,10 +4,10 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "SpatialGridSourceDensityProbe.hpp"
+#include "ColumnOutFile.hpp"
 #include "GeometricSource.hpp"
 #include "MediumSystem.hpp"
 #include "SourceSystem.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -37,7 +37,7 @@ void SpatialGridSourceDensityProbe::probe()
         auto units = find<Units>();
 
         // create a text file and add the columns
-        TextOutFile out(this, itemName() + "_sourcedens", "gridded primary source densities");
+        ColumnOutFile out(this, itemName() + "_sourcedens", "gridded primary source densities");
         out.addColumn("spatial cell index", "", 'd');
         for (int h : hv)
             out.addColumn("normalized density for source " + std::to_string(h + 1), "1/" + units->uvolume());
@@ -52,6 +52,7 @@ void SpatialGridSourceDensityProbe::probe()
             for (auto geom : geomv) row.push_back(1. / units->ovolume(1. / geom->density(p)));
             out.writeRow(row);
         }
+        out.close();
     }
 }
 

@@ -54,6 +54,21 @@
     file, a regular file and a bundle. It is up to the caller to try the regular file first, and to
     fall back to the bundle only if that file does not exist.
 
+    <b>Output to HDF5 files</b>
+
+    In the same way, the output path specified by the client program can include a directory, an
+    HDF5 file in that directory, and a suite in that file. If an HDF5 file is given, output files
+    that support it are written as bundles in that file instead of as regular files in the
+    directory, in the root group of the file or in the specified suite. The HDF5 file is created if
+    it does not exist, and otherwise extended; a bundle with the same name as one being written is
+    replaced. The bundle name is the name of the regular file that would otherwise have been
+    written. Output files that are always written as regular files, such as the log file, are
+    placed in the directory.
+
+    The output() function implements these rules by returning two candidate locations for an
+    output file, a regular file and a bundle. A caller that supports writing a bundle uses the
+    bundle candidate if it is nonempty, and the regular file otherwise.
+
     <b>Resource files</b>
 
     The FilePaths class also offers static functions for locating the resource files used by the
@@ -128,10 +143,6 @@ public:
         support. It does not verify that the HDF5 file can be opened or that the suite exists. */
     void setInputPath(const string& value);
 
-    /** This function returns the absolute canonical path of the input directory, with a trailing
-        slash, or the empty string if the input path has not been set. */
-    string inputPath() const;
-
     /** This function determines the candidate locations for the input file with the specified
         name, as described in the class header. It returns a pair of strings.
 
@@ -164,12 +175,14 @@ public:
         containing a colon to be absolute. */
     static bool isAbsolutePath(const string& path);
 
-    /** Sets the (absolute or relative) path for output files. An empty string (the default value)
-        means the current directory. */
+    /** This function sets the location of the output files. The argument is the (absolute or
+        relative) path of the output directory, optionally followed by the name of an HDF5 file in
+        that directory and by a suite in that file, in the form <tt>\<dir\>/\<hdf\>:\<suite\></tt>
+        described in the class header. An empty string (the default value) means the current
+        directory. The function throws a fatal error if the directory does not exist, or if the
+        argument refers to an HDF5 file while the code was built without HDF5 support. The HDF5
+        file does not need to exist; it is created when the first bundle is written. */
     void setOutputPath(const string& value);
-
-    /** Returns the (absolute or relative) path for output files. */
-    string outputPath() const;
 
     /** Sets the prefix for output file names; the default is empty (i.e. no prefix). */
     void setOutputPrefix(string value);
@@ -177,11 +190,31 @@ public:
     /** Returns the prefix for output file names. */
     string outputPrefix() const;
 
-    /** This function returns the absolute canonical path for an output file with the specified
-        name, relative to the output path returned by outputPath(). The prefix returned by
-        outputPrefix() is inserted in front of the filename specified here. The prefix and the
-        filename are separated by an underscore. */
-    string output(const string& name) const;
+    /** This function determines the candidate locations for the output file with the specified
+        name, as described in the class header. The prefix returned by outputPrefix() is inserted
+        in front of the specified name, separated by an underscore. The function returns a pair of
+        strings.
+
+        The first string is the absolute path of a regular file with that name in the output
+        directory. It is always nonempty, because some output files, such as the log file, are
+        written as a regular file regardless of the output path.
+
+        The second string is the path of a bundle with that name in the HDF5 file and suite
+        included in the output path, in the form <tt>\<filepath\>:\<suite\>/\<bundle\></tt>
+        expected by the H5Lib::createBundle() function, or the empty string if the output path does
+        not include an HDF5 file.
+
+        The function performs no input/output operations. A caller that supports writing a bundle
+        is expected to write the bundle if the second string is nonempty, and the regular file
+        otherwise. */
+    std::pair<string, string> output(const string& name) const;
+
+    /** This function returns the directory portion of the specified input or output path, which
+        can have the form <tt>\<dir\>/\<hdf\>:\<suite\></tt> described in the class header. If
+        the path does not refer to an HDF5 file, the function returns the path itself. It allows
+        locating the output directory before the output path has been set, for example to report an
+        error that occurred while constructing the simulation. */
+    static string directoryPath(const string& path);
 
     //======================== Resource files =======================
 
@@ -229,11 +262,13 @@ public:
     //======================== Data Members ========================
 
 private:
-    string _inputPath;      // absolute canonical path of the input directory, with trailing slash
-    string _inputHdf5Path;  // absolute path of the HDF5 file included in the input path, or empty if there is none
-    string _inputSuite;     // path of the suite in that HDF5 file, without leading or trailing slash, or empty
-    string _outputPath;
-    string _outputPrefix;
+    string _inputPath;       // absolute canonical path of the input directory, with trailing slash
+    string _inputHdf5Path;   // absolute path of the HDF5 file included in the input path, or empty if there is none
+    string _inputSuite;      // path of the suite in that HDF5 file, without leading or trailing slash, or empty
+    string _outputPath;      // absolute canonical path of the output directory, with trailing slash
+    string _outputHdf5Path;  // absolute path of the HDF5 file included in the output path, or empty if there is none
+    string _outputSuite;     // path of the suite in that HDF5 file, without leading or trailing slash, or empty
+    string _outputPrefix;    // prefix for the names of output files
 };
 
 ////////////////////////////////////////////////////////////////////

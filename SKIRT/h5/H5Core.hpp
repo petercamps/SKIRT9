@@ -17,8 +17,8 @@
 
     If the code is built without HDF5 support (i.e. the \c BUILD_HDF5 build option is disabled),
     the available() function returns false, the close() function does nothing, and all other
-    functions throw a fatal error. As a result, the code in this build target and its clients can
-    be compiled without any dependency on the HDF5 library.
+    functions, for reading and for writing, throw a fatal error. As a result, the code in this
+    build target and its clients can be compiled without any dependency on the HDF5 library.
 
     The functions in this namespace refer to an open HDF5 object (a group or a dataset) through an
     opaque 64-bit integer handle. A handle obtained from one of the open functions must eventually
@@ -28,6 +28,13 @@
 
     Several functions take a \em context argument. This is a human-readable description of the
     object on which the function operates, used in the message of a fatal error.
+
+    The functions for writing store each value in the data type listed for it, without any
+    conversion: a Boolean as an enumeration based on a signed byte with the members \c FALSE (0)
+    and \c TRUE (1), the representation used by the \c h5py Python package; an integer as a 32-bit
+    signed integer; a floating point number as a 64-bit floating point number; and a string as a
+    string of variable length in UTF-8 encoding. Datasets are stored contiguously, without
+    chunking or compression.
 
     All functions in this namespace are thread-safe. The HDF5 library cannot be assumed to be
     thread-safe on its own, since that depends on how the installed library was built. All calls
@@ -122,6 +129,59 @@ namespace H5Core
         dataset must have an integer or floating point type, and each of its values must be
         representable without loss of information. Otherwise the function throws a fatal error. */
     Array readDouble(std::int64_t dataset, const string& context);
+
+    /** This function opens the HDF5 file with the specified file path for writing, creating the
+        file if it does not exist, and creates a new group with the specified path inside that
+        file, including any missing parent groups. It returns a handle for the new group. If the
+        file already holds a group with that path that does not contain other groups (a bundle),
+        that group is removed first; the rest of the file remains untouched. The function throws a
+        fatal error if the file cannot be opened or created for writing, if the path refers to a
+        dataset or to a group that contains other groups (a suite), or if one of the parent groups
+        is a dataset or a group that directly contains datasets (a bundle). */
+    std::int64_t createGroup(const string& filePath, const string& groupPath);
+
+    /** This function sets the Boolean attribute with the specified name of the specified object to
+        the specified value, replacing an existing attribute with the same name. */
+    void setBoolAttribute(std::int64_t object, const string& name, bool value, const string& context);
+
+    /** This function sets the integer attribute with the specified name of the specified object to
+        the specified value, replacing an existing attribute with the same name. */
+    void setIntAttribute(std::int64_t object, const string& name, int value, const string& context);
+
+    /** This function sets the floating point attribute with the specified name of the specified
+        object to the specified value, replacing an existing attribute with the same name. */
+    void setDoubleAttribute(std::int64_t object, const string& name, double value, const string& context);
+
+    /** This function sets the string attribute with the specified name of the specified object to
+        the specified UTF-8 encoded value, replacing an existing attribute with the same name. */
+    void setStringAttribute(std::int64_t object, const string& name, const string& value, const string& context);
+
+    /** This function creates a dataset with the specified name and shape inside the specified
+        group, writes the specified Boolean values to it, and returns a handle for the dataset.
+        Each value is a character holding 1 for true or 0 for false. The values are listed with the
+        last dimension varying most rapidly, and their number must equal the product of the
+        dimensions in the shape. The function throws a fatal error if the dataset cannot be created
+        or written, for example because the group already holds an object with that name. */
+    std::int64_t createBoolDataset(std::int64_t group, const string& name, const vector<size_t>& shape,
+                                   const char* values, const string& context);
+
+    /** This function creates a dataset with the specified name and shape inside the specified
+        group, writes the specified 32-bit integer values to it, and returns a handle for the
+        dataset, as described for the createBoolDataset() function. */
+    std::int64_t createIntDataset(std::int64_t group, const string& name, const vector<size_t>& shape,
+                                  const int* values, const string& context);
+
+    /** This function creates a dataset with the specified name and shape inside the specified
+        group, writes the specified 64-bit floating point values to it, and returns a handle for
+        the dataset, as described for the createBoolDataset() function. */
+    std::int64_t createDoubleDataset(std::int64_t group, const string& name, const vector<size_t>& shape,
+                                     const double* values, const string& context);
+
+    /** This function creates a dataset with the specified name inside the specified group, holding
+        the specified UTF-8 encoded text as a single string of variable length, and returns a
+        handle for the dataset. The function throws a fatal error if the dataset cannot be created
+        or written. */
+    std::int64_t createTextDataset(std::int64_t group, const string& name, const string& text, const string& context);
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -4,9 +4,9 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "SpatialCellPropertiesProbe.hpp"
+#include "ColumnOutFile.hpp"
 #include "MediumSystem.hpp"
 #include "StringUtils.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -20,7 +20,7 @@ void SpatialCellPropertiesProbe::probe()
         auto units = find<Units>();
 
         // create a text file
-        TextOutFile out(this, itemName() + "_cellprops", "spatial cell properties");
+        ColumnOutFile out(this, itemName() + "_cellprops", "spatial cell properties");
 
         // write the header
         out.addColumn("spatial cell index", "", 'd');
@@ -55,6 +55,7 @@ void SpatialCellPropertiesProbe::probe()
                                          units->olength(p.z()), units->ovolume(V), tau, units->omassvolumedensity(dust),
                                          units->onumbervolumedensity(elec), units->onumbervolumedensity(gas)}));
         }
+        out.close();
     }
 }
 

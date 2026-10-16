@@ -5,6 +5,7 @@
 
 #include "IntegratedSecondaryLineLuminosityProbe.hpp"
 #include "Array.hpp"
+#include "ColumnOutFile.hpp"
 #include "Configuration.hpp"
 #include "Indices.hpp"
 #include "LockFree.hpp"
@@ -13,7 +14,6 @@
 #include "Parallel.hpp"
 #include "ParallelFactory.hpp"
 #include "ProcessManager.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -51,17 +51,18 @@ void IntegratedSecondaryLineLuminosityProbe::probe()
                 ProcessManager::sumToRoot(perLineLum, true);
 
                 // write a text file for this medium component
-                TextOutFile file(this, itemName() + "_integrated_line_luminosities_" + std::to_string(h),
-                                 "spatially integrated per-line luminosities for medium component "
-                                     + std::to_string(h));
-                file.writeLine("# Spatially integrated per-line luminosities for medium component "
-                               + std::to_string(h));
+                ColumnOutFile file(this, itemName() + "_integrated_line_luminosities_" + std::to_string(h),
+                                   "spatially integrated per-line luminosities for medium component "
+                                       + std::to_string(h));
+                file.setLongDescription("Spatially integrated per-line luminosities for medium component "
+                                        + std::to_string(h));
                 file.addColumn("wavelength; " + units->swavelength(), units->uwavelength());
                 file.addColumn("luminosity", units->ubolluminosity());
                 for (int k : Indices(centers, units->rwavelength()))
                 {
                     file.writeRow({units->owavelength(centers[k]), units->obolluminosity(perLineLum[k])});
                 }
+                file.close();
             }
         }
     }

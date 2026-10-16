@@ -5,6 +5,7 @@
 
 #include "DustEmissivityProbe.hpp"
 #include "ArrayTable.hpp"
+#include "ColumnOutFile.hpp"
 #include "Configuration.hpp"
 #include "DisjointWavelengthGrid.hpp"
 #include "Indices.hpp"
@@ -12,7 +13,6 @@
 #include "MediumSystem.hpp"
 #include "PlanckFunction.hpp"
 #include "StringUtils.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -90,10 +90,10 @@ namespace
         for (size_t i = 0; i != hv.size(); ++i) evv(i) = mixv[i]->emissivity(Jv);
 
         // create an output text file
-        TextOutFile file(probe, probe->itemName() + "_" + name, "dust emissivities for " + title);
+        ColumnOutFile file(probe, probe->itemName() + "_" + name, "dust emissivities for " + title);
 
         // write the header
-        file.writeLine("# Dust emissivities for input field " + title);
+        file.setLongDescription("Dust emissivities for input field " + title);
         file.addColumn("wavelength; " + units->swavelength(), units->uwavelength());
         for (int h : hv) file.addColumn("lambda*j_lambda for dust in medium component " + std::to_string(h), "W/sr/H");
 
@@ -106,6 +106,7 @@ namespace
             // (add 1 to ell to skip leftmost wavelength grid border point included in evv)
             file.writeRow(values);
         }
+        file.close();
     }
 }
 

@@ -226,34 +226,37 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
-void FilePaths::setInputPath(const string& value)
+namespace
 {
-    string dirPath = value;
-    string hdf5Name;
-    _inputSuite.clear();
-
-    // unless the value is an existing directory, it may include an HDF5 file and a suite after the directory
-    if (!System::isDir(value))
+    // splits the specified value of the input or output path, of the form <dir>/<hdf>:<suite>, into the path of the
+    // directory, the path of the HDF5 file (or the empty string), and the path of the suite (or the empty string),
+    // and verifies that the directory exists; the first argument is "Input" or "Output", for use in error messages
+    std::tuple<string, string, string> splitLocation(const string& kind, const string& value)
     {
-        auto [hdf5Path, suite] = splitHdf5Reference(value, true);
-        if (hdf5Path.empty()) throw FATALERROR("Input path does not exist or is not a directory: " + value);
-        requireHdf5("Input path", value);
+        // unless the value is an existing directory, it may include an HDF5 file and a suite after the directory
+        if (System::isDir(value)) return {value, string(), string()};
 
-        dirPath = StringUtils::dirPath(hdf5Path);
-        if (!System::isDir(dirPath)) throw FATALERROR("Input path does not exist or is not a directory: " + dirPath);
-        if (!System::isFile(hdf5Path)) throw FATALERROR("Input HDF5 file does not exist: " + hdf5Path);
-        hdf5Name = StringUtils::filename(hdf5Path);
-        _inputSuite = suite;
+        auto [hdf5Path, suite] = splitHdf5Reference(value, true);
+        if (hdf5Path.empty()) throw FATALERROR(kind + " path does not exist or is not a directory: " + value);
+        requireHdf5(kind + " path", value);
+
+        string dirPath = StringUtils::dirPath(hdf5Path);
+        if (dirPath.empty()) dirPath = ".";
+        if (!System::isDir(dirPath)) throw FATALERROR(kind + " path does not exist or is not a directory: " + dirPath);
+        return {dirPath, hdf5Path, suite};
     }
-    _inputPath = canonicalDirPath(dirPath);
-    _inputHdf5Path = hdf5Name.empty() ? string() : _inputPath + hdf5Name;
 }
 
 ////////////////////////////////////////////////////////////////////
 
-string FilePaths::inputPath() const
+void FilePaths::setInputPath(const string& value)
 {
-    return _inputPath;
+    auto [dirPath, hdf5Path, suite] = splitLocation("Input", value);
+    if (!hdf5Path.empty() && !System::isFile(hdf5Path)) throw FATALERROR("Input HDF5 file does not exist: " + hdf5Path);
+
+    _inputPath = canonicalDirPath(dirPath);
+    _inputHdf5Path = hdf5Path.empty() ? string() : _inputPath + StringUtils::filename(hdf5Path);
+    _inputSuite = suite;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -289,15 +292,12 @@ bool FilePaths::isAbsolutePath(const string& path)
 
 void FilePaths::setOutputPath(const string& value)
 {
-    if (!System::isDir(value)) throw FATALERROR("Output path does not exist or is not a directory: " + value);
-    _outputPath = System::canonicalPath(value) + "/";
-}
+    auto [dirPath, hdf5Path, suite] = splitLocation("Output", value);
+    if (!hdf5Path.empty() && System::isDir(hdf5Path)) throw FATALERROR("Output HDF5 file is a directory: " + hdf5Path);
 
-////////////////////////////////////////////////////////////////////
-
-string FilePaths::outputPath() const
-{
-    return _outputPath;
+    _outputPath = canonicalDirPath(dirPath);
+    _outputHdf5Path = hdf5Path.empty() ? string() : _outputPath + StringUtils::filename(hdf5Path);
+    _outputSuite = suite;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -316,9 +316,21 @@ string FilePaths::outputPrefix() const
 
 ////////////////////////////////////////////////////////////////////
 
-string FilePaths::output(const string& name) const
+std::pair<string, string> FilePaths::output(const string& name) const
 {
-    return _outputPath + _outputPrefix + "_" + name;
+    string filename = _outputPrefix + "_" + name;
+    string bundlePath;
+    if (!_outputHdf5Path.empty()) bundlePath = _outputHdf5Path + ":" + StringUtils::joinPaths(_outputSuite, filename);
+    return {_outputPath + filename, bundlePath};
+}
+
+////////////////////////////////////////////////////////////////////
+
+string FilePaths::directoryPath(const string& path)
+{
+    if (System::isDir(path)) return path;
+    string hdf5Path = splitHdf5Reference(path, true).first;
+    return hdf5Path.empty() ? path : StringUtils::dirPath(hdf5Path);
 }
 
 ////////////////////////////////////////////////////////////////////

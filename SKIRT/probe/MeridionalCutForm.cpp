@@ -4,9 +4,9 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "MeridionalCutForm.hpp"
+#include "ColumnOutFile.hpp"
 #include "ProbeFormBridge.hpp"
 #include "StringUtils.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -16,8 +16,8 @@ void MeridionalCutForm::writeQuantity(const ProbeFormBridge* bridge) const
     auto units = bridge->units();
 
     // create a text column file and add the column definitions
-    TextOutFile outfile(bridge->probe(), bridge->prefix(), bridge->description() + " along a meridian");
-    outfile.writeLine("# " + StringUtils::toUpperFirst(bridge->description()) + " along a meridian");
+    ColumnOutFile outfile(bridge->probe(), bridge->prefix(), bridge->description() + " along a meridian");
+    outfile.setLongDescription(StringUtils::toUpperFirst(bridge->description()) + " along a meridian");
     outfile.addColumn("inclination", units->uposangle());
     bridge->addColumnDefinitions(outfile);
 
@@ -40,6 +40,7 @@ void MeridionalCutForm::writeQuantity(const ProbeFormBridge* bridge) const
         for (int p = 0; p != numValues; ++p) columns[p + 1] = values[p];
         outfile.writeRow(columns);
     }
+    outfile.close();
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -4,11 +4,11 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "InstrumentWavelengthGridProbe.hpp"
+#include "ColumnOutFile.hpp"
 #include "DisjointWavelengthGrid.hpp"
 #include "Indices.hpp"
 #include "Instrument.hpp"
 #include "InstrumentSystem.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 #include "WavelengthGrid.hpp"
 
@@ -32,7 +32,7 @@ void InstrumentWavelengthGridProbe::writeWavelengthGrid(Probe* item, const Wavel
     auto units = item->find<Units>();
 
     // create a text file and add the columns
-    TextOutFile file(item, filename, description);
+    ColumnOutFile file(item, filename, description);
     file.addColumn("characteristic wavelength; " + units->swavelength(), units->uwavelength());
     file.addColumn("effective wavelength bin width; " + units->swavelength(), units->uwavelength());
     file.addColumn("left border of wavelength bin; " + units->swavelength(), units->uwavelength());
@@ -70,6 +70,7 @@ void InstrumentWavelengthGridProbe::writeWavelengthGrid(Probe* item, const Wavel
         }
         file.writeRow(chara, width, left, right);
     }
+    file.close();
 }
 
 ////////////////////////////////////////////////////////////////////

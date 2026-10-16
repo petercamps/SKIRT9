@@ -4,6 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "RadiationFieldProbe.hpp"
+#include "ColumnOutFile.hpp"
 #include "Configuration.hpp"
 #include "DisjointWavelengthGrid.hpp"
 #include "Indices.hpp"
@@ -11,7 +12,6 @@
 #include "MediumSystem.hpp"
 #include "ProbeFormBridge.hpp"
 #include "StringUtils.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ void RadiationFieldProbe::probe()
         }
 
         // define the call-back function to add column definitions
-        auto addColumnDefinitions = [wlg, units](TextOutFile& outfile) {
+        auto addColumnDefinitions = [wlg, units](ColumnOutFile& outfile) {
             for (int ell : Indices(wlg->numBins(), units->rwavelength()))
             {
                 outfile.addColumn(units->smeanintensity() + " at " + units->swavelength() + " = "

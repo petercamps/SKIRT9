@@ -7,6 +7,7 @@
 #include "FatalError.hpp"
 
 #ifdef BUILD_HDF5
+#    include "StringUtils.hpp"
 #    include "System.hpp"
 #    include <hdf5.h>
 #    include <mutex>
@@ -453,6 +454,269 @@ Array H5Core::readDouble(std::int64_t dataset, const string& context)
 
 ////////////////////////////////////////////////////////////////////
 
+namespace
+{
+    // opens the HDF5 file with the specified path for writing, creating it if it does not exist, and returns its
+    // identifier, which must be released by the caller; the caller must hold the lock
+    hid_t openFileForWriting(const string& filePath)
+    {
+        // on a file system that does not support file locking, proceed without locking
+        Id access(H5Pcreate(H5P_FILE_ACCESS), H5Pclose);
+#    if H5_VERSION_GE(1, 12, 1) || (H5_VERSION_GE(1, 10, 7) && !H5_VERSION_GE(1, 12, 0))
+        H5Pset_file_locking(access.get(), true, true);
+#    endif
+
+        // open an existing file
+        if (System::isFile(filePath))
+        {
+            Id file(H5Fopen(filePath.c_str(), H5F_ACC_RDWR, access.get()), H5Fclose);
+            if (!file.valid())
+            {
+#    if H5_VERSION_GE(1, 12, 0)
+                bool isHdf5 = H5Fis_accessible(filePath.c_str(), access.get()) > 0;
+#    else
+                bool isHdf5 = H5Fis_hdf5(filePath.c_str()) > 0;
+#    endif
+                if (!isHdf5) throw FATALERROR("File cannot be opened as an HDF5 file: " + filePath);
+                throw FATALERROR("HDF5 file cannot be opened for writing: " + filePath
+                                 + "\n(it may be read-only, still open for reading, or in use by another process)");
+            }
+            return file.release();
+        }
+
+        // or create a new file
+        Id file(H5Fcreate(filePath.c_str(), H5F_ACC_EXCL, H5P_DEFAULT, access.get()), H5Fclose);
+        if (!file.valid()) throw FATALERROR("Cannot create HDF5 file: " + filePath);
+        return file.release();
+    }
+
+    // returns the type of the object at the specified path relative to the specified location, or H5I_BADID if there
+    // is no such object; the caller must hold the lock
+    H5I_type_t objectType(hid_t location, const string& path)
+    {
+        // verify that each segment of the path exists, because the library does not allow testing a nested path at once
+        string partial;
+        for (const string& segment : StringUtils::split(path, "/"))
+        {
+            partial += (partial.empty() ? "" : "/") + segment;
+            if (H5Lexists(location, partial.c_str(), H5P_DEFAULT) <= 0) return H5I_BADID;
+        }
+        Id object(H5Oopen(location, path.c_str(), H5P_DEFAULT), H5Oclose);
+        return object.valid() ? H5Iget_type(object.get()) : H5I_BADID;
+    }
+
+    // returns true if the specified group contains at least one object of the specified type; if the last argument is
+    // true, only the first member of the group (in the order of the names) is inspected, which suffices as a sanity
+    // check and remains fast for a group with many members; the caller must hold the lock
+    bool containsObjectOfType(hid_t group, H5I_type_t type, bool firstOnly, const string& context)
+    {
+        H5G_info_t info;
+        if (H5Gget_info(group, &info) < 0) throw FATALERROR("Cannot list the contents of " + context);
+        hsize_t count = firstOnly ? std::min(info.nlinks, static_cast<hsize_t>(1)) : info.nlinks;
+        for (hsize_t index = 0; index != count; ++index)
+        {
+            Id object(H5Oopen_by_idx(group, ".", H5_INDEX_NAME, H5_ITER_INC, index, H5P_DEFAULT), H5Oclose);
+            if (object.valid() && H5Iget_type(object.get()) == type) return true;
+        }
+        return false;
+    }
+
+    // returns the identifier of a new data type for Booleans, in the representation used by the h5py package: an
+    // enumeration based on a signed byte with the members FALSE (0) and TRUE (1); the caller must hold the lock
+    hid_t booleanType()
+    {
+        hid_t type = H5Tenum_create(H5T_NATIVE_SCHAR);
+        signed char value = 0;
+        H5Tenum_insert(type, "FALSE", &value);
+        value = 1;
+        H5Tenum_insert(type, "TRUE", &value);
+        return type;
+    }
+
+    // returns the identifier of a new data type for strings of variable length in UTF-8 encoding; the caller must
+    // hold the lock
+    hid_t stringType()
+    {
+        hid_t type = H5Tcopy(H5T_C_S1);
+        H5Tset_size(type, H5T_VARIABLE);
+        H5Tset_cset(type, H5T_CSET_UTF8);
+        return type;
+    }
+
+    // writes an attribute with the specified name, file and memory data types, and value to the specified object,
+    // replacing an existing attribute with the same name; the caller must hold the lock
+    void writeAttribute(hid_t object, const string& name, hid_t fileType, hid_t memoryType, const void* value,
+                        const string& context)
+    {
+        if (H5Aexists(object, name.c_str()) > 0 && H5Adelete(object, name.c_str()) < 0)
+            throw FATALERROR("Cannot replace attribute '" + name + "' for " + context);
+        Id space(H5Screate(H5S_SCALAR), H5Sclose);
+        Id attribute(H5Acreate2(object, name.c_str(), fileType, space.get(), H5P_DEFAULT, H5P_DEFAULT), H5Aclose);
+        if (!attribute.valid() || H5Awrite(attribute.get(), memoryType, value) < 0)
+            throw FATALERROR("Cannot write attribute '" + name + "' for " + context);
+    }
+
+    // creates a dataset with the specified name, shape, and file data type in the specified group, writes the
+    // specified values in the specified memory data type to it, and returns its identifier, which must be released by
+    // the caller; the caller must hold the lock
+    hid_t writeDataset(hid_t group, const string& name, const vector<size_t>& shape, hid_t fileType, hid_t memoryType,
+                       const void* values, const string& context)
+    {
+        vector<hsize_t> dims(shape.begin(), shape.end());
+        Id space(H5Screate_simple(static_cast<int>(dims.size()), dims.data(), nullptr), H5Sclose);
+        if (!space.valid()) throw FATALERROR("Cannot create dataset '" + name + "' in " + context);
+        Id dataset(H5Dcreate2(group, name.c_str(), fileType, space.get(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT),
+                   H5Dclose);
+        if (!dataset.valid()) throw FATALERROR("Cannot create dataset '" + name + "' in " + context);
+        if (H5Sget_simple_extent_npoints(space.get()) > 0
+            && H5Dwrite(dataset.get(), memoryType, H5S_ALL, H5S_ALL, H5P_DEFAULT, values) < 0)
+            throw FATALERROR("Cannot write dataset '" + name + "' in " + context);
+        return dataset.release();
+    }
+}
+
+////////////////////////////////////////////////////////////////////
+
+std::int64_t H5Core::createGroup(const string& filePath, const string& groupPath)
+{
+    Lock lock;
+
+    Id file(openFileForWriting(filePath), H5Fclose);
+    string location = filePath + ":" + groupPath;
+
+    // each parent of the new group must be a suite: a group that does not directly contain datasets
+    auto segments = StringUtils::split(groupPath, "/");
+    string parentPath;
+    for (size_t index = 0; index + 1 < segments.size(); ++index)
+    {
+        parentPath += (parentPath.empty() ? "" : "/") + segments[index];
+        H5I_type_t type = objectType(file.get(), parentPath);
+        if (type == H5I_BADID) break;
+        bool isSuite = type == H5I_GROUP;
+        if (isSuite)
+        {
+            Id parent(H5Gopen2(file.get(), parentPath.c_str(), H5P_DEFAULT), H5Gclose);
+            isSuite = !containsObjectOfType(parent.get(), H5I_DATASET, true, "HDF5 group " + parentPath);
+        }
+        if (!isSuite)
+            throw FATALERROR("Cannot create bundle " + location + " because '" + parentPath + "' is not a suite");
+    }
+
+    // an existing object with the same path must be a bundle: a group that does not contain other groups
+    H5I_type_t type = objectType(file.get(), groupPath);
+    if (type != H5I_BADID)
+    {
+        if (type != H5I_GROUP)
+            throw FATALERROR("Cannot create bundle " + location + " because there is a dataset with that path");
+        {
+            Id existing(H5Gopen2(file.get(), groupPath.c_str(), H5P_DEFAULT), H5Gclose);
+            if (containsObjectOfType(existing.get(), H5I_GROUP, false, "HDF5 group " + location))
+                throw FATALERROR("Cannot create bundle " + location + " because there is a suite with that path");
+        }
+        if (H5Ldelete(file.get(), groupPath.c_str(), H5P_DEFAULT) < 0)
+            throw FATALERROR("Cannot replace the existing bundle " + location);
+    }
+
+    // create the group, and any missing parent groups
+    Id links(H5Pcreate(H5P_LINK_CREATE), H5Pclose);
+    H5Pset_create_intermediate_group(links.get(), 1);
+    Id group(H5Gcreate2(file.get(), groupPath.c_str(), links.get(), H5P_DEFAULT, H5P_DEFAULT), H5Gclose);
+    if (!group.valid()) throw FATALERROR("Cannot create bundle " + location);
+    return group.release();
+}
+
+////////////////////////////////////////////////////////////////////
+
+void H5Core::setBoolAttribute(std::int64_t object, const string& name, bool value, const string& context)
+{
+    Lock lock;
+
+    Id type(booleanType(), H5Tclose);
+    signed char flag = value ? 1 : 0;
+    writeAttribute(object, name, type.get(), type.get(), &flag, context);
+}
+
+////////////////////////////////////////////////////////////////////
+
+void H5Core::setIntAttribute(std::int64_t object, const string& name, int value, const string& context)
+{
+    Lock lock;
+
+    writeAttribute(object, name, H5T_STD_I32LE, H5T_NATIVE_INT, &value, context);
+}
+
+////////////////////////////////////////////////////////////////////
+
+void H5Core::setDoubleAttribute(std::int64_t object, const string& name, double value, const string& context)
+{
+    Lock lock;
+
+    writeAttribute(object, name, H5T_IEEE_F64LE, H5T_NATIVE_DOUBLE, &value, context);
+}
+
+////////////////////////////////////////////////////////////////////
+
+void H5Core::setStringAttribute(std::int64_t object, const string& name, const string& value, const string& context)
+{
+    Lock lock;
+
+    Id type(stringType(), H5Tclose);
+    const char* buffer = value.c_str();
+    writeAttribute(object, name, type.get(), type.get(), &buffer, context);
+}
+
+////////////////////////////////////////////////////////////////////
+
+std::int64_t H5Core::createBoolDataset(std::int64_t group, const string& name, const vector<size_t>& shape,
+                                       const char* values, const string& context)
+{
+    Lock lock;
+
+    // a character occupies the same storage as a signed byte, the base type of the enumeration
+    Id type(booleanType(), H5Tclose);
+    return writeDataset(group, name, shape, type.get(), type.get(), values, context);
+}
+
+////////////////////////////////////////////////////////////////////
+
+std::int64_t H5Core::createIntDataset(std::int64_t group, const string& name, const vector<size_t>& shape,
+                                      const int* values, const string& context)
+{
+    Lock lock;
+
+    return writeDataset(group, name, shape, H5T_STD_I32LE, H5T_NATIVE_INT, values, context);
+}
+
+////////////////////////////////////////////////////////////////////
+
+std::int64_t H5Core::createDoubleDataset(std::int64_t group, const string& name, const vector<size_t>& shape,
+                                         const double* values, const string& context)
+{
+    Lock lock;
+
+    return writeDataset(group, name, shape, H5T_IEEE_F64LE, H5T_NATIVE_DOUBLE, values, context);
+}
+
+////////////////////////////////////////////////////////////////////
+
+std::int64_t H5Core::createTextDataset(std::int64_t group, const string& name, const string& text,
+                                       const string& context)
+{
+    Lock lock;
+
+    Id type(stringType(), H5Tclose);
+    Id space(H5Screate(H5S_SCALAR), H5Sclose);
+    Id dataset(H5Dcreate2(group, name.c_str(), type.get(), space.get(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT),
+               H5Dclose);
+    if (!dataset.valid()) throw FATALERROR("Cannot create dataset '" + name + "' in " + context);
+    const char* buffer = text.c_str();
+    if (H5Dwrite(dataset.get(), type.get(), H5S_ALL, H5S_ALL, H5P_DEFAULT, &buffer) < 0)
+        throw FATALERROR("Cannot write dataset '" + name + "' in " + context);
+    return dataset.release();
+}
+
+////////////////////////////////////////////////////////////////////
+
 #else
 
 namespace
@@ -584,6 +848,77 @@ vector<int> H5Core::readInt(std::int64_t /*dataset*/, const string& /*context*/)
 ////////////////////////////////////////////////////////////////////
 
 Array H5Core::readDouble(std::int64_t /*dataset*/, const string& /*context*/)
+{
+    throwUnavailable();
+}
+
+////////////////////////////////////////////////////////////////////
+
+std::int64_t H5Core::createGroup(const string& /*filePath*/, const string& /*groupPath*/)
+{
+    throwUnavailable();
+}
+
+////////////////////////////////////////////////////////////////////
+
+void H5Core::setBoolAttribute(std::int64_t /*object*/, const string& /*name*/, bool /*value*/,
+                              const string& /*context*/)
+{
+    throwUnavailable();
+}
+
+////////////////////////////////////////////////////////////////////
+
+void H5Core::setIntAttribute(std::int64_t /*object*/, const string& /*name*/, int /*value*/, const string& /*context*/)
+{
+    throwUnavailable();
+}
+
+////////////////////////////////////////////////////////////////////
+
+void H5Core::setDoubleAttribute(std::int64_t /*object*/, const string& /*name*/, double /*value*/,
+                                const string& /*context*/)
+{
+    throwUnavailable();
+}
+
+////////////////////////////////////////////////////////////////////
+
+void H5Core::setStringAttribute(std::int64_t /*object*/, const string& /*name*/, const string& /*value*/,
+                                const string& /*context*/)
+{
+    throwUnavailable();
+}
+
+////////////////////////////////////////////////////////////////////
+
+std::int64_t H5Core::createBoolDataset(std::int64_t /*group*/, const string& /*name*/, const vector<size_t>& /*shape*/,
+                                       const char* /*values*/, const string& /*context*/)
+{
+    throwUnavailable();
+}
+
+////////////////////////////////////////////////////////////////////
+
+std::int64_t H5Core::createIntDataset(std::int64_t /*group*/, const string& /*name*/, const vector<size_t>& /*shape*/,
+                                      const int* /*values*/, const string& /*context*/)
+{
+    throwUnavailable();
+}
+
+////////////////////////////////////////////////////////////////////
+
+std::int64_t H5Core::createDoubleDataset(std::int64_t /*group*/, const string& /*name*/,
+                                         const vector<size_t>& /*shape*/, const double* /*values*/,
+                                         const string& /*context*/)
+{
+    throwUnavailable();
+}
+
+////////////////////////////////////////////////////////////////////
+
+std::int64_t H5Core::createTextDataset(std::int64_t /*group*/, const string& /*name*/, const string& /*text*/,
+                                       const string& /*context*/)
 {
     throwUnavailable();
 }

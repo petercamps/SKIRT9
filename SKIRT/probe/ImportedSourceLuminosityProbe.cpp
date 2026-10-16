@@ -6,6 +6,7 @@
 #include "ImportedSourceLuminosityProbe.hpp"
 #include "ArrayTable.hpp"
 #include "BandWavelengthGrid.hpp"
+#include "ColumnOutFile.hpp"
 #include "Configuration.hpp"
 #include "DisjointWavelengthGrid.hpp"
 #include "EntityCollection.hpp"
@@ -19,7 +20,6 @@
 #include "ProcessManager.hpp"
 #include "Snapshot.hpp"
 #include "StringUtils.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -94,7 +94,7 @@ void ImportedSourceLuminosityProbe::probeImportedSources(const vector<const Impo
     }
 
     // define the call-back function to add column definitions
-    auto addColumnDefinitions = [axis, units](TextOutFile& outfile) {
+    auto addColumnDefinitions = [axis, units](ColumnOutFile& outfile) {
         for (double outwave : axis)
         {
             // we assume that text files always contain values at a given position;

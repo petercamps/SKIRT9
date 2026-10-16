@@ -15,7 +15,7 @@ class Probe;
 class SimulationItem;
 class Snapshot;
 class SpatialGrid;
-class TextOutFile;
+class ColumnOutFile;
 class Units;
 
 //////////////////////////////////////////////////////////////////////
@@ -161,7 +161,7 @@ public:
 
     /** This is the type declaration for the callback function provided by the probe to add column
         definitions for a straight compound quantity to the specified text output file. */
-    using AddColumnDefinitions = std::function<void(TextOutFile& outfile)>;
+    using AddColumnDefinitions = std::function<void(ColumnOutFile& outfile)>;
 
     /** This is the type declaration for the callback function provided by the spatial grid probe
         to retrieve the scalar value (in internal units) of the quantity being probed in the
@@ -394,7 +394,7 @@ public:
         based on the description and unit information provided to the most recent call to
         writeQuantity(). For compound quantities, it invokes the \em addColumnDefinitions callback
         set by the most recent call to writeQuantity(). */
-    void addColumnDefinitions(TextOutFile& outfile) const;
+    void addColumnDefinitions(ColumnOutFile& outfile) const;
 
     //======== Querying: for use by spatial grid-specific forms  =======
 

@@ -4,12 +4,12 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "CustomStateProbe.hpp"
+#include "ColumnOutFile.hpp"
 #include "Configuration.hpp"
 #include "MediumSystem.hpp"
 #include "NR.hpp"
 #include "ProbeFormBridge.hpp"
 #include "StringUtils.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -98,7 +98,7 @@ void CustomStateProbe::probe()
                 }
 
                 // define the call-back function to add column definitions
-                auto addColumnDefinitions = [&indexv, &descriptors, units](TextOutFile& outfile) {
+                auto addColumnDefinitions = [&indexv, &descriptors, units](ColumnOutFile& outfile) {
                     for (int index : indexv)
                     {
                         const auto& descriptor = descriptors[index];

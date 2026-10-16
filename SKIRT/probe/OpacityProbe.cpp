@@ -4,13 +4,13 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "OpacityProbe.hpp"
+#include "ColumnOutFile.hpp"
 #include "Configuration.hpp"
 #include "FragmentDustMixDecorator.hpp"
 #include "Indices.hpp"
 #include "MediumSystem.hpp"
 #include "ProbeFormBridge.hpp"
 #include "StringUtils.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -54,7 +54,7 @@ void OpacityProbe::probe()
         }
 
         // define the call-back function to add column definitions
-        auto addColumnDefinitions = [axis, units](TextOutFile& outfile) {
+        auto addColumnDefinitions = [axis, units](ColumnOutFile& outfile) {
             for (double outwave : axis)
             {
                 outfile.addColumn("opacity at " + units->swavelength() + " = " + StringUtils::toString(outwave, 'g')

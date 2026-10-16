@@ -10,6 +10,7 @@
 #include "FatalError.hpp"
 #include "FileLog.hpp"
 #include "FilePaths.hpp"
+#include "H5Lib.hpp"
 #include "MonteCarloSimulation.hpp"
 #include "Parallel.hpp"
 #include "ParallelFactory.hpp"
@@ -38,6 +39,7 @@ SkirtCommandLineHandler::SkirtCommandLineHandler() : _args(System::arguments(), 
     // issue welcome message
     _producerInfo =
         "SKIRT " + BuildInfo::projectVersion() + " (" + BuildInfo::codeVersion() + " " + BuildInfo::timestamp() + ")";
+    H5Lib::setProducer(_producerInfo);
     _hostUserInfo = "Running on " + System::hostname() + " for " + System::username();
     _console.info("Welcome to " + _producerInfo);
     _console.info(_hostUserInfo);
@@ -318,7 +320,7 @@ void SkirtCommandLineHandler::doSimulation(size_t index)
         string inpath = _args.value("-i");
         string outpath = _args.value("-o");
         if (!FilePaths::isAbsolutePath(inpath)) inpath = StringUtils::joinPaths(base, inpath);
-        if (!StringUtils::isAbsolutePath(outpath)) outpath = StringUtils::joinPaths(base, outpath);
+        if (!FilePaths::isAbsolutePath(outpath)) outpath = StringUtils::joinPaths(base, outpath);
         simulation->filePaths()->setInputPath(inpath);
         simulation->filePaths()->setOutputPath(outpath);
 
@@ -336,7 +338,7 @@ void SkirtCommandLineHandler::doSimulation(size_t index)
         if (ProcessManager::isRoot())
         {
             auto schema = SimulationItemRegistry::getSchemaDef();
-            XmlHierarchyWriter::write(simulation, schema, simulation->filePaths()->output("parameters.xml"),
+            XmlHierarchyWriter::write(simulation, schema, simulation->filePaths()->output("parameters.xml").first,
                                       _producerInfo);
         }
 
@@ -402,8 +404,8 @@ void SkirtCommandLineHandler::logErrorToFile(const vector<string>& message, cons
     string prefix = StringUtils::filenameBase(skipath);
     string base = _args.isPresent("-k") ? StringUtils::dirPath(skipath) : "";
     string outpath = _args.value("-o");
-    if (!StringUtils::isAbsolutePath(outpath)) outpath = StringUtils::joinPaths(base, outpath);
-    string logpath = StringUtils::joinPaths(outpath, prefix + "_log.txt");
+    if (!FilePaths::isAbsolutePath(outpath)) outpath = StringUtils::joinPaths(base, outpath);
+    string logpath = StringUtils::joinPaths(FilePaths::directoryPath(outpath), prefix + "_log.txt");
 
     // create the log file
     std::ofstream logfile = System::ofstream(logpath);
@@ -428,7 +430,7 @@ void SkirtCommandLineHandler::printHelp()
     _console.warning("");
     _console.warning("  skirt [-t <threads>] [-s <simulations>]");
     _console.warning("        [-b] [-v] [-m] [-e]");
-    _console.warning("        [-k] [-i <dirpath>[/<hdf5file>[:<suite>]]] [-o <dirpath>]");
+    _console.warning("        [-k] [-i <dirpath>[/<hdf5file>[:<suite>]]] [-o <dirpath>[/<hdf5file>[:<suite>]]]");
     _console.warning("        [-r] {<filepath>}*");
     _console.warning("");
     _console.warning("  -t <threads> : the number of parallel threads for each simulation");
@@ -443,6 +445,8 @@ void SkirtCommandLineHandler::printHelp()
         "  -i <dirpath>/<hdf5file>[:<suite>] : also look for input files that are missing in the directory");
     _console.warning("               in the specified HDF5 file inside that directory, and in the specified suite");
     _console.warning("  -o <dirpath> : the relative or absolute path for simulation output files");
+    _console.warning("  -o <dirpath>/<hdf5file>[:<suite>] : write the output files that support it as bundles");
+    _console.warning("               in the specified HDF5 file inside that directory, and in the specified suite");
     _console.warning("  -r : cause recursive directory descent for all specified ski file paths");
     _console.warning("  <filepath> : the relative or absolute file path for a ski file");
     _console.warning("               (the filename may contain ? and * wildcards)");

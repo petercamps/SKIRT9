@@ -4,13 +4,13 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "LaunchedPacketsProbe.hpp"
+#include "ColumnOutFile.hpp"
 #include "Configuration.hpp"
 #include "Indices.hpp"
 #include "LockFree.hpp"
 #include "PhotonPacket.hpp"
 #include "SecondarySourceSystem.hpp"
 #include "SourceSystem.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -70,7 +70,7 @@ void LaunchedPacketsProbe::probe()
     int numSecondarySources = _secondaryCounts.size(0);
 
     // create a text file and add the columns
-    TextOutFile file(this, itemName() + "_launchedpackets", "photon packets launched by primary sources");
+    ColumnOutFile file(this, itemName() + "_launchedpackets", "photon packets launched by primary sources");
     file.addColumn("wavelength; " + units->swavelength(), units->uwavelength());
     file.addColumn("total nr of primary photon packets launched");
     for (int h = 0; h != numPrimarySources; ++h)
@@ -116,6 +116,7 @@ void LaunchedPacketsProbe::probe()
 
         file.writeRow(row);
     }
+    file.close();
 }
 
 ////////////////////////////////////////////////////////////////////

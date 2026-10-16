@@ -4,12 +4,12 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "DustGrainSizeDistributionProbe.hpp"
+#include "ColumnOutFile.hpp"
 #include "Configuration.hpp"
 #include "GrainSizeDistribution.hpp"
 #include "MediumSystem.hpp"
 #include "MultiGrainPopulationInterface.hpp"
 #include "NR.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -37,11 +37,11 @@ void DustGrainSizeDistributionProbe::probe()
                     auto sd = mix->populationSizeDistribution(c);
 
                     // create a text file
-                    TextOutFile out(this, itemName() + "_grainsizes_" + std::to_string(h) + "_" + std::to_string(c),
-                                    "grain size distribution");
+                    ColumnOutFile out(this, itemName() + "_grainsizes_" + std::to_string(h) + "_" + std::to_string(c),
+                                      "grain size distribution");
 
                     // write the header
-                    out.writeLine("# Dust grain size distribution");
+                    out.setLongDescription("Dust grain size distribution");
                     out.addColumn("grain size", units->ugrainsize());
                     out.addColumn("size distribution", units->upergrainsize());
 
@@ -54,6 +54,7 @@ void DustGrainSizeDistributionProbe::probe()
                     {
                         out.writeRow(units->ograinsize(av[i]), units->opergrainsize(sd->dnda(av[i])));
                     }
+                    out.close();
                 }
             }
         }

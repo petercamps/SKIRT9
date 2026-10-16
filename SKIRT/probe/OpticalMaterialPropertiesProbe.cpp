@@ -4,6 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "OpticalMaterialPropertiesProbe.hpp"
+#include "ColumnOutFile.hpp"
 #include "Configuration.hpp"
 #include "Indices.hpp"
 #include "InstrumentSystem.hpp"
@@ -11,7 +12,6 @@
 #include "Medium.hpp"
 #include "MediumSystem.hpp"
 #include "StringUtils.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -65,12 +65,13 @@ void OpticalMaterialPropertiesProbe::probe()
             auto mix = ms->media()[h]->mix();
 
             // create a text file
-            TextOutFile out(this, itemName() + "_opticalprops_" + std::to_string(h), "optical properties");
+            ColumnOutFile out(this, itemName() + "_opticalprops_" + std::to_string(h), "optical properties");
 
             // write the header
-            out.writeLine("# Medium component " + std::to_string(h) + " -- " + materialForType(mix->materialType())
-                          + " mass per " + entityForType(mix->materialType()) + ": "
-                          + StringUtils::toString(units->obulkmass(mix->mass()), 'e', 9) + " " + units->ubulkmass());
+            out.setLongDescription(
+                "Medium component " + std::to_string(h) + " -- " + materialForType(mix->materialType()) + " mass per "
+                + entityForType(mix->materialType()) + ": "
+                + StringUtils::toString(units->obulkmass(mix->mass()), 'e', 9) + " " + units->ubulkmass());
             out.addColumn("wavelength; " + units->swavelength(), units->uwavelength());
             out.addColumn("extinction cross section per " + entityForType(mix->materialType()), units->usection());
             out.addColumn("absorption cross section per " + entityForType(mix->materialType()), units->usection());
@@ -95,6 +96,7 @@ void OpticalMaterialPropertiesProbe::probe()
                                     units->omasscoefficient(sigmaAbs / mix->mass()),
                                     units->omasscoefficient(sigmaSca / mix->mass()), albedo, mix->asymmpar(lambda)}));
             }
+            out.close();
         }
     }
 }

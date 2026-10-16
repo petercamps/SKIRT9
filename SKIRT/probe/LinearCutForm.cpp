@@ -4,9 +4,9 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "LinearCutForm.hpp"
+#include "ColumnOutFile.hpp"
 #include "ProbeFormBridge.hpp"
 #include "StringUtils.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -16,8 +16,8 @@ void LinearCutForm::writeQuantity(const ProbeFormBridge* bridge) const
     auto units = bridge->units();
 
     // create a text column file and add the column definitions
-    TextOutFile outfile(bridge->probe(), bridge->prefix(), bridge->description() + " along a line segment");
-    outfile.writeLine("# " + StringUtils::toUpperFirst(bridge->description()) + " along a line segment");
+    ColumnOutFile outfile(bridge->probe(), bridge->prefix(), bridge->description() + " along a line segment");
+    outfile.setLongDescription(StringUtils::toUpperFirst(bridge->description()) + " along a line segment");
     outfile.addColumn("distance from starting point", units->ulength());
     bridge->addColumnDefinitions(outfile);
 
@@ -44,6 +44,7 @@ void LinearCutForm::writeQuantity(const ProbeFormBridge* bridge) const
         for (int p = 0; p != numValues; ++p) columns[p + 1] = values[p];
         outfile.writeRow(columns);
     }
+    outfile.close();
 }
 
 ////////////////////////////////////////////////////////////////////

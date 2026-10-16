@@ -4,12 +4,12 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "RadiationFieldWavelengthGridProbe.hpp"
+#include "ColumnOutFile.hpp"
 #include "Configuration.hpp"
 #include "DisjointWavelengthGrid.hpp"
 #include "InstrumentWavelengthGridProbe.hpp"
 #include "MediumSystem.hpp"
 #include "StringUtils.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////

@@ -21,7 +21,7 @@ TextOutFile::TextOutFile(const SimulationItem* item, const string& filename, con
     if (ProcessManager::isRoot())
     {
         // open the file
-        string filepath = item->find<FilePaths>()->output(filename + ".dat");
+        string filepath = item->find<FilePaths>()->output(filename + ".dat").first;
         _out = System::ofstream(filepath);
         if (!_out) throw FATALERROR("Could not open the " + description + " output file " + filepath);
 

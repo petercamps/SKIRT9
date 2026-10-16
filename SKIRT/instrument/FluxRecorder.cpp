@@ -4,6 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "FluxRecorder.hpp"
+#include "ColumnOutFile.hpp"
 #include "DisjointWavelengthGrid.hpp"
 #include "FITSInOut.hpp"
 #include "Indices.hpp"
@@ -13,7 +14,6 @@
 #include "PhotonPacket.hpp"
 #include "ProcessManager.hpp"
 #include "StringUtils.hpp"
-#include "TextOutFile.hpp"
 #include "TimeGrid.hpp"
 #include "Units.hpp"
 #include "WavelengthGrid.hpp"
@@ -652,9 +652,9 @@ void FluxRecorder::calibrateAndWrite()
             }
     };
 
-    // local function to construct header comment line for text column output files
+    // local function to construct the description of the contents of text column output files
     auto header = [this, units](string name) {
-        string header = "# " + name + " at ";
+        string header = name + " at ";
         header += "inclination " + StringUtils::toString(units->oposangle(_inclination)) + " " + units->uposangle();
         header += ", azimuth " + StringUtils::toString(units->oposangle(_azimuth)) + " " + units->uposangle();
         if (_recordPolarization)
@@ -715,8 +715,8 @@ void FluxRecorder::calibrateAndWrite()
         buildCols(_sed, sedNames, sedArrays);
 
         // open the file and add the column headers
-        TextOutFile sedFile(_parentItem, _instrumentName + "_sed", "SED");
-        sedFile.writeLine(header("SED"));
+        ColumnOutFile sedFile(_parentItem, _instrumentName + "_sed", "SED");
+        sedFile.setLongDescription(header("SED"));
         sedFile.addColumn("wavelength; " + units->swavelength(), units->uwavelength());
         for (const string& name : sedNames)
         {
@@ -736,13 +736,13 @@ void FluxRecorder::calibrateAndWrite()
         if (_recordStatistics)
         {
             // open the file and add the column headers
-            TextOutFile statFile(_parentItem, _instrumentName + "_sedstats", "SED statistics");
+            ColumnOutFile statFile(_parentItem, _instrumentName + "_sedstats", "SED statistics");
             statFile.addColumn("wavelength; " + units->swavelength(), units->uwavelength());
             for (int k = 0; k <= maxContributionPower; ++k)
             {
                 statFile.addColumn("Sum[w_i**" + std::to_string(k) + "]");
             }
-            statFile.writeLine("# --> w_i is luminosity contribution (in W) from i_th launched photon");
+            statFile.addComment("--> w_i is luminosity contribution (in W) from i_th launched photon");
 
             // write the column data
             for (int ell : Indices(_numWavelengths, units->rwavelength()))
@@ -895,8 +895,8 @@ void FluxRecorder::calibrateAndWrite()
         buildCols(_lc, lcNames, lcArrays);
 
         // open the file and add the column headers
-        TextOutFile lcFile(_parentItem, _instrumentName + "_lc", "LC");
-        lcFile.writeLine(header("LC"));
+        ColumnOutFile lcFile(_parentItem, _instrumentName + "_lc", "LC");
+        lcFile.setLongDescription(header("LC"));
         lcFile.addColumn("time lag", units->utimelag());
         for (const string& name : lcNames)
         {
@@ -916,13 +916,13 @@ void FluxRecorder::calibrateAndWrite()
         if (_recordStatistics)
         {
             // open the file and add the column headers
-            TextOutFile statFile(_parentItem, _instrumentName + "_lcstats", "LC statistics");
+            ColumnOutFile statFile(_parentItem, _instrumentName + "_lcstats", "LC statistics");
             statFile.addColumn("time lag", units->utimelag());
             for (int p = 0; p <= maxContributionPower; ++p)
             {
                 statFile.addColumn("Sum[w_i**" + std::to_string(p) + "]");
             }
-            statFile.writeLine("# --> w_i is luminosity contribution (in W) from i_th launched photon");
+            statFile.addComment("--> w_i is luminosity contribution (in W) from i_th launched photon");
 
             // write the column data
             for (int k = 0; k != numTimes; ++k)

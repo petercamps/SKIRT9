@@ -4,12 +4,12 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "SecondaryLineLuminosityProbe.hpp"
+#include "ColumnOutFile.hpp"
 #include "Configuration.hpp"
 #include "Indices.hpp"
 #include "MediumSystem.hpp"
 #include "ProbeFormBridge.hpp"
 #include "StringUtils.hpp"
-#include "TextOutFile.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ void SecondaryLineLuminosityProbe::probe()
                 }
 
                 // define the call-back function to add column definitions
-                auto addColumnDefinitions = [centers, units](TextOutFile& outfile) {
+                auto addColumnDefinitions = [centers, units](ColumnOutFile& outfile) {
                     for (int ell : Indices(centers, units->rwavelength()))
                     {
                         outfile.addColumn("L/V for line at "

@@ -4,8 +4,8 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "InstrumentTimeGridProbe.hpp"
+#include "ColumnOutFile.hpp"
 #include "InstrumentSystem.hpp"
-#include "TextOutFile.hpp"
 #include "TimeGrid.hpp"
 #include "TimeInstrument.hpp"
 #include "Units.hpp"
@@ -24,7 +24,7 @@ void InstrumentTimeGridProbe::probe()
             // create a text file and add the columns
             string filename = timeInstrument->instrumentName() + "_timegrid";
             string description = "time grid for instrument " + timeInstrument->instrumentName();
-            TextOutFile file(this, filename, description);
+            ColumnOutFile file(this, filename, description);
             file.addColumn("characteristic time", units->utimelag());
             file.addColumn("left border of time bin", units->utimelag());
             file.addColumn("right border of time bin", units->utimelag());
@@ -41,6 +41,7 @@ void InstrumentTimeGridProbe::probe()
                 double width = units->otimelag(timeGrid->width(k));
                 file.writeRow(time, left, right, width);
             }
+            file.close();
         }
     }
 }
