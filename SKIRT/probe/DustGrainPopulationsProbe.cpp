@@ -46,7 +46,7 @@ void DustGrainPopulationsProbe::probe()
             if (auto mix = ms->media()[h]->mix()->interface<MultiGrainPopulationInterface>(0, 0, false))
             {
                 // create a text file
-                TextOutFile out(this, itemName() + "_grainpops_" + std::to_string(h), "grain populations");
+                TextOutFile out(this, itemName() + "_grainpops_" + std::to_string(h), "grain populations", "free form");
 
                 // write the header
                 double totalmass = mix->totalMass();
@@ -85,6 +85,7 @@ void DustGrainPopulationsProbe::probe()
 
                     out.writeLine(line);
                 }
+                out.close();
             }
         }
     }

@@ -158,7 +158,7 @@ void ConvergenceInfoProbe::probe()
         auto ms = find<MediumSystem>();
 
         // create a text file
-        TextOutFile out(this, itemName() + "_convergence", "spatial grid convergence info");
+        TextOutFile out(this, itemName() + "_convergence", "spatial grid convergence info", "free form");
         out.writeLine("Spatial grid convergence information");
         out.writeLine("------------------------------------");
 
@@ -174,6 +174,7 @@ void ConvergenceInfoProbe::probe()
         // write footer
         out.writeLine("");
         out.writeLine("------------------------------------");
+        out.close();
     }
 }
 

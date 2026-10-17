@@ -20,6 +20,7 @@
 #include "StopWatch.hpp"
 #include "StringUtils.hpp"
 #include "System.hpp"
+#include "TextOutFile.hpp"
 #include "TimeLogger.hpp"
 #include "XmlHierarchyCreator.hpp"
 #include "XmlHierarchyWriter.hpp"
@@ -361,6 +362,32 @@ void SkirtCommandLineHandler::doSimulation(size_t index)
         if (ProcessManager::isMultiProc() && _args.isPresent("-v") && !_args.isPresent("-e"))
             ProcessManager::setLogger([log](string message) { log->info(message); });
 
+        // this function stores the parameter file and the log file as bundles in the HDF5 output file, if the output
+        // path includes one; the message goes to the console only, so that the log file keeps its final messages
+        auto storeTextFiles = [this, simulation]() {
+            string parameters = TextOutFile::copyToBundle(simulation, "parameters.xml", "parameter file", "XML");
+            string log = TextOutFile::copyToBundle(simulation, "log.txt", "log file", "log");
+            if (!log.empty())
+                _console.info("Stored the parameter file and the log file in bundles " + parameters + " and " + log);
+        };
+
+        // after a fatal error in the simulation, this function stores the files if possible; it reports a failure to
+        // do so on the console, so that the original error remains the one that is propagated
+        auto storeTextFilesAfterError = [this, &storeTextFiles]() {
+            try
+            {
+                storeTextFiles();
+            }
+            catch (FatalError& error)
+            {
+                for (const string& line : error.message()) _console.error(line);
+            }
+            catch (const std::exception& except)
+            {
+                _console.error("Standard Library Exception: " + string(except.what()));
+            }
+        };
+
         // run the simulation and catch and properly report any exceptions to the simulation log file
         try
         {
@@ -370,11 +397,13 @@ void SkirtCommandLineHandler::doSimulation(size_t index)
         catch (FatalError& error)
         {
             for (const string& line : error.message()) log->error(line, false);
+            storeTextFilesAfterError();
             throw error;
         }
         catch (const std::exception& except)
         {
             log->error("Standard Library Exception: " + string(except.what()), false);
+            storeTextFilesAfterError();
             throw except;
         }
 
@@ -383,6 +412,9 @@ void SkirtCommandLineHandler::doSimulation(size_t index)
 
         // if this is the only or first simulation in the run, report memory statistics in the simulation's log file
         if (_parallelSims == 1 && index == 0) reportPeakMemory(_args.isPresent("-v") ? simulation->log() : log);
+
+        // store the parameter file and the log file in the HDF5 output file, if any
+        storeTextFiles();
     }
     catch (FatalError& error)
     {

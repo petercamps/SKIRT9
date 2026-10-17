@@ -16,14 +16,19 @@
     model coordinate system). If the material mix offers MultiGrainDustMix capabilities (i.e. it is
     described by one or more individual dust grain populations), the probe creates a file with
     information on each of the grain populations in that mix. The files are named
-    <tt>prefix_probe_grainpops_N.fits</tt> where N is replaced with the zero-based index of the
+    <tt>prefix_probe_grainpops_N.dat</tt> where N is replaced with the zero-based index of the
     medium in the configuration (i.e. in the ski file).
 
     The columns in each text file list the following properties for each grain population: the
     zero-based population index; a short name identifying the type of grain material in the
     population; the dust mass in the population as a percentage of the total, as a mass per
     hydrogen atom, and as a mass per hydrogen mass; and the size range of the grains in the
-    population. */
+    population.
+
+    Because one of the columns holds text rather than a number, the table cannot be represented as
+    a text column file bundle. If the output path of the simulation includes an HDF5 file, each
+    table is therefore written as an unstructured text file bundle with text type "free form" in
+    that file instead, holding the complete text of the file (see the TextOutFile class). */
 class DustGrainPopulationsProbe : public SpecialtyProbe
 {
     ITEM_CONCRETE(DustGrainPopulationsProbe, SpecialtyProbe,

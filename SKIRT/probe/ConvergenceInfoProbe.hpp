@@ -26,7 +26,11 @@
     the simulation (in the ideal case, there would be no difference between both sets of values).
 
     Finally, the file includes some basic statistics on the diagonal optical depths of the spatial
-    grid cells: the largest and average diagonal optical depth, and the 90% percentile. */
+    grid cells: the largest and average diagonal optical depth, and the 90% percentile.
+
+    If the output path of the simulation includes an HDF5 file, the text is written as an
+    unstructured text file bundle with text type "free form" in that file instead (see the
+    TextOutFile class). */
 class ConvergenceInfoProbe : public SpecialtyWavelengthProbe
 {
     ITEM_CONCRETE(ConvergenceInfoProbe, SpecialtyWavelengthProbe, "convergence: information on the spatial grid")
