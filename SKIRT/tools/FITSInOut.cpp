@@ -5,52 +5,9 @@
 
 #include "FITSInOut.hpp"
 #include "FatalError.hpp"
-#include "FilePaths.hpp"
-#include "Log.hpp"
-#include "ProcessManager.hpp"
 #include "System.hpp"
 #include "fitsio.h"
 #include <mutex>
-
-////////////////////////////////////////////////////////////////////
-
-void FITSInOut::write(const SimulationItem* item, const string& description, const string& filename, const Array& data,
-                      const string& dataUnits, int nx, int ny, double incx, double incy, double xc, double yc,
-                      const string& xyUnits, const Array& z, const string& zUnits, const ObserverInfo* obsInfo)
-{
-    // Only write the FITS file if this process is the root
-    if (ProcessManager::isRoot())
-    {
-        // Determine the path of the output FITS file
-        string filepath = item->find<FilePaths>()->output(filename + ".fits").first;
-
-        // Write the FITS file
-        FITSInOut::write(filepath, data, dataUnits, nx, ny, incx, incy, xc, yc, xyUnits, z, zUnits, obsInfo);
-
-        // Log the file path
-        item->find<Log>()->info(item->typeAndName() + " wrote " + description + " to FITS file " + filepath);
-    }
-}
-
-////////////////////////////////////////////////////////////////////
-
-void FITSInOut::writeMap(const SimulationItem* item, const string& description, const string& filename,
-                         const Array& data, const string& dataUnits, const Array& x, const Array& y,
-                         const string& xUnits, const string& yUnits, const ObserverInfo* obsInfo)
-{
-    // Only write the FITS file if this process is the root
-    if (ProcessManager::isRoot())
-    {
-        // Determine the path of the output FITS file
-        string filepath = item->find<FilePaths>()->output(filename + ".fits").first;
-
-        // Write the FITS file
-        FITSInOut::writeMap(filepath, data, dataUnits, x, y, xUnits, yUnits, obsInfo);
-
-        // Log the file path
-        item->find<Log>()->info(item->typeAndName() + " wrote " + description + " to FITS file " + filepath);
-    }
-}
 
 ////////////////////////////////////////////////////////////////////
 

@@ -4,7 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "AllSkyProjectionForm.hpp"
-#include "FITSInOut.hpp"
+#include "FITSInOutFile.hpp"
 #include "FatalError.hpp"
 #include "HomogeneousTransform.hpp"
 #include "Log.hpp"
@@ -74,7 +74,7 @@ void AllSkyProjectionForm::writeQuantity(const ProbeFormBridge* bridge) const
     int Nx = 2 * Ny;
 
     // allocate result array with the appropriate size and initialize contents to zero
-    Table<3> vvv(Nv, Ny, Nx);  // reverse index order to get proper data value ordering for FITSInOut::write()
+    Table<3> vvv(Nv, Ny, Nx);  // reverse index order to get proper data value ordering for FITSInOutFile::write()
 
     // calculate the results in parallel
     auto log = find<Log>();
@@ -132,9 +132,10 @@ void AllSkyProjectionForm::writeQuantity(const ProbeFormBridge* bridge) const
 
     // write the file
     auto units = bridge->units();
-    FITSInOut::write(bridge->probe(), "all-sky-projected " + bridge->projectedDescription(), bridge->projectedPrefix(),
-                     vvv.data(), bridge->projectedUnit(), Nx, Ny, units->oposangle(-2 * M_PI / Nx),
-                     units->oposangle(M_PI / Ny), 0., 0., units->uposangle(), bridge->axis(), bridge->axisUnit());
+    FITSInOutFile::write(bridge->probe(), "all-sky-projected " + bridge->projectedDescription(),
+                         bridge->projectedPrefix(), vvv.data(), bridge->projectedUnit(), Nx, Ny,
+                         units->oposangle(-2 * M_PI / Nx), units->oposangle(M_PI / Ny), 0., 0., units->uposangle(),
+                         bridge->axis(), bridge->axisUnit());
 }
 
 ////////////////////////////////////////////////////////////////////

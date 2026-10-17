@@ -7,27 +7,27 @@
 #define FITINSOUT_HPP
 
 #include "Array.hpp"
-class SimulationItem;
 
 ////////////////////////////////////////////////////////////////////
 
 /** The FITSInOut class offers static functions to read/write a 2D or 3D data stream from/to a
-    standard FITS file, with support for a basic set of metadata in the header. To read a genuine
-    input file in the context of a simulation item hierarchy, use the FITSInOutFile class instead;
-    it locates the file relative to the input path of the simulation, and also supports input
-    provided as a bundle in an HDF5 file. */
+    standard FITS file, with support for a basic set of metadata in the header. These functions
+    are private: to read a genuine input file or to write an output file in the context of a
+    simulation item hierarchy, use the FITSInOutFile class, which delegates to this class. It
+    locates the file relative to the input or output path of the simulation, and also supports
+    files provided as a bundle in an HDF5 file. */
 class FITSInOut final
 {
-    // allow the FITSInOutFile class to delegate to the basic read function
+    // allow the FITSInOutFile class to delegate to the basic read and write functions
     friend class FITSInOutFile;
 
 public:
-    // ================== Write in the context of an item hierarchy ==================
+    // ================== Observer information ==================
 
     /** This basic data structure holds information on the observer associated with a data cube
-        being written. These fields are included in the FITS header as a convenience to the user.
-        Note: if the redshift is zero, the angular-diameter and luminosity distances must be equal.
-        */
+        being written. These fields are included in the FITS header, or as attributes of an HDF5
+        bundle, as a convenience to the user. Note: if the redshift is zero, the angular-diameter
+        and luminosity distances must be equal. */
     struct ObserverInfo
     {
         double inclination{0}, azimuth{0}, roll{0};                // must be in degrees, regardless of output units
@@ -35,32 +35,6 @@ public:
         double luminosityDistance{0}, angularDiameterDistance{0};  // distances in output units
         string distanceUnits;                                      // describes distance output units
     };
-
-    /** This function writes a 2D data frame or a 3D data cube to a FITS file in the context of the
-        simulation item hierarchy specified through the first argument. This allows the function to
-        issue log messages using the human-readable description of the data given as the second
-        argument, to skip writing in non-root processes of a multi-process similation, and to
-        determine a full path from the output filename specified as the third argument, relative to
-        the simulation's output path. The output filename should \em not include the filename
-        extension nor the simulation prefix. The remaining arguments of this function are the same
-        as those described for the basic write() function in this class. Note that the arguments
-        describing the z-axis and observer info may be omitted when writing a 2D data frame. */
-    static void write(const SimulationItem* item, const string& description, const string& filename, const Array& data,
-                      const string& dataUnits, int nx, int ny, double incx, double incy, double xc, double yc,
-                      const string& xyUnits, const Array& z = Array(), const string& zUnits = string(),
-                      const ObserverInfo* obsInfo = nullptr);
-
-    /** This function writes a 2D map to a FITS file in the context of the simulation item
-        hierarchy specified through the first argument. This allows the function to issue log
-        messages using the human-readable description of the data given as the second argument, to
-        skip writing in non-root processes of a multi-process similation, and to determine a full
-        path from the output filename specified as the third argument, relative to the simulation's
-        output path. The output filename should \em not include the filename extension nor the
-        simulation prefix. The remaining arguments of this function are the same as those described
-        for the basic writeMap() function in this class. */
-    static void writeMap(const SimulationItem* item, const string& description, const string& filename,
-                         const Array& data, const string& dataUnits, const Array& x, const Array& y,
-                         const string& xUnits, const string& yUnits, const ObserverInfo* obsInfo = nullptr);
 
     // ================== Basic read/write ==================
 

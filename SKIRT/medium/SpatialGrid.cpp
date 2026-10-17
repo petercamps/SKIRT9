@@ -24,6 +24,7 @@ void SpatialGrid::writeGridPlotFiles(const SimulationItem* probe) const
     {
         SpatialGridPlotFile outfile(probe, probe->itemName() + "_grid_xy");
         write_xy(&outfile);
+        outfile.close();
     }
 
     // For the xz plane (only if dimension is at least 2)
@@ -31,6 +32,7 @@ void SpatialGrid::writeGridPlotFiles(const SimulationItem* probe) const
     {
         SpatialGridPlotFile outfile(probe, probe->itemName() + "_grid_xz");
         write_xz(&outfile);
+        outfile.close();
     }
 
     // For the yz plane (only if dimension is 3)
@@ -38,6 +40,7 @@ void SpatialGrid::writeGridPlotFiles(const SimulationItem* probe) const
     {
         SpatialGridPlotFile outfile(probe, probe->itemName() + "_grid_yz");
         write_yz(&outfile);
+        outfile.close();
     }
 
     // Full 3D coordinates (only if dimension is 3)
@@ -45,6 +48,7 @@ void SpatialGrid::writeGridPlotFiles(const SimulationItem* probe) const
     {
         SpatialGridPlotFile outfile(probe, probe->itemName() + "_grid_xyz");
         write_xyz(&outfile);
+        outfile.close();
     }
 }
 

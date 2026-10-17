@@ -909,6 +909,12 @@ void VoronoiMeshSnapshot::writeGridPlotFiles(const SimulationItem* probe) const
             numDone++;
             if (numDone % 2000 == 0) log()->infoIfElapsed("Computed Voronoi cells: ", 2000);
         } while (vloop.inc());
+
+    // complete the plot files
+    plotxy.close();
+    plotxz.close();
+    plotyz.close();
+    plotxyz.close();
 }
 
 ////////////////////////////////////////////////////////////////////

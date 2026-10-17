@@ -5,7 +5,7 @@
 
 #include "PlanarCutsForm.hpp"
 #include "Box.hpp"
-#include "FITSInOut.hpp"
+#include "FITSInOutFile.hpp"
 #include "FatalError.hpp"
 #include "Parallel.hpp"
 #include "ParallelFactory.hpp"
@@ -49,7 +49,7 @@ void PlanarCutsForm::writePlanarCut(const ProbeFormBridge* bridge, bool xd, bool
     int Nv = bridge->numValues();
 
     // allocate result array with the appropriate size and initialize contents to zero
-    Table<3> vvv(Nv, Nj, Ni);  // reverse index order to get proper data value ordering for FITSInOut::write()
+    Table<3> vvv(Nv, Nj, Ni);  // reverse index order to get proper data value ordering for FITSInOutFile::write()
 
     // calculate the results in parallel
     auto parallel = bridge->probe()->find<ParallelFactory>()->parallelDistributed();
@@ -95,11 +95,11 @@ void PlanarCutsForm::writePlanarCut(const ProbeFormBridge* bridge, bool xd, bool
 
     // write the file
     auto units = bridge->units();
-    FITSInOut::write(bridge->probe(), bridge->description() + position + plane + " plane",
-                     bridge->prefix() + "_" + plane, vvv.data(), bridge->unit(), Ni, Nj,
-                     units->olength(xd ? xpsize : ypsize), units->olength(zd ? zpsize : ypsize),
-                     units->olength(xd ? xcenter : ycenter), units->olength(zd ? zcenter : ycenter), units->ulength(),
-                     bridge->axis(), bridge->axisUnit());
+    FITSInOutFile::write(bridge->probe(), bridge->description() + position + plane + " plane",
+                         bridge->prefix() + "_" + plane, vvv.data(), bridge->unit(), Ni, Nj,
+                         units->olength(xd ? xpsize : ypsize), units->olength(zd ? zpsize : ypsize),
+                         units->olength(xd ? xcenter : ycenter), units->olength(zd ? zcenter : ycenter),
+                         units->ulength(), bridge->axis(), bridge->axisUnit());
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -666,6 +666,12 @@ void TetraMeshSpatialGrid::writeGridPlotFiles(const SimulationItem* probe) const
         numDone++;
         if (numDone % 2000 == 0) _log->infoIfElapsed("Computed tetrahedra: ", 2000);
     }
+
+    // complete the plot files
+    plotxy.close();
+    plotxz.close();
+    plotyz.close();
+    plotxyz.close();
 }
 
 //////////////////////////////////////////////////////////////////////

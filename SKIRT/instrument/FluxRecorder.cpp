@@ -6,7 +6,7 @@
 #include "FluxRecorder.hpp"
 #include "ColumnOutFile.hpp"
 #include "DisjointWavelengthGrid.hpp"
-#include "FITSInOut.hpp"
+#include "FITSInOutFile.hpp"
 #include "Indices.hpp"
 #include "LockFree.hpp"
 #include "Log.hpp"
@@ -839,9 +839,9 @@ void FluxRecorder::calibrateAndWrite()
             {
                 string filename = _instrumentName + "_" + ifuNames[q];
                 string description = ifuNames[q] + " flux";
-                FITSInOut::write(_parentItem, description, filename, *(ifuArrays[q]), units->usurfacebrightness(),
-                                 _numPixelsX, _numPixelsY, incx, incy, cx, cy, unitsxy, wavegrid, units->uwavelength(),
-                                 info.get());
+                FITSInOutFile::write(_parentItem, description, filename, *(ifuArrays[q]), units->usurfacebrightness(),
+                                     _numPixelsX, _numPixelsY, incx, incy, cx, cy, unitsxy, wavegrid,
+                                     units->uwavelength(), info.get());
             }
         }
 
@@ -866,8 +866,8 @@ void FluxRecorder::calibrateAndWrite()
                 string filename = _instrumentName + "_stats" + std::to_string(k);
                 string description = "sum of contributions to the power of " + std::to_string(k);
                 _wifu[k] *= cn;
-                FITSInOut::write(_parentItem, description, filename, _wifu[k], "", _numPixelsX, _numPixelsY, incx, incy,
-                                 cx, cy, unitsxy, wavegrid, units->uwavelength());
+                FITSInOutFile::write(_parentItem, description, filename, _wifu[k], "", _numPixelsX, _numPixelsY, incx,
+                                     incy, cx, cy, unitsxy, wavegrid, units->uwavelength());
                 cn *= c;
             }
         }
@@ -1013,9 +1013,9 @@ void FluxRecorder::calibrateAndWrite()
             {
                 string filename = _instrumentName + "_stm_" + stmNames[q];
                 string description = stmNames[q] + " flux";
-                FITSInOut::writeMap(_parentItem, description, filename, *(stmArrays[q]),
-                                    units->uspectraltimefluxdensity(), wavegrid, timegrid, units->uwavelength(),
-                                    units->utimelag(), info.get());
+                FITSInOutFile::writeMap(_parentItem, description, filename, *(stmArrays[q]),
+                                        units->uspectraltimefluxdensity(), wavegrid, timegrid, units->uwavelength(),
+                                        units->utimelag(), info.get());
             }
         }
 
@@ -1040,8 +1040,8 @@ void FluxRecorder::calibrateAndWrite()
                 string filename = _instrumentName + "_stm_stats" + std::to_string(p);
                 string description = "sum of contributions to the power of " + std::to_string(p);
                 _wstm[p] *= cn;
-                FITSInOut::writeMap(_parentItem, description, filename, _wstm[p], "", wavegrid, timegrid,
-                                    units->uwavelength(), units->utimelag());
+                FITSInOutFile::writeMap(_parentItem, description, filename, _wstm[p], "", wavegrid, timegrid,
+                                        units->uwavelength(), units->utimelag());
                 cn *= c;
             }
         }

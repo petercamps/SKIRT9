@@ -4,7 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "ParallelProjectionForm.hpp"
-#include "FITSInOut.hpp"
+#include "FITSInOutFile.hpp"
 #include "Log.hpp"
 #include "Parallel.hpp"
 #include "ParallelFactory.hpp"
@@ -51,7 +51,7 @@ void ParallelProjectionForm::writeQuantity(const ProbeFormBridge* bridge) const
     double zp = 10. * (fieldOfViewX() + fieldOfViewY());
 
     // allocate result array with the appropriate size and initialize contents to zero
-    Table<3> vvv(Nv, Nyp, Nxp);  // reverse index order to get proper data value ordering for FITSInOut::write()
+    Table<3> vvv(Nv, Nyp, Nxp);  // reverse index order to get proper data value ordering for FITSInOutFile::write()
 
     // calculate the results in parallel
     auto log = find<Log>();
@@ -109,10 +109,10 @@ void ParallelProjectionForm::writeQuantity(const ProbeFormBridge* bridge) const
 
     // write the file
     auto units = bridge->units();
-    FITSInOut::write(bridge->probe(), "parallel-projected " + bridge->projectedDescription(), bridge->projectedPrefix(),
-                     vvv.data(), bridge->projectedUnit(), Nxp, Nyp, units->olength(xpsiz), units->olength(ypsiz),
-                     units->olength(xcent), units->olength(ycent), units->ulength(), bridge->axis(),
-                     bridge->axisUnit());
+    FITSInOutFile::write(bridge->probe(), "parallel-projected " + bridge->projectedDescription(),
+                         bridge->projectedPrefix(), vvv.data(), bridge->projectedUnit(), Nxp, Nyp,
+                         units->olength(xpsiz), units->olength(ypsiz), units->olength(xcent), units->olength(ycent),
+                         units->ulength(), bridge->axis(), bridge->axisUnit());
 }
 
 ////////////////////////////////////////////////////////////////////
