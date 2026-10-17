@@ -6,6 +6,7 @@
 #ifndef ATPOSITIONSFORM_HPP
 #define ATPOSITIONSFORM_HPP
 
+#include "Array.hpp"
 #include "GenericForm.hpp"
 
 //////////////////////////////////////////////////////////////////////
@@ -29,7 +30,12 @@
     The output file contains a line for each (non-empty and non-comment) line in the input file, in
     the same order. The first three columns repeat the x, y and z coordinates of the position (in
     the configured output units, which may differ from the input units). Subsequent column(s) list
-    the quantity being probed. */
+    the quantity being probed.
+
+    The positions are read from the input file during setup and kept in memory, because a
+    simulation reads all of its input files during setup (see the I/O cutover described for the
+    FilePaths class). The input file can also be provided as a bundle in an HDF5 file (see the
+    ColumnInFile class). */
 class AtPositionsForm : public GenericForm
 {
     ITEM_CONCRETE(AtPositionsForm, GenericForm, "a text column file with values for each imported position")
@@ -44,11 +50,27 @@ class AtPositionsForm : public GenericForm
 
     ITEM_END()
 
+    //============= Construction - Setup - Destruction =============
+
+protected:
+    /** This function reads the positions from the input file. */
+    void setupSelfBefore() override;
+
+    //======================== Other Functions =======================
+
 public:
     /** This function causes the form to output file(s) as described in the class header for the
         quantity being probed according to the information provided by the specified
         ProbeFormBridge instance. */
     void writeQuantity(const ProbeFormBridge* bridge) const override;
+
+    //======================== Data Members ========================
+
+private:
+    // the coordinates of the positions read from the input file, in internal units
+    Array _xv;
+    Array _yv;
+    Array _zv;
 };
 
 //////////////////////////////////////////////////////////////////////

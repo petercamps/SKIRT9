@@ -69,6 +69,30 @@
     output file, a regular file and a bundle. A caller that supports writing a bundle uses the
     bundle candidate if it is nonempty, and the regular file otherwise.
 
+    <b>I/O cutover</b>
+
+    The I/O cutover is the moment in a simulation that separates all reading of bundles from all
+    writing of bundles. It falls at the end of setup, after all processes have finished their
+    setup: every input file is read during setup, and every output file is written after it.
+    Before the cutover, bundles may be read but not written; after the cutover, bundles may be
+    written but not read, nor tested for existence. Regular files are not affected. Together with
+    the fact that only the root process writes bundles, this guarantees that the processes of a
+    multiprocessing run never access an HDF5 file in a way that violates the concurrency rules of
+    HDF5 (see the H5Lib class).
+
+    The simulation calls the cutOver() function at the cutover. The classes that read or write
+    bundles call the verifyBundleInput() or verifyBundleOutput() function before each access, so
+    that a violation of the rule is reported as a fatal error in every run, also when there is a
+    single process. In a process that runs a single simulation, the cutOver() function also
+    verifies that the process holds no open HDF5 objects, so that a reader that keeps a bundle
+    open is reported right away. This check is skipped when several simulations run in parallel in
+    the same process, as specified through the setSharedProcess() function, because the other
+    simulations may legitimately hold HDF5 objects at that moment. Finally, if the output path
+    includes an HDF5 file, the cutOver() function verifies in the root process that the file can
+    be written, so that a file that is not an HDF5 file, that is read-only, or that is held open by
+    another program is reported before the simulation runs, rather than when the first bundle is
+    written.
+
     <b>Resource files</b>
 
     The FilePaths class also offers static functions for locating the resource files used by the
@@ -216,6 +240,36 @@ public:
         error that occurred while constructing the simulation. */
     static string directoryPath(const string& path);
 
+    //========================= I/O cutover ========================
+
+public:
+    /** This function specifies whether other simulations run in parallel in the same process, as
+        with the \c -s command line option of SKIRT. The default is false. The function must be
+        called before the cutover. */
+    void setSharedProcess(bool shared);
+
+    /** This function records that the simulation has reached the I/O cutover, as described in the
+        class header. Before doing so, if the process runs a single simulation, it verifies that the
+        process holds no open HDF5 objects. If the output path includes an HDF5 file, it then
+        verifies in the root process that this file can be written, creating the file if it does
+        not exist. The function throws a fatal error if one of these checks fails, in which case the
+        cutover is not recorded. Once the cutover has been recorded, a further call has no effect.
+        */
+    void cutOver();
+
+    /** This function returns true if the simulation has reached the I/O cutover, and false
+        otherwise. */
+    bool hasCutOver() const;
+
+    /** This function throws a fatal error if the simulation has reached the I/O cutover. A client
+        calls it before it opens the bundle with the specified path for reading, or tests whether
+        it exists. */
+    void verifyBundleInput(const string& bundlePath) const;
+
+    /** This function throws a fatal error if the simulation has not yet reached the I/O cutover. A
+        client calls it before it opens the bundle with the specified path for writing. */
+    void verifyBundleOutput(const string& bundlePath) const;
+
     //======================== Resource files =======================
 
 public:
@@ -269,6 +323,8 @@ private:
     string _outputHdf5Path;  // absolute path of the HDF5 file included in the output path, or empty if there is none
     string _outputSuite;     // path of the suite in that HDF5 file, without leading or trailing slash, or empty
     string _outputPrefix;    // prefix for the names of output files
+    bool _sharedProcess{false};  // true if other simulations run in parallel in the same process
+    bool _cutOver{false};        // true if the simulation has reached the I/O cutover
 };
 
 ////////////////////////////////////////////////////////////////////

@@ -6,6 +6,7 @@
 #include "FilePaths.hpp"
 #include "FatalError.hpp"
 #include "H5Lib.hpp"
+#include "ProcessManager.hpp"
 #include "StringUtils.hpp"
 #include "System.hpp"
 #include <mutex>
@@ -331,6 +332,59 @@ string FilePaths::directoryPath(const string& path)
     if (System::isDir(path)) return path;
     string hdf5Path = splitHdf5Reference(path, true).first;
     return hdf5Path.empty() ? path : StringUtils::dirPath(hdf5Path);
+}
+
+////////////////////////////////////////////////////////////////////
+
+void FilePaths::setSharedProcess(bool shared)
+{
+    _sharedProcess = shared;
+}
+
+////////////////////////////////////////////////////////////////////
+
+void FilePaths::cutOver()
+{
+    if (_cutOver) return;
+
+    // a process that runs a single simulation must have released all objects obtained while reading bundles
+    if (!_sharedProcess)
+    {
+        auto files = H5Lib::openFiles();
+        if (!files.empty())
+            throw FATALERROR("HDF5 files are still open at the end of setup: " + StringUtils::join(files, ", "));
+    }
+
+    // the root process verifies that it can write the HDF5 output file, if any
+    if (!_outputHdf5Path.empty() && ProcessManager::isRoot()) H5Lib::verifyWritable(_outputHdf5Path);
+
+    // record the cutover only if the checks succeed
+    _cutOver = true;
+}
+
+////////////////////////////////////////////////////////////////////
+
+bool FilePaths::hasCutOver() const
+{
+    return _cutOver;
+}
+
+////////////////////////////////////////////////////////////////////
+
+void FilePaths::verifyBundleInput(const string& bundlePath) const
+{
+    if (_cutOver)
+        throw FATALERROR("Bundle " + bundlePath
+                         + " cannot be read after the end of setup, because all input must be read during setup");
+}
+
+////////////////////////////////////////////////////////////////////
+
+void FilePaths::verifyBundleOutput(const string& bundlePath) const
+{
+    if (!_cutOver)
+        throw FATALERROR("Bundle " + bundlePath
+                         + " cannot be written before the end of setup, because output must be written after setup");
 }
 
 ////////////////////////////////////////////////////////////////////

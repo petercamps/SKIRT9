@@ -96,6 +96,7 @@ void ColumnInFile::open()
     // otherwise read from the bundle; if there is no bundle either, report both locations
     else
     {
+        _item->find<FilePaths>()->verifyBundleInput(bundlePath);
         if (!filePath.empty() && !H5Lib::hasBundle(bundlePath))
             throw FATALERROR("Could not find the " + _description + " input file " + _filename
                              + ": there is no regular file " + filePath + " and no bundle " + bundlePath);

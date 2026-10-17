@@ -173,6 +173,7 @@ void ColumnOutFile::writeBundle(const SimulationItem* item, const string& bundle
                                 const string& bundleDescription, const vector<string>& descriptions,
                                 const vector<string>& units, vector<vector<double>>& columns)
 {
+    item->find<FilePaths>()->verifyBundleOutput(bundlePath);
     H5BundleW bundle = H5Lib::createBundle(bundlePath);
     if (!bundleDescription.empty()) bundle.setStringAttribute("description", bundleDescription);
 

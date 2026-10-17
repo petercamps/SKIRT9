@@ -25,6 +25,9 @@ void MonteCarloSimulation::setupSimulation()
         _config->setup();  // first of all perform setup for the configuration object
         SimulationItem::setup();
         wait("setup");
+
+        // all processes have now read their input; from here on, only output is written (the I/O cutover)
+        filePaths()->cutOver();
     }
 
     // write setup output

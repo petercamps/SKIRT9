@@ -325,6 +325,9 @@ void SkirtCommandLineHandler::doSimulation(size_t index)
         simulation->filePaths()->setInputPath(inpath);
         simulation->filePaths()->setOutputPath(outpath);
 
+        //  - whether other simulations run in parallel in the same process
+        simulation->filePaths()->setSharedProcess(_parallelSims > 1);
+
         //  - the number of parallel threads
         if (_args.intValue("-t") > 0) simulation->parallelFactory()->setMaxThreadCount(_args.intValue("-t"));
 
@@ -373,9 +376,23 @@ void SkirtCommandLineHandler::doSimulation(size_t index)
 
         // after a fatal error in the simulation, this function stores the files if possible; it reports a failure to
         // do so on the console, so that the original error remains the one that is propagated
-        auto storeTextFilesAfterError = [this, &storeTextFiles]() {
+        auto storeTextFilesAfterError = [this, simulation, &storeTextFiles]() {
             try
             {
+                // before the I/O cutover, other processes may still be reading bundles, so that the files can be
+                // stored only if this is the only process, after recording the cutover now that reading has ended
+                auto filePaths = simulation->filePaths();
+                if (!filePaths->hasCutOver() && ProcessManager::isRoot()
+                    && !filePaths->output("log.txt").second.empty())
+                {
+                    if (ProcessManager::isMultiProc())
+                    {
+                        _console.warning("The parameter file and the log file are not stored in the HDF5 output file, "
+                                         "because the simulation ended before the end of setup");
+                        return;
+                    }
+                    filePaths->cutOver();
+                }
                 storeTextFiles();
             }
             catch (FatalError& error)

@@ -147,6 +147,21 @@ public:
         afterwards, normally the name and version of the program. The default value is "SKIRT". The
         function should be called once, early in the program, before any bundle is created. */
     static void setProducer(const string& producer);
+
+    /** This function opens the HDF5 file with the specified file path (without suite or bundle)
+        for writing, creating the file if it does not exist, and closes it again. It throws a fatal
+        error if the code was built without HDF5 support, or if the file cannot be opened or
+        created for writing, for the reasons listed for the createBundle() function. It allows a
+        client to verify that the file can be written before writing bundles to it. Like the
+        createBundle() function, it waits as long as another object in this process holds the
+        file open for reading. */
+    static void verifyWritable(const string& filePath);
+
+    /** This function returns the paths of the HDF5 files on which this process holds open
+        objects, i.e. objects handed out by this class or obtained from them that have not yet been
+        destroyed, without duplicates. If the code was built without HDF5 support, the list is
+        empty. It allows a client to verify that all objects have been released. */
+    static vector<string> openFiles();
 };
 
 ////////////////////////////////////////////////////////////////////

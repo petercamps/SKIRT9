@@ -33,6 +33,7 @@ TextOutFile::TextOutFile(const SimulationItem* item, const string& filename, con
         // collect the text for a bundle if requested and possible
         if (!textType.empty() && !bundlePath.empty())
         {
+            _filePaths = item->find<FilePaths>();
             _bundlePath = bundlePath;
             _textType = textType;
             _message = item->typeAndName() + " wrote " + description + " to bundle " + bundlePath;
@@ -66,6 +67,7 @@ void TextOutFile::close()
         string text;
         std::swap(bundlePath, _bundlePath);
         std::swap(text, _text);
+        _filePaths->verifyBundleOutput(bundlePath);
         H5BundleW bundle = H5Lib::createBundle(bundlePath);
         bundle.setStringAttribute("type", _textType);
         bundle.createTextDataset("text", text);
@@ -104,8 +106,10 @@ string TextOutFile::copyToBundle(const SimulationItem* item, const string& name,
 {
     // only the root process writes output, and only if the output path includes an HDF5 file
     if (!ProcessManager::isRoot()) return string();
-    auto [filePath, bundlePath] = item->find<FilePaths>()->output(name);
+    auto filePaths = item->find<FilePaths>();
+    auto [filePath, bundlePath] = filePaths->output(name);
     if (bundlePath.empty()) return string();
+    filePaths->verifyBundleOutput(bundlePath);
 
     // read the complete file
     std::ifstream in = System::ifstream(filePath);

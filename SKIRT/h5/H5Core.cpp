@@ -10,7 +10,10 @@
 #    include "StringUtils.hpp"
 #    include "System.hpp"
 #    include <hdf5.h>
+#    include <chrono>
+#    include <condition_variable>
 #    include <mutex>
+#    include <set>
 #endif
 
 ////////////////////////////////////////////////////////////////////
@@ -25,6 +28,13 @@ namespace
     // the mutex that protects all calls into the HDF5 library
     std::mutex _mutex;
 
+    // the condition that is notified when an object is released, for functions waiting until a file is no longer
+    // held open for reading
+    std::condition_variable _released;
+
+    // the time a function waits until a file is no longer held open for reading before it reports an error
+    constexpr auto _readerTimeLimit = std::chrono::minutes(10);
+
     // An instance of this class locks the mutex for its lifetime. It also stops the HDF5 library from printing its
     // own error messages for the calling thread, because failures are reported through fatal errors instead.
     class Lock
@@ -33,6 +43,9 @@ namespace
 
     public:
         Lock() : _lock(_mutex) { H5Eset_auto2(H5E_DEFAULT, nullptr, nullptr); }
+
+        // releases the mutex until an object is released or the specified time has passed, and then locks it again
+        void wait(std::chrono::milliseconds duration) { _released.wait_for(_lock, duration); }
     };
 
     // An instance of this class holds an identifier handed out by the HDF5 library, and releases it upon
@@ -267,6 +280,7 @@ void H5Core::close(std::int64_t object) noexcept
         }
         catch (...)
         {}
+        _released.notify_all();
     }
 }
 
@@ -458,6 +472,61 @@ namespace
 {
     // opens the HDF5 file with the specified path for writing, creating it if it does not exist, and returns its
     // identifier, which must be released by the caller; the caller must hold the lock
+    // returns the name of the specified open file, as passed to the function that opened it
+    string fileName(hid_t file)
+    {
+        ssize_t length = H5Fget_name(file, nullptr, 0);
+        if (length <= 0) return string();
+        string name(length + 1, '\0');
+        H5Fget_name(file, &name[0], name.size());
+        name.resize(length);
+        return name;
+    }
+
+    // calls the specified function with the name and the access flags of the file of each object held open by this
+    // process; the caller must hold the lock
+    template<class Function> void forEachOpenObject(Function function)
+    {
+        ssize_t count = H5Fget_obj_count(H5F_OBJ_ALL, H5F_OBJ_ALL);
+        if (count <= 0) return;
+        vector<hid_t> objects(count);
+        count = H5Fget_obj_ids(H5F_OBJ_ALL, H5F_OBJ_ALL, objects.size(), objects.data());
+        for (ssize_t index = 0; index < count; ++index)
+        {
+            Id file(H5Iget_file_id(objects[index]), H5Fclose);
+            unsigned int intent = 0;
+            if (file.valid() && H5Fget_intent(file.get(), &intent) >= 0) function(fileName(file.get()), intent);
+        }
+    }
+
+    // returns true if an object held open by this process belongs to the specified file, opened for reading only;
+    // the caller must hold the lock
+    bool isHeldForReading(const string& filePath)
+    {
+        if (!System::isFile(filePath)) return false;
+        string target = System::canonicalPath(filePath);
+        bool held = false;
+        forEachOpenObject([&held, &target](const string& name, unsigned int intent) {
+            if (!(intent & H5F_ACC_RDWR) && System::canonicalPath(name) == target) held = true;
+        });
+        return held;
+    }
+
+    // waits until no object held open by this process belongs to the specified file opened for reading only, because
+    // the library cannot reopen such a file for writing; throws a fatal error if this takes longer than the time limit
+    void waitForReaders(Lock& lock, const string& filePath)
+    {
+        auto deadline = std::chrono::steady_clock::now() + _readerTimeLimit;
+        while (isHeldForReading(filePath))
+        {
+            if (std::chrono::steady_clock::now() > deadline)
+                throw FATALERROR("HDF5 file remains open for reading in this process, so that it cannot be opened "
+                                 "for writing: "
+                                 + filePath);
+            lock.wait(std::chrono::milliseconds(100));
+        }
+    }
+
     hid_t openFileForWriting(const string& filePath)
     {
         // on a file system that does not support file locking, proceed without locking
@@ -580,6 +649,7 @@ namespace
 std::int64_t H5Core::createGroup(const string& filePath, const string& groupPath)
 {
     Lock lock;
+    waitForReaders(lock, filePath);
 
     Id file(openFileForWriting(filePath), H5Fclose);
     string location = filePath + ":" + groupPath;
@@ -713,6 +783,25 @@ std::int64_t H5Core::createTextDataset(std::int64_t group, const string& name, c
     if (H5Dwrite(dataset.get(), type.get(), H5S_ALL, H5S_ALL, H5P_DEFAULT, &buffer) < 0)
         throw FATALERROR("Cannot write dataset '" + name + "' in " + context);
     return dataset.release();
+}
+
+////////////////////////////////////////////////////////////////////
+
+void H5Core::verifyWritable(const string& filePath)
+{
+    Lock lock;
+    waitForReaders(lock, filePath);
+    Id file(openFileForWriting(filePath), H5Fclose);
+}
+
+////////////////////////////////////////////////////////////////////
+
+vector<string> H5Core::openFiles()
+{
+    Lock lock;
+    std::set<string> names;
+    forEachOpenObject([&names](const string& name, unsigned int /*intent*/) { names.insert(name); });
+    return vector<string>(names.begin(), names.end());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -921,6 +1010,20 @@ std::int64_t H5Core::createTextDataset(std::int64_t /*group*/, const string& /*n
                                        const string& /*context*/)
 {
     throwUnavailable();
+}
+
+////////////////////////////////////////////////////////////////////
+
+void H5Core::verifyWritable(const string& /*filePath*/)
+{
+    throwUnavailable();
+}
+
+////////////////////////////////////////////////////////////////////
+
+vector<string> H5Core::openFiles()
+{
+    return vector<string>();
 }
 
 ////////////////////////////////////////////////////////////////////

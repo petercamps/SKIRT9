@@ -298,6 +298,7 @@ void StoredTable_Impl::open(size_t numAxes, const SimulationItem* item, string f
         if (!bundlePath.empty() && (candidatePath.empty() || !System::isFile(candidatePath)))
         {
             // if there is no bundle either, report both locations
+            item->find<FilePaths>()->verifyBundleInput(bundlePath);
             if (!candidatePath.empty() && !H5Lib::hasBundle(bundlePath))
                 throw FATALERROR("Could not find the stored table input file " + filename
                                  + ": there is no regular file " + candidatePath + " and no bundle " + bundlePath);

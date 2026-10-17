@@ -10,6 +10,7 @@
 #include "CompileTimeUtils.hpp"
 #include <array>
 #include <fstream>
+class FilePaths;
 class Log;
 class SimulationItem;
 class Units;
@@ -144,9 +145,10 @@ private:
     string _message;     // the message
 
     // used when writing a bundle
-    string _bundlePath;  // the location of the bundle, or empty if a regular file is written
-    string _textType;    // the type of text
-    string _text;        // the text collected so far
+    FilePaths* _filePaths{nullptr};  // the file paths of the simulation, for verifying the I/O cutover
+    string _bundlePath;              // the location of the bundle, or empty if a regular file is written
+    string _textType;                // the type of text
+    string _text;                    // the text collected so far
 };
 
 ////////////////////////////////////////////////////////////////////

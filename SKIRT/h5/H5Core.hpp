@@ -38,7 +38,18 @@
 
     All functions in this namespace are thread-safe. The HDF5 library cannot be assumed to be
     thread-safe on its own, since that depends on how the installed library was built. All calls
-    into the library are therefore protected by a single mutex. */
+    into the library are therefore protected by a single mutex.
+
+    Within a process, the HDF5 library shares a single object for each open file. It cannot reopen
+    a file for writing while the file is open for reading only, but it can reopen a file for
+    reading while the file is open for writing. When several simulations run in parallel in the
+    same process, one of them may hold a file open for reading while it loads its input, while
+    another one is about to write its output to the same file. The functions that open a file for
+    writing, createGroup() and verifyWritable(), therefore wait as long as any object in this
+    process holds the file open for reading only. Readers hold a file only while they load data, so
+    that the wait is short. If the file remains held for more than ten minutes, for example because
+    the calling thread holds it itself, the function throws a fatal error rather than waiting
+    forever. */
 namespace H5Core
 {
     /** This function returns true if the code was built with HDF5 support, and false otherwise. */
@@ -182,6 +193,17 @@ namespace H5Core
         handle for the dataset. The function throws a fatal error if the dataset cannot be created
         or written. */
     std::int64_t createTextDataset(std::int64_t group, const string& name, const string& text, const string& context);
+
+    /** This function opens the HDF5 file with the specified file path for writing, creating the
+        file if it does not exist, and closes it again. It throws a fatal error if the file cannot
+        be opened or created for writing, as for the createGroup() function. It allows a client to
+        verify that a file can be written before it writes to the file. */
+    void verifyWritable(const string& filePath);
+
+    /** This function returns the paths of the HDF5 files on which this process holds open
+        objects, in the form passed to the function that opened them, without duplicates. If the
+        code was built without HDF5 support, the list is empty. */
+    vector<string> openFiles();
 }
 
 ////////////////////////////////////////////////////////////////////

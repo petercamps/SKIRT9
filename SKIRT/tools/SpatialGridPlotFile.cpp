@@ -72,6 +72,7 @@ void SpatialGridPlotFile::close()
             static_cast<size_t>(_dimension ? _dimension : (StringUtils::endsWith(_filename, "_xyz") ? 3 : 2));
         size_t numPoints = _moveto.size();
 
+        _item->find<FilePaths>()->verifyBundleOutput(_bundlePath);
         H5BundleW bundle = H5Lib::createBundle(_bundlePath);
         bundle.setStringAttribute("unit", _units->ulength());
         Array points(_coords.data(), _coords.size());

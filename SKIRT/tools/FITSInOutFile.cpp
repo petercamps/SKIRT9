@@ -76,6 +76,7 @@ void FITSInOutFile::read(const SimulationItem* item, const string& filename, Arr
     else
     {
         // if there is no bundle either, report both locations
+        item->find<FilePaths>()->verifyBundleInput(bundlePath);
         if (!filePath.empty() && !H5Lib::hasBundle(bundlePath))
             throw FATALERROR("Could not find the FITS input file " + filename + ": there is no regular file " + filePath
                              + " and no bundle " + bundlePath);
@@ -131,6 +132,7 @@ void FITSInOutFile::write(const SimulationItem* item, const string& description,
         if (data.size() != static_cast<size_t>(nx) * static_cast<size_t>(ny) * (nz ? nz : 1))
             throw FATALERROR("Inconsistent data size when creating FITS file bundle " + bundlePath);
 
+        item->find<FilePaths>()->verifyBundleOutput(bundlePath);
         H5BundleW bundle = H5Lib::createBundle(bundlePath);
         setBundleAttributes(bundle, description, obsInfo);
         writeDataset(bundle, "x", regularGrid(nx, incx, xc), xyUnits);
@@ -173,6 +175,7 @@ void FITSInOutFile::writeMap(const SimulationItem* item, const string& descripti
         if (data.size() != x.size() * y.size())
             throw FATALERROR("Inconsistent data size when creating FITS file bundle " + bundlePath);
 
+        item->find<FilePaths>()->verifyBundleOutput(bundlePath);
         H5BundleW bundle = H5Lib::createBundle(bundlePath);
         setBundleAttributes(bundle, description, obsInfo);
         writeDataset(bundle, "x", x, xUnits);

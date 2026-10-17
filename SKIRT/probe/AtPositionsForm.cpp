@@ -12,6 +12,21 @@
 
 ////////////////////////////////////////////////////////////////////
 
+void AtPositionsForm::setupSelfBefore()
+{
+    GenericForm::setupSelfBefore();
+
+    // read the positions from the input file
+    ColumnInFile infile(this, filename(), "positions");
+    infile.useColumns(useColumns());
+    infile.addColumn("position x", "length", "pc");
+    infile.addColumn("position y", "length", "pc");
+    infile.addColumn("position z", "length", "pc");
+    infile.readAllColumns(_xv, _yv, _zv);
+}
+
+////////////////////////////////////////////////////////////////////
+
 void AtPositionsForm::writeQuantity(const ProbeFormBridge* bridge) const
 {
     auto units = bridge->units();
@@ -29,17 +44,13 @@ void AtPositionsForm::writeQuantity(const ProbeFormBridge* bridge) const
     Array values(numValues);
     vector<double> columns(numValues + 3);
 
-    // open the input file
-    ColumnInFile infile(this, filename(), "positions");
-    infile.useColumns(useColumns());
-    infile.addColumn("position x", "length", "pc");
-    infile.addColumn("position y", "length", "pc");
-    infile.addColumn("position z", "length", "pc");
-
-    // write a line for each line in the input file
-    double x, y, z;
-    while (infile.readRow(x, y, z))
+    // write a line for each position in the input file
+    size_t numPositions = _xv.size();
+    for (size_t i = 0; i != numPositions; ++i)
     {
+        double x = _xv[i];
+        double y = _yv[i];
+        double z = _zv[i];
         bridge->valuesAtPosition(Position(x, y, z), values);
         columns[0] = units->olength(x);
         columns[1] = units->olength(y);
