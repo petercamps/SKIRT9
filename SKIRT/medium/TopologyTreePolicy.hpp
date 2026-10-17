@@ -32,11 +32,13 @@ class TreeSpatialGrid;
     recorded tree can also be refined by configuring other policies alongside this one, because a
     node is subdivided as soon as one of the policies asks for it.
 
-    The input file is a column text file with a single dimensionless column (see the TextInFile
-    class). After a brief descriptive header (lines starting with a # character), the file contains
-    lines with just a single integer number. The first line specifies the number of children for
-    each nonleaf node (2 for a binary tree, 8 for an octtree, or 0 if the root node is not
-    subdivided). The second line contains 1 if the root node is subdivided, or 0 if not. The
+    The input file is a column text file with a single dimensionless column, or the corresponding
+    bundle in an HDF5 file (see the ColumnInFile class). After a brief descriptive header (lines
+    starting with a # character), which includes a column information line in files written by this
+    version of the TreeSpatialGridTopologyProbe but not in those written by older versions, the file
+    contains lines with just a single integer number. The first line specifies the number of
+    children for each nonleaf node (2 for a binary tree, 8 for an octtree, or 0 if the root node is
+    not subdivided). The second line contains 1 if the root node is subdivided, or 0 if not. The
     following lines similarly contain 1 or 0 indicating subdivision for any children of the
     preceding node, recursively, in a depth-first traversal of the tree. The topology data is
     scale-free; the spatial domain is defined by the grid in the current simulation. If the number

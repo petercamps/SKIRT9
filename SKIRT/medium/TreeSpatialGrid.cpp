@@ -5,6 +5,7 @@
 
 #include "TreeSpatialGrid.hpp"
 #include "Array.hpp"
+#include "ColumnOutFile.hpp"
 #include "Configuration.hpp"
 #include "FatalError.hpp"
 #include "Log.hpp"
@@ -17,7 +18,6 @@
 #include "Random.hpp"
 #include "SpatialGridPlotFile.hpp"
 #include "StringUtils.hpp"
-#include "TextOutFile.hpp"
 #include "TreeNodeEvaluation.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -473,10 +473,11 @@ std::unique_ptr<PathSegmentGenerator> TreeSpatialGrid::createPathSegmentGenerato
 
 ////////////////////////////////////////////////////////////////////
 
-void TreeSpatialGrid::writeTopology(TextOutFile* outfile) const
+void TreeSpatialGrid::writeTopology(ColumnOutFile* outfile) const
 {
-    outfile->writeLine("# Topology for tree spatial grid with " + std::to_string(numCells()) + " cells");
-    outfile->writeLine(std::to_string(_nodev[0].isLeaf() ? 0 : numChildren()));  // zero if the root is not subdivided
+    outfile->setLongDescription("Topology for tree spatial grid with " + std::to_string(numCells()) + " cells");
+    outfile->addColumn("number of children per nonleaf node, followed by the subdivision flag for each node", "", 'd');
+    outfile->writeRow(_nodev[0].isLeaf() ? 0 : numChildren());  // zero if the root is not subdivided
 
     // write the subdivision flags in depth-first order, visiting the children of a node in order of their index;
     // the stack holds the indices of the nodes still to be visited, with the next one to be visited last
@@ -487,10 +488,10 @@ void TreeSpatialGrid::writeTopology(TextOutFile* outfile) const
         const Node& node = _nodev[stack.back()];
         stack.pop_back();
         if (node.isLeaf())
-            outfile->writeLine("0");
+            outfile->writeRow(0);
         else
         {
-            outfile->writeLine("1");
+            outfile->writeRow(1);
             for (int c = numChildren - 1; c >= 0; --c) stack.push_back(node.child() + c);
         }
     }

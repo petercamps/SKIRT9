@@ -4,8 +4,8 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "TreeSpatialGridTopologyProbe.hpp"
+#include "ColumnOutFile.hpp"
 #include "MediumSystem.hpp"
-#include "TextOutFile.hpp"
 #include "TreeSpatialGrid.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -16,8 +16,9 @@ void TreeSpatialGridTopologyProbe::probe()
     auto ms = find<MediumSystem>(false);
     if (auto grid = ms ? ms->find<TreeSpatialGrid>(false) : nullptr)
     {
-        TextOutFile outfile(this, itemName() + "_treetop", "spatial tree grid topology");
+        ColumnOutFile outfile(this, itemName() + "_treetop", "spatial tree grid topology");
         grid->writeTopology(&outfile);
+        outfile.close();
     }
 }
 

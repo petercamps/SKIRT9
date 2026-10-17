@@ -25,13 +25,20 @@
     is scale-free; the simulation loading the topology must define the extent of the spatial
     domain.
 
-    The output file is called <tt>prefix_probe_treetop.dat</tt>. After a brief descriptive header,
-    the file contains lines with just a single integer number. The first line specifies the number
-    of children for each nonleaf node (2 for a binary tree, 8 for an octtree, or 0 if the root node
-    is not subdivided). The second line contains 1 if the root node is subdivided, or 0 if not. The
-    following lines similarly contain 1 or 0 indicating subdivision for any children of the
-    preceding node, recursively, in a depth-first traversal of the tree. The children of a node are
-    listed in the order defined by the BinTreeSpatialGrid and OctTreeSpatialGrid classes. */
+    The output file is called <tt>prefix_probe_treetop.dat</tt>. It is a column text file with a
+    single dimensionless column (see the ColumnOutFile class). After a brief descriptive header,
+    which includes a column information line, the file contains lines with just a single integer
+    number. The first line specifies the number of children for each nonleaf node (2 for a binary
+    tree, 8 for an octtree, or 0 if the root node is not subdivided). The second line contains 1 if
+    the root node is subdivided, or 0 if not. The following lines similarly contain 1 or 0
+    indicating subdivision for any children of the preceding node, recursively, in a depth-first
+    traversal of the tree. The children of a node are listed in the order defined by the
+    BinTreeSpatialGrid and OctTreeSpatialGrid classes. Storing the number of children in the same
+    column as the subdivision flags keeps the format of the files written by older versions, which
+    lacked the column information line.
+
+    If the output path of the simulation includes an HDF5 file, the topology is written as a text
+    column file bundle in that file instead, with a single dataset holding the same values. */
 class TreeSpatialGridTopologyProbe : public SpecialtyProbe
 {
     ITEM_CONCRETE(TreeSpatialGridTopologyProbe, SpecialtyProbe,

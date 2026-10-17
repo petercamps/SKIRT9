@@ -11,7 +11,7 @@
 #include "TreePolicy.hpp"
 #include <array>
 #include <deque>
-class TextOutFile;
+class ColumnOutFile;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -289,14 +289,16 @@ public:
         \f${\cal{X}}_1\f$, \f${\cal{X}}_2\f$ and \f${\cal{X}}_3\f$ three uniform deviates. */
     Position randomPositionInCell(int m) const override;
 
-    /** This function writes the topology of the tree to the specified text file in a simple,
-        proprietary format. After a brief descriptive header, it writes lines that each contain
-        just a single integer number. The first line specifies the number of children for each
-        nonleaf node (2 for a binary tree, 8 for an octtree, or 0 if the root node has not been
-        subdivided). The second line contains 1 if the root node is subdivided, or 0 if not. The
-        following lines similarly contain 1 or 0 indicating subdivision for any children of the
-        preceding node, recursively, in a depth-first traversal of the tree. */
-    void writeTopology(TextOutFile* outfile) const;
+    /** This function writes the topology of the tree to the specified column output file, which
+        must not yet have any columns, as a single dimensionless column in integer format. The
+        function sets a brief descriptive header and the column, and then writes rows that each
+        contain just a single integer number. The first row specifies the number of children for
+        each nonleaf node (2 for a binary tree, 8 for an octtree, or 0 if the root node has not
+        been subdivided). The second row contains 1 if the root node is subdivided, or 0 if not.
+        The following rows similarly contain 1 or 0 indicating subdivision for any children of
+        the preceding node, recursively, in a depth-first traversal of the tree. The caller must
+        close the file. */
+    void writeTopology(ColumnOutFile* outfile) const;
 
     /** This function returns the index of the cell that contains the position \f${\bf{r}}\f$, or -1
         if the position is outside of the domain. It performs a top-down search as described in the
