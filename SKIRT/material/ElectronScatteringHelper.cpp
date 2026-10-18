@@ -387,7 +387,8 @@ namespace ElectronScatteringHelper
         double C = comptonFactor(x, costheta);
         double sin2theta = (1 - costheta) * (1 + costheta);
         double phase = C * C * C + C - C * C * sin2theta;
-        double section = NR::value<NR::interpolateLogLog>(x, _CSv[0], _CSv[Z]);
+        // clamp, because the caller may have shifted x to the rest frame of a moving atom, just outside the table
+        double section = NR::clampedValue<NR::interpolateLogLog>(x, _CSv[0], _CSv[Z]);
         double sintheta2 = sqrt(0.5 * (1 - costheta));
         double incoherent = interpolateQ(x, sintheta2, _SFv, _logRatioSFv, Z);
         return norm / section * phase * incoherent;
@@ -596,7 +597,8 @@ namespace ElectronScatteringHelper
     {
         constexpr double norm = 3. / 4. * Constants::sigmaThomson();
         double phase = 1. + costheta * costheta;
-        double section = NR::value<NR::interpolateLogLog>(x, _RSSv[0], _RSSv[Z]);
+        // clamp, because the caller may have shifted x to the rest frame of a moving atom, just outside the table
+        double section = NR::clampedValue<NR::interpolateLogLog>(x, _RSSv[0], _RSSv[Z]);
         double sintheta2 = sqrt(0.5 * (1 - costheta));
         double form = interpolateQ(x, sintheta2, _FFv, _logRatioFFv, Z);
         return norm / section * phase * form * form;
