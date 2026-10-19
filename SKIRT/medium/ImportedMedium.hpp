@@ -168,6 +168,11 @@ public:
         See the parameters() function for more information. */
     bool hasParameters() const override;
 
+    /** This function returns the descriptors of the custom input model parameters returned by the
+        parameters() function: those requested by the configured material mix, or an empty list if
+        the medium is configured with a material mix family. */
+    vector<SnapshotParameter> parameterInfo() const override;
+
     /** If custom input model parameters are available for this medium, this function stores the
         parameter values at the specified position into the given array. If the position is outside
         the domain, the parameter values default to zero. If no custom input model parameters are

@@ -218,7 +218,9 @@ public:
     void importBias();
 
     /** This function configures the snapshot to import a sequence of parameters as described by
-        the specified list of SnapshotParameter metadata objects. */
+        the specified list of SnapshotParameter metadata objects. The snapshot remembers the kind
+        of each parameter, which determines how the values of overlapping entities are combined by
+        the parameters(Position, Array&) function. */
     void importParameters(const vector<SnapshotParameter>& parameters);
 
     /** This function sets the policy for calculating the mass or mass density at a given spatial
@@ -557,10 +559,18 @@ public:
         index is out of range, the behavior is undefined. */
     void parameters(int m, Array& params) const;
 
-    /** This function stores the parameters at the specified point
-        \f${\bf{r}}\f$ into the given array. If the point is outside the domain, the function
-        returns the appropriate number of zero parameter values. If parameters are not being
-        imported, the behavior is undefined. */
+    /** This function stores the parameters at the specified point \f${\bf{r}}\f$ into the given
+        array. If the point is outside the domain, the function returns the appropriate number of
+        zero parameter values. If parameters are not being imported, the behavior is undefined.
+
+        If a single entity overlaps the point, as is always the case for a snapshot with cells,
+        the function returns the parameters of that entity. If several entities overlap the point,
+        as may be the case for smoothed particles, their values are combined according to the kind
+        of each parameter (see the QuantityKind enumeration). An intensive parameter is averaged
+        over the entities, weighted by the weight of each entity at the point (e.g., the smoothing
+        kernel value) times the mass returned by the massForAveraging() function, as for the
+        temperature() function. If these weights add up to zero, the value is zero. A categorical
+        parameter is taken from the entity with the largest weight at the point. */
     void parameters(Position bfr, Array& params) const;
 
     /** This function returns the X-axis surface density of the density distribution represented by
@@ -614,6 +624,7 @@ private:
     int _biasIndex{-1};
     int _parametersIndex{-1};
     int _numParameters{0};
+    vector<QuantityKind> _parameterKinds;  // the kind of each parameter, indexed on the parameter index
 
     // mass and mass density policy
     double _multiplier{0.};

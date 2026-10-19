@@ -42,7 +42,9 @@ public:
     Capabilities capabilities() const override;
 
     /** This function returns SnapshotParameter information for a single parameter corresponding to
-        the zero-based index in the configured list of dust mixes. */
+        the zero-based index in the configured list of dust mixes. The parameter is categorical, so
+        that the index of overlapping entities is not averaged (see the QuantityKind
+        enumeration). */
     vector<SnapshotParameter> parameterInfo() const override;
 
     /** This function returns (a pointer to) the dust mix corresponding to the zero-based index in

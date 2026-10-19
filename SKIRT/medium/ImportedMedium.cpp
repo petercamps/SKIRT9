@@ -191,6 +191,13 @@ bool ImportedMedium::hasParameters() const
 
 ////////////////////////////////////////////////////////////////////
 
+vector<SnapshotParameter> ImportedMedium::parameterInfo() const
+{
+    return _importVariableMixParams ? vector<SnapshotParameter>() : _materialMix->parameterInfo();
+}
+
+////////////////////////////////////////////////////////////////////
+
 void ImportedMedium::parameters(Position bfr, Array& params) const
 {
     if (hasParameters())

@@ -277,6 +277,7 @@ void Snapshot::importParameters(const vector<SnapshotParameter>& parameters)
     for (const auto& param : parameters)
     {
         _infile->addColumn(param.description(), param.quantity(), param.defaultUnit());
+        _parameterKinds.push_back(param.kind());
 
         // discover standard parameter types and set the corresponding index so these values can be probed
         switch (param.identifier())
@@ -522,23 +523,50 @@ void Snapshot::parameters(Position bfr, Array& params) const
     thread_local EntityCollection entities;  // can be reused for all queries in a given execution thread
     getEntities(entities, bfr);
 
-    // look for the entity with the highest weight
-    double wmax = 0.;
-    int m = -1;
-    for (const auto& [index, weight] : entities)
+    // without entities, return zero values; for a single entity, return its values
+    int n = numParameters();
+    auto first = entities.begin();
+    if (first == entities.end())
     {
-        if (weight > wmax)
+        params.resize(n);
+        return;
+    }
+    if (std::next(first) == entities.end())
+    {
+        parameters(first->first, params);
+        return;
+    }
+
+    // in a single pass over the entities, accumulate the weighted values of the intensive parameters,
+    // and locate the entity with the largest weight for the categorical parameters
+    params.resize(n);
+    double sumw = 0.;
+    double wmax = 0.;
+    int mmax = -1;
+    for (const auto& [m, wm] : entities)
+    {
+        double w = massForAveraging(m) * wm;
+        const auto& propv = properties(m);
+        for (int i = 0; i != n; ++i)
+            if (_parameterKinds[i] == QuantityKind::Intensive) params[i] += propv[parametersIndex() + i] * w;
+        sumw += w;
+        if (wm > wmax)
         {
-            wmax = weight;
-            m = index;
+            wmax = wm;
+            mmax = m;
         }
     }
 
-    // if found, use it
-    if (m >= 0)
-        parameters(m, params);
-    else
-        params.resize(numParameters());
+    // finalize the averages, guarding against weights that add up to zero, and copy the categorical values;
+    // an entity always has a positive weight in the collection, so that the entity with the largest weight exists
+    const auto& propmax = properties(mmax);
+    for (int i = 0; i != n; ++i)
+    {
+        if (_parameterKinds[i] == QuantityKind::Intensive)
+            params[i] = sumw > 0. ? params[i] / sumw : 0.;
+        else
+            params[i] = propmax[parametersIndex() + i];
+    }
 }
 
 ////////////////////////////////////////////////////////////////////

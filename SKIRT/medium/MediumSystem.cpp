@@ -53,8 +53,9 @@ namespace
         int _numMedia;
         int _cellIndex;
         Position _center;
-        vector<Position> _positions;  // indexed on n
-        Table<2> _densities;          // indexed on h and n
+        vector<Position> _positions;              // indexed on n
+        Table<2> _densities;                      // indexed on h and n
+        vector<vector<int>> _categoricalIndices;  // indices of the categorical parameters, indexed on h
 
     public:
         // The constructor allocates the required memory depending on the sampling configuration.
@@ -71,6 +72,19 @@ namespace
                 int numSamples = max(_numDensitySamples, _numPropertySamples);
                 _positions.resize(numSamples);
                 _densities.resize(_numMedia, numSamples);
+            }
+
+            // if we need random sampling of the custom parameters, remember which ones are categorical
+            if (_numPropertySamples > 1)
+            {
+                _categoricalIndices.resize(_numMedia);
+                for (int h = 0; h != _numMedia; ++h)
+                {
+                    auto info = _media[h]->parameterInfo();
+                    int numParams = info.size();
+                    for (int i = 0; i != numParams; ++i)
+                        if (info[i].kind() == QuantityKind::Categorical) _categoricalIndices[h].push_back(i);
+                }
             }
         }
 
@@ -157,27 +171,36 @@ namespace
             return nsum > 0. ? Tsum / nsum : 0.;
         }
 
-        // Returns the central or density-averaged custom parameter values in the cell for the given medium component.
+        // Returns the central or sampled custom parameter values in the cell for the given medium component:
+        // the density-averaged value for an intensive parameter, and the value of the sample with the highest
+        // density (the first such sample if several samples have this density) for a categorical parameter.
         void parameters(int h, Array& params)
         {
             // always sample at the center to make sure that the output array has the proper size
             _media[h]->parameters(_center, params);
             // if center-sampling is requested, we're done
             if (_numPropertySamples == 1) return;
-            // otherwise, clear the output values and accumulate the samples
+            // otherwise, clear the output values and accumulate the samples, remembering the densest sample
             params = 0.;
             double nsum = 0;
-            Array sample;
+            double nmax = -1.;
+            Array sample, densest;
             for (int n = 0; n != _numPropertySamples; ++n)
             {
                 nsum += _densities(h, n);
                 _media[h]->parameters(_positions[n], sample);
                 params += _densities(h, n) * sample;
+                if (!_categoricalIndices[h].empty() && _densities(h, n) > nmax)
+                {
+                    nmax = _densities(h, n);
+                    densest = sample;
+                }
             }
             if (nsum > 0.)
                 params /= nsum;
             else
                 params = 0.;
+            for (int i : _categoricalIndices[h]) params[i] = densest[i];
             return;
         }
     };

@@ -31,7 +31,7 @@ SelectDustMixFamily::Capabilities SelectDustMixFamily::capabilities() const
 
 vector<SnapshotParameter> SelectDustMixFamily::parameterInfo() const
 {
-    return {SnapshotParameter::custom("dustmix index")};
+    return {SnapshotParameter::custom("dustmix index").categorical()};
 }
 
 ////////////////////////////////////////////////////////////////////

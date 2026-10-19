@@ -55,3 +55,12 @@ SnapshotParameter SnapshotParameter::custom(const string& description, const str
 }
 
 //////////////////////////////////////////////////////////////////////
+
+SnapshotParameter SnapshotParameter::categorical() const
+{
+    SnapshotParameter result = *this;
+    result._kind = QuantityKind::Categorical;
+    return result;
+}
+
+//////////////////////////////////////////////////////////////////////

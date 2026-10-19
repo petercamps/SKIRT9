@@ -7,6 +7,7 @@
 #define SNAPSHOTPARAMETER_HPP
 
 #include "Basics.hpp"
+#include "QuantityKind.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -19,7 +20,13 @@
     The SnapshotParameter class offers specific support for a number of frequently-used snapshot
     parameters, so that these can be discovered and, for example, used for probing. Examples
     include metallicity and age. Use one of the factory functions to construct a SnapshotParameter
-    instance. */
+    instance.
+
+    Each SnapshotParameter instance also has a kind, which determines how the values of
+    overlapping entities in the snapshot, and of several samples in a spatial cell, are combined
+    (see the QuantityKind enumeration). A parameter is intensive, unless it has been marked as
+    categorical through the categorical() function. There is no way to mark a parameter as
+    extensive, because a material mix cannot request an extensive quantity. */
 class SnapshotParameter
 {
     // ================== Data types ==================
@@ -65,6 +72,10 @@ public:
     static SnapshotParameter custom(const string& description, const string& quantity = string(),
                                     const string& defaultUnit = string());
 
+    /** This function returns a copy of this snapshot parameter that is marked as categorical, for
+        a parameter that represents a label or an index, such as the index of a dust mix. */
+    SnapshotParameter categorical() const;
+
     // ================== Querying ==================
 
 public:
@@ -83,6 +94,10 @@ public:
         input file does not contain unit information for it. */
     const string& defaultUnit() const { return _defaultUnit; }
 
+    /** This function returns the kind of the snapshot parameter, which is QuantityKind::Intensive
+        unless the parameter has been marked as categorical. */
+    QuantityKind kind() const { return _kind; }
+
     // ================== Data Members ==================
 
 private:
@@ -90,6 +105,7 @@ private:
     string _description;
     string _quantity;
     string _defaultUnit;
+    QuantityKind _kind{QuantityKind::Intensive};
 };
 
 ////////////////////////////////////////////////////////////////////

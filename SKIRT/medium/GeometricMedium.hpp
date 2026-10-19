@@ -120,6 +120,10 @@ protected:
     /** This function returns false because geometric media do not define custom parameters. */
     bool hasParameters() const override;
 
+    /** This function returns an empty list because geometric media do not define custom
+        parameters. */
+    vector<SnapshotParameter> parameterInfo() const override;
+
     /** This function resizes the specified array to zero length because a geometric medium does
         not provide custom input model parameters. */
     void parameters(Position bfr, Array& params) const override;

@@ -125,6 +125,13 @@ bool GeometricMedium::hasParameters() const
 
 ////////////////////////////////////////////////////////////////////
 
+vector<SnapshotParameter> GeometricMedium::parameterInfo() const
+{
+    return vector<SnapshotParameter>();
+}
+
+////////////////////////////////////////////////////////////////////
+
 void GeometricMedium::parameters(Position /*bfr*/, Array& params) const
 {
     params.resize(0);
