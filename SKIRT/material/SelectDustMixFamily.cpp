@@ -4,6 +4,28 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "SelectDustMixFamily.hpp"
+#include "FatalError.hpp"
+
+////////////////////////////////////////////////////////////////////
+
+void SelectDustMixFamily::setupSelfAfter()
+{
+    MaterialMixFamily::setupSelfAfter();
+
+    auto capabilities = _dustMixes[0]->capabilities();
+    int numMixes = _dustMixes.size();
+    for (int index = 1; index != numMixes; ++index)
+        if (_dustMixes[index]->capabilities() != capabilities)
+            throw FATALERROR("The dust mix with index " + std::to_string(index)
+                             + " in the SelectDustMixFamily has other capabilities than the dust mix with index 0");
+}
+
+////////////////////////////////////////////////////////////////////
+
+SelectDustMixFamily::Capabilities SelectDustMixFamily::capabilities() const
+{
+    return _dustMixes[0]->capabilities();
+}
 
 ////////////////////////////////////////////////////////////////////
 

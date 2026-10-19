@@ -124,6 +124,10 @@ public:
         position. If false, the same object is always returned. */
     bool hasVariableMix() const override;
 
+    /** This function returns the capabilities of the configured material mix family if the \em
+        importVariableMixParams flag is enabled, and of the configured material mix otherwise. */
+    MaterialMixProvider::Capabilities capabilities() const override;
+
     /** This function returns true if the \em importVelocity flag is enabled for the medium. */
     bool hasVelocity() const override;
 

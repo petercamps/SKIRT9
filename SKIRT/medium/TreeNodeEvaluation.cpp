@@ -20,7 +20,7 @@ TreeNodeEvaluation::TreeNodeEvaluation(const MediumSystem* ms, Random* random, i
         for (auto medium : _media)
         {
             _mibv.push_back(medium->interface<MassInBoxInterface>(0, 0, false));
-            _dustv.push_back(medium->mix()->materialType() == MaterialMix::MaterialType::Dust);
+            _dustv.push_back(medium->capabilities().materialType == MaterialMix::MaterialType::Dust);
         }
     }
     int numMedia = _media.size();

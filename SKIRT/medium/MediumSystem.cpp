@@ -21,6 +21,7 @@
 #include "Random.hpp"
 #include "ShortArray.hpp"
 #include "StringUtils.hpp"
+#include <unordered_set>
 
 ////////////////////////////////////////////////////////////////////
 
@@ -200,7 +201,7 @@ void MediumSystem::setupSelfBefore()
     int numMedia = _media.size();
     for (int h = 0; h != numMedia; ++h)
     {
-        switch (_media[h]->mix()->materialType())
+        switch (_media[h]->capabilities().materialType)
         {
             case MaterialMix::MaterialType::Dust: _dust_hv.push_back(h); break;
             case MaterialMix::MaterialType::Gas: _gas_hv.push_back(h); break;
@@ -275,6 +276,28 @@ void MediumSystem::setupSelfAfter()
         {
             Position bfr = _grid->centralPositionInCell(m);
             for (int h = 0; h != _numMedia; ++h) _mixv[m * _numMedia + h] = _media[h]->mix(bfr);
+        }
+
+        // verify that each distinct material mix of a medium component with a variable mix has the capabilities
+        // of the medium component and the specific state variables of its representative mix, which determine
+        // the configuration and the layout of the medium state
+        for (int h = 0; h != _numMedia; ++h)
+        {
+            if (!_media[h]->hasVariableMix()) continue;
+            auto capabilities = _media[h]->capabilities();
+            auto variables = _media[h]->mix()->specificStateVariableInfo();
+            std::unordered_set<const MaterialMix*> verified;
+            for (int m = 0; m != _numCells; ++m)
+            {
+                const MaterialMix* mix = _mixv[m * _numMedia + h];
+                if (!verified.insert(mix).second) continue;
+                if (mix->capabilities() != capabilities)
+                    throw FATALERROR("A material mix of medium component " + std::to_string(h)
+                                     + " has other capabilities than the medium component");
+                if (mix->specificStateVariableInfo() != variables)
+                    throw FATALERROR("A material mix of medium component " + std::to_string(h)
+                                     + " has other specific state variables than the representative mix");
+            }
         }
     }
     else

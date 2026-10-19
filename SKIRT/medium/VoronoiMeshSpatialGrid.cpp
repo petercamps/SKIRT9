@@ -87,7 +87,7 @@ void VoronoiMeshSpatialGrid::setupSelfBefore()
             vector<double> weights;
             auto ms = find<MediumSystem>();
             for (auto medium : ms->media())
-                if (medium->mix()->isDust()) media.push_back(medium);
+                if (medium->capabilities().materialType == MaterialMix::MaterialType::Dust) media.push_back(medium);
             for (auto medium : media) weights.push_back(medium->mass());
             _mesh =
                 new VoronoiMeshSnapshot(this, extent(), sampleMedia(media, weights, extent(), _numSites), _relaxSites);
@@ -100,7 +100,8 @@ void VoronoiMeshSpatialGrid::setupSelfBefore()
             vector<double> weights;
             auto ms = find<MediumSystem>();
             for (auto medium : ms->media())
-                if (medium->mix()->isElectrons()) media.push_back(medium);
+                if (medium->capabilities().materialType == MaterialMix::MaterialType::Electrons)
+                    media.push_back(medium);
             for (auto medium : media) weights.push_back(medium->number());
             _mesh =
                 new VoronoiMeshSnapshot(this, extent(), sampleMedia(media, weights, extent(), _numSites), _relaxSites);
@@ -113,7 +114,7 @@ void VoronoiMeshSpatialGrid::setupSelfBefore()
             vector<double> weights;
             auto ms = find<MediumSystem>();
             for (auto medium : ms->media())
-                if (medium->mix()->isGas()) media.push_back(medium);
+                if (medium->capabilities().materialType == MaterialMix::MaterialType::Gas) media.push_back(medium);
             for (auto medium : media) weights.push_back(medium->number());
             _mesh =
                 new VoronoiMeshSnapshot(this, extent(), sampleMedia(media, weights, extent(), _numSites), _relaxSites);

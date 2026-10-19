@@ -7,6 +7,7 @@
 #define MEDIUM_HPP
 
 #include "Array.hpp"
+#include "MaterialMixProvider.hpp"
 #include "Position.hpp"
 #include "SimulationItem.hpp"
 class MaterialMix;
@@ -86,6 +87,13 @@ public:
         MaterialMix object depending on the specified position, or false when the same object is
         always returned. */
     virtual bool hasVariableMix() const = 0;
+
+    /** This function returns the capabilities of the material mixes that may be returned by the
+        mix(bfr) function for this medium, which are the same for all positions. It may be called
+        before setup of the receiving medium has completed, and it does not need a material mix
+        for a medium configured with a material mix family. See the MaterialMixProvider class for
+        more information. */
+    virtual MaterialMixProvider::Capabilities capabilities() const = 0;
 
     /** This function returns true if this medium may have a nonzero bulk velocity for some
         positions. It may be called before setup of the receiving medium has completed. */

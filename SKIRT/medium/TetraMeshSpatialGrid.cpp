@@ -285,7 +285,7 @@ void TetraMeshSpatialGrid::setupSelfBefore()
             vector<double> weights;
             auto ms = find<MediumSystem>();
             for (auto medium : ms->media())
-                if (medium->mix()->isDust()) media.push_back(medium);
+                if (medium->capabilities().materialType == MaterialMix::MaterialType::Dust) media.push_back(medium);
             for (auto medium : media) weights.push_back(medium->mass());
             _vertices = sampleMedia(media, weights, extent(), _numSamples);
             break;
@@ -297,7 +297,8 @@ void TetraMeshSpatialGrid::setupSelfBefore()
             vector<double> weights;
             auto ms = find<MediumSystem>();
             for (auto medium : ms->media())
-                if (medium->mix()->isElectrons()) media.push_back(medium);
+                if (medium->capabilities().materialType == MaterialMix::MaterialType::Electrons)
+                    media.push_back(medium);
             for (auto medium : media) weights.push_back(medium->number());
             _vertices = sampleMedia(media, weights, extent(), _numSamples);
             break;
@@ -309,7 +310,7 @@ void TetraMeshSpatialGrid::setupSelfBefore()
             vector<double> weights;
             auto ms = find<MediumSystem>();
             for (auto medium : ms->media())
-                if (medium->mix()->isGas()) media.push_back(medium);
+                if (medium->capabilities().materialType == MaterialMix::MaterialType::Gas) media.push_back(medium);
             for (auto medium : media) weights.push_back(medium->number());
             _vertices = sampleMedia(media, weights, extent(), _numSamples);
             break;

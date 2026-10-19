@@ -85,6 +85,9 @@ protected:
         throughout its spatial domain. */
     bool hasVariableMix() const override;
 
+    /** This function returns the capabilities of the material mix of the medium. */
+    MaterialMixProvider::Capabilities capabilities() const override;
+
     /** This function returns true if the bulk velocity of the medium is nonzero. */
     bool hasVelocity() const override;
 

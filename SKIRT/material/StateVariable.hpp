@@ -99,6 +99,18 @@ public:
         scientific notation, and 'g' for the most concise 'f' or 'e'. */
     char format() const { return _format; }
 
+    /** This function returns true if all fields of this state variable descriptor are equal to
+        those of the other descriptor, and false otherwise. */
+    bool operator==(const StateVariable& other) const
+    {
+        return _identifier == other._identifier && _customIndex == other._customIndex
+               && _description == other._description && _quantity == other._quantity && _format == other._format;
+    }
+
+    /** This function returns true if some field of this state variable descriptor differs from the
+        one of the other descriptor, and false otherwise. */
+    bool operator!=(const StateVariable& other) const { return !(*this == other); }
+
 private:
     Identifier _identifier;
     int _customIndex;

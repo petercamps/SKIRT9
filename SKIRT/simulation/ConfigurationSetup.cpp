@@ -108,7 +108,7 @@ void ConfigurationSetup::setupSelfBefore()
 
     // check for negative extinction, which requires explicit absorption
     for (auto medium : ms->media())
-        if (medium->mix()->hasNegativeExtinction()) _hasNegativeExtinction = true;
+        if (medium->capabilities().negativeExtinction) _hasNegativeExtinction = true;
 
     // retrieve resonant line scattering options
     if (simulationMode == SimulationMode::ResonanceExtinction)
@@ -213,7 +213,7 @@ void ConfigurationSetup::setupSelfBefore()
         _hasDynamicStateRecipes = ms->dynamicStateOptions() && !ms->dynamicStateOptions()->recipes().empty();
         for (auto medium : ms->media())
         {
-            auto type = medium->mix()->hasDynamicMediumState();
+            auto type = medium->capabilities().dynamicMediumState;
             if (type == MaterialMix::DynamicStateType::Primary
                 || (_hasMergedIterations && type == MaterialMix::DynamicStateType::PrimaryIfMergedIterations))
                 _hasPrimaryDynamicStateMedia = true;
@@ -231,7 +231,7 @@ void ConfigurationSetup::setupSelfBefore()
     {
         for (auto medium : ms->media())
         {
-            auto type = medium->mix()->hasDynamicMediumState();
+            auto type = medium->capabilities().dynamicMediumState;
             if (type == MaterialMix::DynamicStateType::Secondary
                 || (!_hasMergedIterations && type == MaterialMix::DynamicStateType::PrimaryIfMergedIterations))
                 _hasSecondaryDynamicStateMedia = true;
@@ -257,8 +257,12 @@ void ConfigurationSetup::setupSelfBefore()
         {
             // verify that all dust mixes are multi-grain when requesting stochastic heating
             for (auto medium : ms->media())
-                if (medium->mix()->isDust() && !medium->mix()->hasStochasticDustEmission())
+            {
+                auto capabilities = medium->capabilities();
+                if (capabilities.materialType == MaterialMix::MaterialType::Dust
+                    && !capabilities.stochasticDustEmission)
                     throw FATALERROR("When requesting stochastic heating, all dust mixes must be multi-grain");
+            }
             _hasStochasticDustEmission = true;
         }
         _includeHeatingByCMB = ms->dustEmissionOptions()->includeHeatingByCMB();
@@ -293,7 +297,7 @@ void ConfigurationSetup::setupSelfBefore()
     // verify that there is a medium component with resonant line scattering if required, and none if not required
     int numResonantMedia = 0;
     for (auto medium : ms->media())
-        if (medium->mix()->hasResonantScattering()) numResonantMedia++;
+        if (medium->capabilities().resonantScattering) numResonantMedia++;
     if (_hasResonantScattering && numResonantMedia < 1)
         throw FATALERROR(
             "Simulation mode ResonanceExtinction requires a medium component with resonant line scattering");
@@ -325,7 +329,7 @@ void ConfigurationSetup::setupSelfBefore()
     // check for dependencies on extra specific state variables
     bool hasExtraSpecificState = false;
     for (auto medium : ms->media())
-        if (medium->mix()->hasExtraSpecificState()) hasExtraSpecificState = true;
+        if (medium->capabilities().extraSpecificState) hasExtraSpecificState = true;
 
     // set the combined medium criteria
     _hasConstantPerceivedWavelength = !_hasMovingMedia && !_hubbleExpansionRate;
@@ -336,8 +340,9 @@ void ConfigurationSetup::setupSelfBefore()
     // check for scattering dispersion and for emulating secondary emission
     for (auto medium : ms->media())
     {
-        if (medium->mix()->hasScatteringDispersion()) _hasScatteringDispersion = true;
-        if (medium->mix()->scatteringEmulatesSecondaryEmission()) _scatteringEmulatesSecondaryEmission = true;
+        auto capabilities = medium->capabilities();
+        if (capabilities.scatteringDispersion) _hasScatteringDispersion = true;
+        if (capabilities.scatteringEmulatesSecondaryEmission) _scatteringEmulatesSecondaryEmission = true;
     }
     _needIndividualPeelOff = _hasScatteringDispersion | _scatteringEmulatesSecondaryEmission;
 
@@ -355,7 +360,7 @@ void ConfigurationSetup::setupSelfBefore()
     // check for polarization
     int numPolarization = 0;
     for (auto medium : ms->media())
-        if (medium->mix()->hasPolarizedScattering()) numPolarization++;
+        if (medium->capabilities().polarizedScattering) numPolarization++;
     if (numPolarization != 0 && numPolarization != numMedia)
         throw FATALERROR("All media must consistently support polarization, or not support polarization");
     _hasPolarization = numPolarization != 0;
@@ -363,8 +368,11 @@ void ConfigurationSetup::setupSelfBefore()
     // check for polarization by spheroidal particles
     if (_hasPolarization)
         for (auto medium : ms->media())
-            if (medium->mix()->hasPolarizedAbsorption() || medium->mix()->hasPolarizedEmission())
+        {
+            auto capabilities = medium->capabilities();
+            if (capabilities.polarizedAbsorption || capabilities.polarizedEmission)
                 _hasSpheroidalPolarization = true;  // this flag may need to be split over absorption and emission
+        }
 
     // spheroidal particles require a magnetic field
     if (_hasSpheroidalPolarization && _magneticFieldMediumIndex < 0)

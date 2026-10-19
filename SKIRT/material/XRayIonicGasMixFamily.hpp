@@ -68,6 +68,14 @@ public:
     //====================== Other functions ======================
 
 public:
+    /** This function returns the capabilities shared by all members of the family, derived from
+        the properties of the family in the same way as the XRayIonicGasMix class derives them from
+        its corresponding properties: a gas with scattering dispersion that emulates secondary
+        emission, with polarized scattering if the \em electronScattering property is set to \c
+        FreeWithPolarization or if the \em resonantScattering property is set to true, and with
+        resonant scattering if the latter property is set to true. */
+    Capabilities capabilities() const override;
+
     /** This function returns the number and type of parameters used by family. For this class,
         this is all the relative abundances for the user-specified ions. */
     vector<SnapshotParameter> parameterInfo() const override;
@@ -81,7 +89,8 @@ public:
     const MaterialMix* mix(double Z, double T, const Array& parameters) override;
 
     /** This function returns (a pointer to) the default XRayIonicGasMix, corresponding to
-        the parameters all set to zero. */
+        the parameters all set to zero. The default mix is created during setup, so this function
+        throws a fatal error if it is called before the family has been set up. */
     const MaterialMix* mix() override;
 
     //======================== Data Members ========================

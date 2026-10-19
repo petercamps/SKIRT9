@@ -45,7 +45,7 @@ void ImportedMedium::setupSelfAfter()
     if (!parameterInfo.empty()) _snapshot->importParameters(parameterInfo);
 
     // set the density policy
-    if (mix()->isDust())
+    if (capabilities().materialType == MaterialMix::MaterialType::Dust)
     {
         // for dust, use temperature cutoff and metallicity multiplier
         _snapshot->setMassDensityPolicy(_massFraction, _importTemperature ? _maxTemperature : 0., _importMetallicity);
@@ -101,6 +101,13 @@ const MaterialMix* ImportedMedium::mix() const
         return _materialMixFamily->mix();
     else
         return _materialMix;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+MaterialMixProvider::Capabilities ImportedMedium::capabilities() const
+{
+    return _importVariableMixParams ? _materialMixFamily->capabilities() : _materialMix->capabilities();
 }
 
 //////////////////////////////////////////////////////////////////////

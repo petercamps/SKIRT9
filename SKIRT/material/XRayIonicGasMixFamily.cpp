@@ -46,6 +46,20 @@ void XRayIonicGasMixFamily::setupSelfBefore()
 
 ////////////////////////////////////////////////////////////////////
 
+XRayIonicGasMixFamily::Capabilities XRayIonicGasMixFamily::capabilities() const
+{
+    Capabilities capabilities;
+    capabilities.materialType = MaterialType::Gas;
+    capabilities.polarizedScattering =
+        electronScattering() == ElectronScattering::FreeWithPolarization || resonantScattering();
+    capabilities.resonantScattering = resonantScattering();
+    capabilities.scatteringDispersion = true;
+    capabilities.scatteringEmulatesSecondaryEmission = true;
+    return capabilities;
+}
+
+////////////////////////////////////////////////////////////////////
+
 vector<SnapshotParameter> XRayIonicGasMixFamily::parameterInfo() const
 {
     vector<SnapshotParameter> descriptors;
@@ -76,9 +90,8 @@ const MaterialMix* XRayIonicGasMixFamily::mix(double /*Z*/, double T, const Arra
 
 const MaterialMix* XRayIonicGasMixFamily::mix()
 {
-    // perform setup if not already done
-    setup();
-
+    // the default mix is created during setup; the capabilities() function does not need it
+    if (_mixes.empty()) throw FATALERROR("The default mix of an XRayIonicGasMixFamily is requested before setup");
     return _mixes[0];
 }
 

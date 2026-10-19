@@ -180,6 +180,7 @@
 #include "MarastonSEDFamily.hpp"
 #include "MassColumnMaterialNormalization.hpp"
 #include "MassMaterialNormalization.hpp"
+#include "MaterialMixProvider.hpp"
 #include "MeanFileDustMix.hpp"
 #include "MeanInterstellarDustMix.hpp"
 #include "MeanIvezicBenchmarkDustMix.hpp"
@@ -610,6 +611,7 @@ SimulationItemRegistry::SimulationItemRegistry(const string& version, const stri
     ItemRegistry::add<NumberColumnMaterialNormalization>();
 
     // material mixes
+    ItemRegistry::add<MaterialMixProvider>();
     ItemRegistry::add<MaterialMix>();
     ItemRegistry::add<DustMix>();
 

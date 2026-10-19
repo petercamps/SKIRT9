@@ -8,8 +8,7 @@
 
 #include "Array.hpp"
 #include "Direction.hpp"
-#include "SimulationItem.hpp"
-#include "SnapshotParameter.hpp"
+#include "MaterialMixProvider.hpp"
 #include "StateVariable.hpp"
 #include "UpdateStatus.hpp"
 class Configuration;
@@ -86,6 +85,13 @@ class DisjointWavelengthGrid;
     mixes support stochastic heating when enabled in the configuration), to enable or disable
     optimizations (e.g., when calculating optical depth), and to enable probing of the appropriate
     information (e.g., producing separate density cuts for dust, gas, and electrons).
+
+    The capabilities() function, declared in the MaterialMixProvider base class, gathers the
+    answers of all these functions in a single structure. It is implemented once in this class,
+    for all material mixes, so that a subclass overrides the individual functions only. The code
+    that establishes the configuration of a simulation asks each medium component for this
+    structure (see Medium::capabilities()), so that it does not need a material mix for a medium
+    component that is configured with a material mix family.
 
     Most MaterialMix subclasses implement no public functions outside of those defined in this base
     class. However, sometimes specific features require external access to additional information
@@ -192,9 +198,9 @@ class DisjointWavelengthGrid;
     equilibrium conditions. Other materials may return a temperature determined based on the
     radiation field, the specific state, a default value, or zero if none of the above apply.
 */
-class MaterialMix : public SimulationItem
+class MaterialMix : public MaterialMixProvider
 {
-    ITEM_ABSTRACT(MaterialMix, SimulationItem, "a material mix")
+    ITEM_ABSTRACT(MaterialMix, MaterialMixProvider, "a material mix")
     ITEM_END()
 
     //============= Construction - Setup - Destruction =============
@@ -206,12 +212,9 @@ protected:
     //======== Material type =======
 
 public:
-    /** This enumeration lists the fundamental material types supported by the MaterialMix class
-        hierarchy. */
-    enum class MaterialType { Dust, Electrons, Gas };
-
     /** This function returns the fundamental material type represented by this material mix. See
-        the documentation of the MaterialMix class for more information. */
+        the documentation of the MaterialMix class for more information. The MaterialType
+        enumeration is defined in the MaterialMixProvider base class. */
     virtual MaterialType materialType() const = 0;
 
     /** This convenience function returns true if the fundamental material type represented by this
@@ -290,24 +293,11 @@ public:
         scattering interaction. The default implementation in this base class returns false. */
     virtual bool scatteringEmulatesSecondaryEmission() const;
 
-    /** This enumeration is used to indicate whether a dynamic medium state (DMS) update algorithm
-        is provided, and if so, when it should be executed:
-
-        - \c None: no DMS update algorithm is provided.
-
-        - \c Primary: the DMS update affects the opacity for primary emission (PDMS).
-
-        - \c Secondary: the DMS update affects the secondary emission only (SDMS).
-
-        - \c PrimaryIfMergedIterations: \c Primary if the simulation has merged iterations (\em
-        iterateSecondaryEmission and \em includePrimaryEmission are both true), and \c Secondary
-        otherwise. */
-    enum class DynamicStateType { None, Primary, Secondary, PrimaryIfMergedIterations };
-
     /** This function returns an enumeration indicating whether the material mix offers an
         algorithm to update its specific medium state, and if so, when the updateSpecificState()
         function should be called. Refer to the documentation of the MonteCarloSimulation class for
-        more information on dynamic \em medium \em state (DMS) support.
+        more information on dynamic \em medium \em state (DMS) support. The DynamicStateType
+        enumeration is defined in the MaterialMixProvider base class.
 
         The default implementation in this base class returns DynamicStateType::None. */
     virtual DynamicStateType hasDynamicMediumState() const;
@@ -321,6 +311,11 @@ public:
         emission at discrete wavelengths. The default implementation in this base class returns
         false. */
     virtual bool hasLineEmission() const;
+
+    /** This function returns the capabilities of this material mix, gathered from the material
+        type and capability functions listed above. Because these functions are virtual, a subclass
+        overrides them rather than this function. */
+    Capabilities capabilities() const final;
 
     //======== Medium state setup =======
 
@@ -336,7 +331,7 @@ public:
         initializeSpecificState() function. Consequently, it is not allowed for a material mix to
         request an additional metallicity and/or temperature parameter with the parameterInfo()
         function. */
-    virtual vector<SnapshotParameter> parameterInfo() const;
+    vector<SnapshotParameter> parameterInfo() const override;
 
     /** This function returns a list of StateVariable objects describing the specific state
         variables used by the receiving material mix. This allows the MediumSystem class to

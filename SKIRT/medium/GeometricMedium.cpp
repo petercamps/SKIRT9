@@ -41,6 +41,13 @@ const MaterialMix* GeometricMedium::mix() const
 
 ////////////////////////////////////////////////////////////////////
 
+MaterialMixProvider::Capabilities GeometricMedium::capabilities() const
+{
+    return materialMix()->capabilities();
+}
+
+////////////////////////////////////////////////////////////////////
+
 bool GeometricMedium::hasVariableMix() const
 {
     return false;

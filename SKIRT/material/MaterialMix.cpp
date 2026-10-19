@@ -12,7 +12,7 @@
 
 void MaterialMix::setupSelfBefore()
 {
-    SimulationItem::setupSelfBefore();
+    MaterialMixProvider::setupSelfBefore();
 
     _random = find<Random>();
     _config = find<Configuration>();
@@ -100,6 +100,27 @@ bool MaterialMix::hasContinuumEmission() const
 bool MaterialMix::hasLineEmission() const
 {
     return false;
+}
+
+////////////////////////////////////////////////////////////////////
+
+MaterialMix::Capabilities MaterialMix::capabilities() const
+{
+    Capabilities capabilities;
+    capabilities.materialType = materialType();
+    capabilities.polarizedScattering = hasPolarizedScattering();
+    capabilities.polarizedAbsorption = hasPolarizedAbsorption();
+    capabilities.polarizedEmission = hasPolarizedEmission();
+    capabilities.resonantScattering = hasResonantScattering();
+    capabilities.negativeExtinction = hasNegativeExtinction();
+    capabilities.stochasticDustEmission = hasStochasticDustEmission();
+    capabilities.extraSpecificState = hasExtraSpecificState();
+    capabilities.scatteringDispersion = hasScatteringDispersion();
+    capabilities.scatteringEmulatesSecondaryEmission = scatteringEmulatesSecondaryEmission();
+    capabilities.continuumEmission = hasContinuumEmission();
+    capabilities.lineEmission = hasLineEmission();
+    capabilities.dynamicMediumState = hasDynamicMediumState();
+    return capabilities;
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -16,7 +16,8 @@
     user-configurable list of dust mixes representing the family. The family requires a single
     parameter value to select a family member, corresponding to the zero-based index in the
     configured list of dust mixes. The floating point parameter value is rounded to the nearest
-    integer and subsequently clipped to be in range. */
+    integer and subsequently clipped to be in range. All dust mixes in the list must have the same
+    capabilities (see the MaterialMixProvider class). */
 class SelectDustMixFamily : public MaterialMixFamily
 {
     ITEM_CONCRETE(SelectDustMixFamily, MaterialMixFamily, "a family of dust mixes specified in the configuration")
@@ -26,9 +27,20 @@ class SelectDustMixFamily : public MaterialMixFamily
 
     ITEM_END()
 
+    //============= Construction - Setup - Destruction =============
+
+protected:
+    /** This function verifies that all configured dust mixes have the same capabilities as the
+        first one, and throws a fatal error if this is not the case. */
+    void setupSelfAfter() override;
+
     //====================== Other functions =====================
 
 public:
+    /** This function returns the capabilities of the first dust mix in the configured list, which
+        are shared by all dust mixes in the list. */
+    Capabilities capabilities() const override;
+
     /** This function returns SnapshotParameter information for a single parameter corresponding to
         the zero-based index in the configured list of dust mixes. */
     vector<SnapshotParameter> parameterInfo() const override;
