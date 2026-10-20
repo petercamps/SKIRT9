@@ -74,6 +74,7 @@ public:
         continuumEmission | hasContinuumEmission()
         lineEmission | hasLineEmission()
         dynamicMediumState | hasDynamicMediumState()
+        stagedStateUpdate | hasStagedStateUpdate()
         */
     struct Capabilities
     {
@@ -90,6 +91,7 @@ public:
         bool continuumEmission{false};
         bool lineEmission{false};
         DynamicStateType dynamicMediumState{DynamicStateType::None};
+        bool stagedStateUpdate{false};
 
         /** This function returns true if all data members of this structure are equal to those of
             the other structure, and false otherwise. */

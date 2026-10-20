@@ -93,6 +93,10 @@ public:
         function should be called. */
     virtual DynamicStateType hasDynamicMediumState() const override;
 
+    /** This function returns true if the decorated material mix updates its dynamic medium state
+        in stages, and false otherwise. */
+    virtual bool hasStagedStateUpdate() const override;
+
     //======== Medium state setup =======
 
 public:
@@ -119,6 +123,18 @@ public:
         emission and/or extinction properties of the material. The function returns the update
         status as described for the UpdateStatus class. */
     virtual UpdateStatus updateSpecificState(MaterialState* state, const Array& Jv) const override;
+
+    /** This function forwards stage 1 of a staged medium state update to the decorated material
+        mix. */
+    virtual UpdateStatus prepareSpecificStateUpdate(MaterialState* state, const Array& Jv) const override;
+
+    /** This function forwards stage 2 of a staged medium state update to the decorated material
+        mix. */
+    virtual void beginSpecificStateUpdate(const MediumState& state, int h) const override;
+
+    /** This function forwards stage 4 of a staged medium state update to the decorated material
+        mix. */
+    virtual void endSpecificStateUpdate(const MediumState& state, int h) const override;
 
     /** If the decorated material mix has a dynamic medium state, i.e. if the
         hasDynamicMediumState() function returns anything other than \c None, this function is

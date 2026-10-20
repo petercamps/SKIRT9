@@ -91,6 +91,13 @@ MaterialMix::DynamicStateType MaterialMix::hasDynamicMediumState() const
 
 ////////////////////////////////////////////////////////////////////
 
+bool MaterialMix::hasStagedStateUpdate() const
+{
+    return false;
+}
+
+////////////////////////////////////////////////////////////////////
+
 bool MaterialMix::hasContinuumEmission() const
 {
     return false;
@@ -121,6 +128,7 @@ MaterialMix::Capabilities MaterialMix::capabilities() const
     capabilities.continuumEmission = hasContinuumEmission();
     capabilities.lineEmission = hasLineEmission();
     capabilities.dynamicMediumState = hasDynamicMediumState();
+    capabilities.stagedStateUpdate = hasStagedStateUpdate();
     return capabilities;
 }
 
@@ -171,6 +179,21 @@ UpdateStatus MaterialMix::updateSpecificState(MaterialState* /*state*/, const Ar
 {
     throw FATALERROR("This function implementation should never be called");
 }
+
+////////////////////////////////////////////////////////////////////
+
+UpdateStatus MaterialMix::prepareSpecificStateUpdate(MaterialState* /*state*/, const Array& /*Jv*/) const
+{
+    throw FATALERROR("This function implementation should never be called");
+}
+
+////////////////////////////////////////////////////////////////////
+
+void MaterialMix::beginSpecificStateUpdate(const MediumState& /*state*/, int /*h*/) const {}
+
+////////////////////////////////////////////////////////////////////
+
+void MaterialMix::endSpecificStateUpdate(const MediumState& /*state*/, int /*h*/) const {}
 
 ////////////////////////////////////////////////////////////////////
 

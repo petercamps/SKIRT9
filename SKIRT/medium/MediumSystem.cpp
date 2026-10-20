@@ -1601,21 +1601,57 @@ bool MediumSystem::updateDynamicStateMedia(bool primary)
 {
     auto log = find<Log>();
     auto parfac = find<ParallelFactory>();
+    const vector<int>& hv = primary ? _pdms_hv : _sdms_hv;
+
+    // determine the medium components that update their state in stages
+    vector<int> stagedHv;
+    for (int h : hv)
+        if (_media[h]->capabilities().stagedStateUpdate) stagedHv.push_back(h);
+
+    // for these components, prepare the update of each cell (stage 1) in parallel, synchronize the prepared state
+    // between processes, and begin the update (stage 2) on each process
+    if (!stagedHv.empty())
+    {
+        std::vector<UpdateStatus> flags(_numCells);
+        log->info("Preparing medium state update for " + std::to_string(_numCells) + " cells...");
+        log->infoSetElapsed(_numCells);
+        parfac->parallelDistributed()->call(
+            _numCells, [this, log, &stagedHv, &flags](size_t firstIndex, size_t numIndices) {
+                while (numIndices)
+                {
+                    size_t currentChunkSize = min(logProgressChunkSize, numIndices);
+                    for (size_t m = firstIndex; m != firstIndex + currentChunkSize; ++m)
+                    {
+                        const Array& Jv = meanIntensity(m);
+                        for (int h : stagedHv)
+                        {
+                            MaterialState mst(_state, m, h);
+                            flags[m].update(mix(m, h)->prepareSpecificStateUpdate(&mst, Jv));
+                        }
+                    }
+                    log->infoIfElapsed("Prepared medium state update: ", currentChunkSize);
+                    firstIndex += currentChunkSize;
+                    numIndices -= currentChunkSize;
+                }
+            });
+        _state.synchronize(flags);
+        for (int h : stagedHv) mix(0, h)->beginSpecificStateUpdate(_state, h);
+    }
 
     // update status for each cell
     std::vector<UpdateStatus> flags(_numCells);
 
-    // loop over the spatial cells in parallel
+    // loop over the spatial cells in parallel (stage 3 for the components that update their state in stages)
     log->info("Updating medium state for " + std::to_string(_numCells) + " cells...");
     log->infoSetElapsed(_numCells);
-    parfac->parallelDistributed()->call(_numCells, [this, primary, log, &flags](size_t firstIndex, size_t numIndices) {
+    parfac->parallelDistributed()->call(_numCells, [this, &hv, log, &flags](size_t firstIndex, size_t numIndices) {
         while (numIndices)
         {
             size_t currentChunkSize = min(logProgressChunkSize, numIndices);
             for (size_t m = firstIndex; m != firstIndex + currentChunkSize; ++m)
             {
                 const Array& Jv = meanIntensity(m);
-                for (int h : (primary ? _pdms_hv : _sdms_hv))
+                for (int h : hv)
                 {
                     MaterialState mst(_state, m, h);
                     flags[m].update(mix(m, h)->updateSpecificState(&mst, Jv));
@@ -1637,12 +1673,15 @@ bool MediumSystem::updateDynamicStateMedia(bool primary)
         log->info("  Not converged: " + std::to_string(numNotConverged) + " out of " + std::to_string(_numCells) + " ("
                   + StringUtils::toString(100. * numNotConverged / _numCells, 'f', 2) + " %)");
 
+    // end the update (stage 4) on each process for the components that update their state in stages
+    for (int h : stagedHv) mix(0, h)->endSpecificStateUpdate(_state, h);
+
     // calculate the new current aggregate state
     _state.calculateAggregate();
 
     // collect convergence info from the material mixes
     bool converged = true;
-    for (int h : (primary ? _pdms_hv : _sdms_hv))
+    for (int h : hv)
     {
         MaterialState current(_state, _numCells, h);
         MaterialState previous(_state, _numCells + 1, h);

@@ -16,7 +16,7 @@ bool MaterialMixProvider::Capabilities::operator==(const Capabilities& other) co
            && scatteringDispersion == other.scatteringDispersion
            && scatteringEmulatesSecondaryEmission == other.scatteringEmulatesSecondaryEmission
            && continuumEmission == other.continuumEmission && lineEmission == other.lineEmission
-           && dynamicMediumState == other.dynamicMediumState;
+           && dynamicMediumState == other.dynamicMediumState && stagedStateUpdate == other.stagedStateUpdate;
 }
 
 ////////////////////////////////////////////////////////////////////

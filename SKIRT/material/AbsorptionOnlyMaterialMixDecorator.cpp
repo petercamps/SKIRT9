@@ -57,6 +57,13 @@ MaterialMix::DynamicStateType AbsorptionOnlyMaterialMixDecorator::hasDynamicMedi
 
 ////////////////////////////////////////////////////////////////////
 
+bool AbsorptionOnlyMaterialMixDecorator::hasStagedStateUpdate() const
+{
+    return materialMix()->hasStagedStateUpdate();
+}
+
+////////////////////////////////////////////////////////////////////
+
 vector<SnapshotParameter> AbsorptionOnlyMaterialMixDecorator::parameterInfo() const
 {
     return materialMix()->parameterInfo();
@@ -81,6 +88,27 @@ void AbsorptionOnlyMaterialMixDecorator::initializeSpecificState(MaterialState* 
 UpdateStatus AbsorptionOnlyMaterialMixDecorator::updateSpecificState(MaterialState* state, const Array& Jv) const
 {
     return materialMix()->updateSpecificState(state, Jv);
+}
+
+////////////////////////////////////////////////////////////////////
+
+UpdateStatus AbsorptionOnlyMaterialMixDecorator::prepareSpecificStateUpdate(MaterialState* state, const Array& Jv) const
+{
+    return materialMix()->prepareSpecificStateUpdate(state, Jv);
+}
+
+////////////////////////////////////////////////////////////////////
+
+void AbsorptionOnlyMaterialMixDecorator::beginSpecificStateUpdate(const MediumState& state, int h) const
+{
+    materialMix()->beginSpecificStateUpdate(state, h);
+}
+
+////////////////////////////////////////////////////////////////////
+
+void AbsorptionOnlyMaterialMixDecorator::endSpecificStateUpdate(const MediumState& state, int h) const
+{
+    materialMix()->endSpecificStateUpdate(state, h);
 }
 
 ////////////////////////////////////////////////////////////////////

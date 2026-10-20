@@ -303,6 +303,7 @@
 #include "TreeSpatialGridTopologyProbe.hpp"
 #include "TriaxialGeometryDecorator.hpp"
 #include "TrivialGasMix.hpp"
+#include "TrivialStagedGasMix.hpp"
 #include "TrustBenchmarkDustMix.hpp"
 #include "TrustGraphiteGrainComposition.hpp"
 #include "TrustNeutralPAHGrainComposition.hpp"
@@ -646,6 +647,7 @@ SimulationItemRegistry::SimulationItemRegistry(const string& version, const stri
     ItemRegistry::add<DiffuseIonizedGasMix>();
     ItemRegistry::add<LyaNeutralHydrogenGasMix>();
     ItemRegistry::add<TrivialGasMix>();
+    ItemRegistry::add<TrivialStagedGasMix>();
 
     ItemRegistry::add<AbsorptionOnlyMaterialMixDecorator>();
 

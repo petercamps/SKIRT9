@@ -12,6 +12,7 @@
 #include "UpdateStatus.hpp"
 class Configuration;
 class MaterialState;
+class MediumState;
 class StateVariableList;
 class PhotonPacket;
 class Random;
@@ -130,6 +131,23 @@ class DisjointWavelengthGrid;
     based on the radiation field calculated during that segment. The hasDynamicMediumState()
     function indicates if and when the state for this material mix should be updated, and the
     updateSpecificState() function actually performs such an update.
+
+    A material mix can also perform the update in four stages, as indicated by the
+    hasStagedStateUpdate() function. Stage 1, the prepareSpecificStateUpdate() function, is called
+    for each spatial cell in parallel, and may store in the specific state of the cell the
+    information needed by the next stage. After the medium state has been synchronized between
+    processes, stage 2, the beginSpecificStateUpdate() function, is called once on each process,
+    serially, with access to the state of all cells. Stage 3, the updateSpecificState() function,
+    is then called for each cell in parallel, as for any material mix with a dynamic medium state,
+    and after the next synchronization, stage 4, the endSpecificStateUpdate() function, is called
+    once on each process, serially. Because the state has been synchronized, all processes see the
+    same state in stages 2 and 4, and they arrive at the same results without communicating.
+    Stage 2 may store data for use by stage 3 in \c mutable data members of the material mix, and
+    stage 4 releases them. This is safe because stages 2 and 4 are serial, and stage 3 only reads
+    the data. The lifetime of such data is limited to a single update; anything that must survive
+    an update belongs in the medium state. Stage 2 may itself perform a parallel calculation
+    through the ParallelFactory, and communicate the results between processes through the
+    ProcessManager. The TrivialStagedGasMix class illustrates the protocol.
 
     <b>Low-level material properties functions</b>
 
@@ -308,6 +326,13 @@ public:
         The default implementation in this base class returns DynamicStateType::None. */
     virtual DynamicStateType hasDynamicMediumState() const;
 
+    /** This function returns true if this material mix updates its dynamic medium state in four
+        stages, as described in the class header, and false if it updates the state of each cell
+        through the updateSpecificState() function only. The function is relevant only if the
+        hasDynamicMediumState() function returns anything other than \c None. The default
+        implementation in this base class returns false. */
+    virtual bool hasStagedStateUpdate() const;
+
     /** This function returns true if this material mix supports secondary continuum emission, i.e.
         with an emission spectrum discretized over a wavelength grid with adjacent bins. The
         default implementation in this base class returns false. */
@@ -394,8 +419,47 @@ public:
 
         This function may be called in parallel across multiple threads and processes. It should
         not update any information outside the specific medium state of the given cell and medium
-        component. The default implementation in this base class throws a fatal error. */
+        component. For a material mix with a staged update, this function is stage 3 of the update,
+        and it may read the data prepared by the beginSpecificStateUpdate() function. The default
+        implementation in this base class throws a fatal error. */
     virtual UpdateStatus updateSpecificState(MaterialState* state, const Array& Jv) const;
+
+    /** If this material mix has a staged dynamic medium state update, i.e. if the
+        hasStagedStateUpdate() function returns true, this function is invoked for each spatial cell
+        as stage 1 of each update, before the updateSpecificState() function. Based on the
+        specified radiation field, if needed, the function prepares the update of the cell, and may
+        store in the specific state of the cell the information that stage 2 needs. The function
+        returns the update status as described for the UpdateStatus class; the state of the cells
+        that are marked as updated is synchronized between processes before stage 2.
+
+        This function may be called in parallel across multiple threads and processes. It should
+        not update any information outside the specific medium state of the given cell and medium
+        component. The default implementation in this base class throws a fatal error. */
+    virtual UpdateStatus prepareSpecificStateUpdate(MaterialState* state, const Array& Jv) const;
+
+    /** If this material mix has a staged dynamic medium state update, i.e. if the
+        hasStagedStateUpdate() function returns true, this function is invoked as stage 2 of each
+        update, after the prepareSpecificStateUpdate() function has been called for all spatial
+        cells and the medium state has been synchronized between processes. The function is called
+        once on each process, serially, with read access to the complete medium state; the \em h
+        argument specifies the index of the medium component configured with this material mix.
+        The function may store data for use by the updateSpecificState() function in \c mutable
+        data members, as described in the class header. For a medium component with a material
+        mix family, the function is invoked on the material mix of the first spatial cell. The
+        default implementation in this base class does nothing. */
+    virtual void beginSpecificStateUpdate(const MediumState& state, int h) const;
+
+    /** If this material mix has a staged dynamic medium state update, i.e. if the
+        hasStagedStateUpdate() function returns true, this function is invoked as stage 4 of each
+        update, after the updateSpecificState() function has been called for all spatial cells and
+        the medium state has been synchronized between processes, and before the
+        isSpecificStateConverged() function. The function is called once on each process, serially,
+        with read access to the complete medium state; the \em h argument specifies the index of
+        the medium component configured with this material mix. The function should release any
+        data stored by the beginSpecificStateUpdate() function. For a medium component with a
+        material mix family, the function is invoked on the material mix of the first spatial cell.
+        The default implementation in this base class does nothing. */
+    virtual void endSpecificStateUpdate(const MediumState& state, int h) const;
 
     /** If this material mix has a dynamic medium state, i.e. if the hasDynamicMediumState()
         function returns anything other than \c None, this function is invoked (once) \em after

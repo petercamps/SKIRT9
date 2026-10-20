@@ -215,6 +215,9 @@ public:
     //============= Querying =============
 
 public:
+    /** This function returns the number of spatial cells, not including any aggregate cells. */
+    int numCells() const { return _numCells; }
+
     /** This function returns the volume \f$V\f$ of the spatial cell with index \f$m\f$. */
     double volume(int m) const { return _data[_numVars * m + _off_volu]; }
 

@@ -820,7 +820,14 @@ private:
         value of the specified flag. The function returns true if all updates have converged, and
         false otherwise. It assumes that the radiation field has been calculated and that at least
         one medium component in the simulation supports a dynamic medium state of the requested
-        type. */
+        type.
+
+        For the medium components whose material mix updates its state in stages (see the
+        MaterialMix class), the function first calls stage 1 for each cell in parallel, synchronizes
+        the state between processes, and calls stage 2 on each process. It then calls the per-cell
+        update (stage 3) for all components in parallel, as for any material mix with a dynamic
+        medium state, synchronizes the state, and calls stage 4 on each process. Finally, it
+        calculates the aggregate state and asks each component whether its state has converged. */
     bool updateDynamicStateMedia(bool primary);
 
 public:
