@@ -8,6 +8,7 @@
 
 #include "EmittingGasMix.hpp"
 #include "GasLineEmission.hpp"
+#include "StateVariableList.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -639,12 +640,12 @@ public:
         partners, and for the turbulence velocity, in that order. */
     vector<SnapshotParameter> parameterInfo() const override;
 
-    /** This function returns a list of StateVariable objects describing the specific state
-        variables used by the receiving material mix. For this class, the function returns a list
-        containing descriptors for the properties defined in the input model and for a number of
-        variables to hold the level populations derived from the radiation field and related
-        information. */
-    vector<StateVariable> specificStateVariableInfo() const override;
+    /** This function returns the list of specific state variables used by the receiving material
+        mix. For this class, the list contains descriptors for the properties defined in the input
+        model and for a number of variables to hold the level populations derived from the
+        radiation field and related information. The level populations and, if requested, the
+        mean intensities at the transition lines are array variables. */
+    const StateVariableList& specificStateVariableInfo() const override;
 
     /** This function initializes the specific state variables requested by this material mix
         through the specificStateVariableInfo() function except for the number density of the
@@ -763,11 +764,13 @@ private:
     vector<Array> _initLevelPops;  // initial level populations for each cell -- indices m, p
 
 private:
-    // Data members indicating custom variable indices; initialized in specificStateVariableInfo()
-    int _indexKineticTemperature{0};
-    int _indexFirstColPartnerDensity{0};
-    int _indexFirstLevelPopulation{0};
-    int _indexFirstMeanIntensity{0};
+    // the specific state variables and their handles; initialized in setupSelfBefore()
+    StateVariableList _variables;
+    StateScalar _temperature;                  // effective gas temperature, including unresolved turbulence
+    StateScalar _kineticTemperature;           // kinetic gas temperature
+    vector<StateScalar> _colPartnerDensities;  // number density of each collisional partner
+    StateArray _levelPopulations;              // population of each energy level
+    StateArray _meanIntensities;               // mean intensity at each transition line (if requested)
 };
 
 ////////////////////////////////////////////////////////////////////

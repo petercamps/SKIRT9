@@ -57,14 +57,6 @@ public:
         false otherwise. */
     bool hasNegativeExtinction() const override;
 
-    //======== Medium state setup =======
-
-public:
-    /** This function returns a list of StateVariable objects describing the specific state
-        variables used by the receiving material mix. For this class, the function returns just the
-        descriptor for the number density. */
-    vector<StateVariable> specificStateVariableInfo() const override;
-
     //======== Low-level material properties =======
 
 public:

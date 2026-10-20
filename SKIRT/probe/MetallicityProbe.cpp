@@ -7,6 +7,7 @@
 #include "Configuration.hpp"
 #include "MediumSystem.hpp"
 #include "ProbeFormBridge.hpp"
+#include "StateVariableList.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -22,15 +23,8 @@ void MetallicityProbe::probe()
         vector<std::pair<int, int>> hiv;
         for (int h : ms->gasMediumIndices())
         {
-            auto mix = ms->media()[h]->mix();
-            for (const auto& candidate : mix->specificStateVariableInfo())
-            {
-                if (candidate.name() == "Z")
-                {
-                    hiv.emplace_back(h, candidate.customIndex());
-                    break;
-                }
-            }
+            int i = ms->media()[h]->mix()->specificStateVariableInfo().index("Z");
+            if (i >= 0) hiv.emplace_back(h, i);
         }
 
         // construct a bridge

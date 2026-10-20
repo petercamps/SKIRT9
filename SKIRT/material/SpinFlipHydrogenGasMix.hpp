@@ -7,6 +7,7 @@
 #define SPINFLIPHYDROGENGASMIX_HPP
 
 #include "EmittingGasMix.hpp"
+#include "StateVariableList.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -246,13 +247,12 @@ public:
         density, in that order. */
     vector<SnapshotParameter> parameterInfo() const override;
 
-    /** This function returns a list of StateVariable objects describing the specific state
-        variables used by the receiving material mix. For this class, the function returns a list
-        containing descriptors for the properties defined in the input model (neutral hydrogen
-        number density, metallicity, temperature, and neutral hydrogen mass surface density) and
-        for a variable to hold the atomic hydrogen fraction derived from the radiation field when
-        the dynamic medium state is updated. */
-    vector<StateVariable> specificStateVariableInfo() const override;
+    /** This function returns the list of specific state variables used by the receiving material
+        mix. For this class, the function returns a list containing descriptors for the properties
+        defined in the input model (neutral hydrogen number density, metallicity, temperature, and
+        neutral hydrogen mass surface density) and for a variable to hold the atomic hydrogen
+        fraction derived from the radiation field when the dynamic medium state is updated. */
+    const StateVariableList& specificStateVariableInfo() const override;
 
     /** This function initializes the specific state variables requested by this material mix
         through the specificStateVariableInfo() function except for the number density. For this
@@ -335,6 +335,13 @@ public:
 
 private:
     int _indexUV{-1};  // index in simulation's RF WLG for the bin containing 1000 A
+
+    // the specific state variables and their handles - initialized during setup
+    StateVariableList _variables;
+    StateScalar _metallicity;
+    StateScalar _temperature;
+    StateScalar _neutralSurfaceDensity;
+    StateScalar _atomicFraction;
 };
 
 ////////////////////////////////////////////////////////////////////

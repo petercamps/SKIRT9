@@ -16,6 +16,7 @@
 #include "PhotonPacket.hpp"
 #include "ProcessManager.hpp"
 #include "Random.hpp"
+#include "StateVariableList.hpp"
 #include "StringUtils.hpp"
 #include "Units.hpp"
 #include "VelocityInterface.hpp"
@@ -41,14 +42,8 @@ double LineGasSecondarySource::prepareLuminosities()
 
     // determine whether the component's medium state has a temperature variable, i.e. a custom variable with
     // the standard name for the temperature, and remember its custom index
-    for (const StateVariable& variable : _mix->specificStateVariableInfo())
-    {
-        if (variable.name() == "T")
-        {
-            _hasTemperature = true;
-            _temperatureIndex = variable.customIndex();
-        }
-    }
+    _temperatureIndex = _mix->specificStateVariableInfo().index("T");
+    _hasTemperature = _temperatureIndex >= 0;
 
     // if so, also retrieve the particle masses corresponding to each line
     if (_hasTemperature) _masses = _mix->lineEmissionMasses();

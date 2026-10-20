@@ -20,6 +20,7 @@
 #include "ProcessManager.hpp"
 #include "Random.hpp"
 #include "ShortArray.hpp"
+#include "StateVariableList.hpp"
 #include "StringUtils.hpp"
 #include <unordered_set>
 
@@ -280,7 +281,7 @@ void MediumSystem::setupSelfAfter()
         {
             if (!_media[h]->hasVariableMix()) continue;
             auto capabilities = _media[h]->capabilities();
-            auto variables = _media[h]->mix()->specificStateVariableInfo();
+            const auto& variables = _media[h]->mix()->specificStateVariableInfo();
             std::unordered_set<const MaterialMix*> verified;
             for (int m = 0; m != _numCells; ++m)
             {

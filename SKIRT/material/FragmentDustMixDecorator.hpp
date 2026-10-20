@@ -7,6 +7,7 @@
 #define FRAGMENTDUSTMIXDECORATOR_HPP
 
 #include "MultiGrainDustMix.hpp"
+#include "StateVariableList.hpp"
 class DustMixFragment;
 
 ////////////////////////////////////////////////////////////////////
@@ -111,12 +112,15 @@ public:
         specificStateVariableInfo() and initializeSpecificState() functions. */
     vector<SnapshotParameter> parameterInfo() const override;
 
-    /** This function returns a list of StateVariable objects describing the specific state
-        variables used by this fragmented dust mix. Specifically, in addition to a description for
-        the overall number density, the function returns a custom state variable description for
-        each fragment corresponding to the weight factor for that fragment. For more information,
-        see the parameterInfo() and initializeSpecificState() functions. */
-    vector<StateVariable> specificStateVariableInfo() const override;
+    /** This function returns the list of specific state variables used by this fragmented dust
+        mix. Specifically, in addition to a description for the overall number density, the list
+        includes a custom state variable for each fragment corresponding to the weight factor for
+        that fragment, at custom index \f$f\f$ for fragment \f$f\f$, and, if dynamic densities are
+        enabled, a custom state variable for each fragment corresponding to its dynamic density
+        fraction, at custom index \f$N+f\f$, where \f$N\f$ is the number of fragments. Recipes that
+        adjust these variables, such as the DustDestructionRecipe, rely on this layout. For more
+        information, see the parameterInfo() and initializeSpecificState() functions. */
+    const StateVariableList& specificStateVariableInfo() const override;
 
     /** This function initializes the specific state variables requested by this fragmented dust
         mix through the specificStateVariableInfo() function except for the number density. If the
@@ -287,12 +291,26 @@ public:
         by the fragment with index \f$f\f$. */
     double populationGrainRadius(int f) const;
 
+    //======================== Private helpers ========================
+
+private:
+    /** This function returns the weight of the fragment with index \f$f\f$ in the specified
+        material state, i.e. its weight factor multiplied by its dynamic density fraction if
+        dynamic densities are enabled. */
+    double weight(const MaterialState* state, int f) const
+    {
+        return _hasDynamicDensities ? state->custom(f) * state->custom(_numFrags + f) : state->custom(f);
+    }
+
     //======================== Data Members ========================
 
 private:
     // list of fragments created in setupSelfAfter() and destructed automatically by being children
     vector<const DustMixFragment*> _fragments;
     int _numFrags{0};
+
+    // the specific state variables - initialized during setup
+    StateVariableList _variables;
 };
 
 ////////////////////////////////////////////////////////////////////

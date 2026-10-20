@@ -64,7 +64,7 @@ vector<SnapshotParameter> AbsorptionOnlyMaterialMixDecorator::parameterInfo() co
 
 ////////////////////////////////////////////////////////////////////
 
-vector<StateVariable> AbsorptionOnlyMaterialMixDecorator::specificStateVariableInfo() const
+const StateVariableList& AbsorptionOnlyMaterialMixDecorator::specificStateVariableInfo() const
 {
     return materialMix()->specificStateVariableInfo();
 }

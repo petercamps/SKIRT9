@@ -63,6 +63,14 @@ public:
         in the spatial cell. */
     double custom(int i) const { return _ms.custom(_m, _h, i); }
 
+    /** This function returns a read-only view on the \f$n\f$ consecutive custom state variables
+        starting at index \f$i\f$ of the medium component in the spatial cell. */
+    Span<const double> customs(int i, int n) const { return _ms.customs(_m, _h, i, n); }
+
+    /** This function returns a writable view on the \f$n\f$ consecutive custom state variables
+        starting at index \f$i\f$ of the medium component in the spatial cell. */
+    Span<double> customs(int i, int n) { return _ms.customs(_m, _h, i, n); }
+
     //======================== Data Members ========================
 
 private:

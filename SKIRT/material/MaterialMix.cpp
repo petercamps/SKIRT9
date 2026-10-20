@@ -7,6 +7,7 @@
 #include "Configuration.hpp"
 #include "FatalError.hpp"
 #include "Random.hpp"
+#include "StateVariableList.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -149,6 +150,15 @@ const MaterialMix* MaterialMix::mix(const Array& /*parameters*/)
 const MaterialMix* MaterialMix::mix()
 {
     return this;
+}
+
+////////////////////////////////////////////////////////////////////
+
+const StateVariableList& MaterialMix::specificStateVariableInfo() const
+{
+    // the list of a material mix without custom state variables holds just the number density
+    static const StateVariableList numberDensityOnly;
+    return numberDensityOnly;
 }
 
 ////////////////////////////////////////////////////////////////////

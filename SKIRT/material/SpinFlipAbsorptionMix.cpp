@@ -19,9 +19,15 @@ namespace
 
     // wavelength range outside of which we consider absorption to be zero (approximately 20.47 - 21.74 cm)
     constexpr Range absorptionRange(lambdaSF * (1. - 0.03), lambdaSF * (1. + 0.03));
+}
 
-    // index of the custom state variable holding the temperature
-    constexpr int TEMPERATURE = 0;
+////////////////////////////////////////////////////////////////////
+
+void SpinFlipAbsorptionMix::setupSelfBefore()
+{
+    MaterialMix::setupSelfBefore();
+
+    _temperature = _variables.add(StateVariable::temperature());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -47,9 +53,9 @@ vector<SnapshotParameter> SpinFlipAbsorptionMix::parameterInfo() const
 
 ////////////////////////////////////////////////////////////////////
 
-vector<StateVariable> SpinFlipAbsorptionMix::specificStateVariableInfo() const
+const StateVariableList& SpinFlipAbsorptionMix::specificStateVariableInfo() const
 {
-    return vector<StateVariable>{StateVariable::numberDensity(), StateVariable::temperature(TEMPERATURE)};
+    return _variables;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -62,7 +68,7 @@ void SpinFlipAbsorptionMix::initializeSpecificState(MaterialState* state, const 
         // use the imported value, or for a geometric medium, the default value
         // make sure the temperature is at least the local universe CMB temperature
         double temperature = params.size() ? params[0] : defaultTemperature();
-        state->setCustom(TEMPERATURE, max(Constants::Tcmb(), temperature));
+        _temperature(state) = max(Constants::Tcmb(), temperature);
     }
 }
 
@@ -119,7 +125,7 @@ double SpinFlipAbsorptionMix::opacityAbs(double lambda, const MaterialState* sta
     if (absorptionRange.contains(lambda))
     {
         double number = state->numberDensity();
-        if (number > 0.) return crossSection(lambda, state->custom(TEMPERATURE)) * number;
+        if (number > 0.) return crossSection(lambda, _temperature(state)) * number;
     }
     return 0.;
 }
@@ -143,7 +149,7 @@ double SpinFlipAbsorptionMix::opacityExt(double lambda, const MaterialState* sta
 
 double SpinFlipAbsorptionMix::indicativeTemperature(const MaterialState* state, const Array& /*Jv*/) const
 {
-    return state->custom(TEMPERATURE);
+    return _temperature(state);
 }
 
 ////////////////////////////////////////////////////////////////////

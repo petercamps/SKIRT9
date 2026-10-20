@@ -44,23 +44,23 @@ StateVariable StateVariable::numberDensity()
 
 //////////////////////////////////////////////////////////////////////
 
-StateVariable StateVariable::metallicity(int customIndex)
+StateVariable StateVariable::metallicity()
 {
-    return custom(customIndex, "metallicity", "").named("Z");
+    return custom("metallicity", "").named("Z");
 }
 
 //////////////////////////////////////////////////////////////////////
 
-StateVariable StateVariable::temperature(int customIndex)
+StateVariable StateVariable::temperature()
 {
-    return custom(customIndex, "temperature", "temperature").named("T");
+    return custom("temperature", "temperature").named("T");
 }
 
 //////////////////////////////////////////////////////////////////////
 
-StateVariable StateVariable::custom(int customIndex, const string& description, const string& quantity, char format)
+StateVariable StateVariable::custom(const string& description, const string& quantity, char format)
 {
-    return StateVariable(Identifier::Custom, customIndex, description, quantity, format);
+    return StateVariable(Identifier::Custom, 0, description, quantity, format);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -96,6 +96,25 @@ StateVariable StateVariable::extensive() const
     StateVariable result = *this;
     result._kind = QuantityKind::Extensive;
     return result;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+StateVariable StateVariable::array(int count) const
+{
+    if (_identifier != Identifier::Custom) throw FATALERROR("Only a custom state variable can be an array");
+    if (count < 0) throw FATALERROR("The number of elements of an array state variable cannot be negative");
+    StateVariable result = *this;
+    result._isArray = true;
+    result._count = count;
+    return result;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+string StateVariable::elementDescription(int k) const
+{
+    return _isArray ? _description + " " + std::to_string(k) : _description;
 }
 
 //////////////////////////////////////////////////////////////////////

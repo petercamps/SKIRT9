@@ -50,6 +50,22 @@ void FragmentDustMixDecorator::setupSelfAfter()
 
     _numFrags = _fragments.size();
     if (!_numFrags) throw FATALERROR("There are no fragments in the dust mix to be fragmented");
+
+    // assemble the specific state variables: the weight factors, followed by the dynamic density fractions, if any
+    for (int f = 0; f != _numFrags; ++f)
+    {
+        string description = "weight for dust mix fragment " + std::to_string(f) + " -- " + populationGrainType(f);
+        _variables.add(StateVariable::custom(description, string()));
+    }
+    if (hasDynamicDensities())
+    {
+        for (int f = 0; f != _numFrags; ++f)
+        {
+            string description =
+                "dynamic density fraction for dust mix fragment " + std::to_string(f) + " -- " + populationGrainType(f);
+            _variables.add(StateVariable::custom(description, string()));
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -103,26 +119,9 @@ vector<SnapshotParameter> FragmentDustMixDecorator::parameterInfo() const
 
 ////////////////////////////////////////////////////////////////////
 
-vector<StateVariable> FragmentDustMixDecorator::specificStateVariableInfo() const
+const StateVariableList& FragmentDustMixDecorator::specificStateVariableInfo() const
 {
-    vector<StateVariable> descriptors{StateVariable::numberDensity()};
-
-    for (int f = 0; f != _numFrags; ++f)
-    {
-        string description = "weight for dust mix fragment " + std::to_string(f) + " -- " + populationGrainType(f);
-        descriptors.emplace_back(StateVariable::custom(f, description, string()));
-    }
-
-    if (hasDynamicDensities())
-    {
-        for (int f = 0; f != _numFrags; ++f)
-        {
-            string description =
-                "dynamic density fraction for dust mix fragment " + std::to_string(f) + " -- " + populationGrainType(f);
-            descriptors.emplace_back(StateVariable::custom(_numFrags + f, description, string()));
-        }
-    }
-    return descriptors;
+    return _variables;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -180,15 +179,10 @@ double FragmentDustMixDecorator::asymmpar(double lambda) const
 
 ////////////////////////////////////////////////////////////////////
 
-// define macro for fragment weight combining initial weight and dynamic density fraction, if available
-#define WEIGHT(f) (_hasDynamicDensities ? state->custom(f) * state->custom(_numFrags + f) : state->custom(f))
-
-////////////////////////////////////////////////////////////////////
-
 double FragmentDustMixDecorator::opacityAbs(double lambda, const MaterialState* state, const PhotonPacket* pp) const
 {
     double opacity = 0.;
-    for (int f = 0; f != _numFrags; ++f) opacity += WEIGHT(f) * _fragments[f]->opacityAbs(lambda, state, pp);
+    for (int f = 0; f != _numFrags; ++f) opacity += weight(state, f) * _fragments[f]->opacityAbs(lambda, state, pp);
     return opacity;
 }
 
@@ -197,7 +191,7 @@ double FragmentDustMixDecorator::opacityAbs(double lambda, const MaterialState* 
 double FragmentDustMixDecorator::opacitySca(double lambda, const MaterialState* state, const PhotonPacket* pp) const
 {
     double opacity = 0.;
-    for (int f = 0; f != _numFrags; ++f) opacity += WEIGHT(f) * _fragments[f]->opacitySca(lambda, state, pp);
+    for (int f = 0; f != _numFrags; ++f) opacity += weight(state, f) * _fragments[f]->opacitySca(lambda, state, pp);
     return opacity;
 }
 
@@ -206,7 +200,7 @@ double FragmentDustMixDecorator::opacitySca(double lambda, const MaterialState* 
 double FragmentDustMixDecorator::opacityExt(double lambda, const MaterialState* state, const PhotonPacket* pp) const
 {
     double opacity = 0.;
-    for (int f = 0; f != _numFrags; ++f) opacity += WEIGHT(f) * _fragments[f]->opacityExt(lambda, state, pp);
+    for (int f = 0; f != _numFrags; ++f) opacity += weight(state, f) * _fragments[f]->opacityExt(lambda, state, pp);
     return opacity;
 }
 
@@ -221,7 +215,7 @@ bool FragmentDustMixDecorator::peeloffScattering(double& I, double& Q, double& U
     double sum = 0.;
     for (int f = 0; f != _numFrags; ++f)
     {
-        wv[f] = WEIGHT(f) * _fragments[f]->opacitySca(lambda, state, pp);
+        wv[f] = weight(state, f) * _fragments[f]->opacitySca(lambda, state, pp);
         sum += wv[f];
     }
 
@@ -248,8 +242,9 @@ void FragmentDustMixDecorator::performScattering(double lambda, const MaterialSt
 {
     // build the cumulative distribution corresponding to the scattering opacities for each fragment
     Array Xv;
-    NR::cdf(Xv, _numFrags,
-            [this, lambda, state, pp](int f) { return WEIGHT(f) * _fragments[f]->opacitySca(lambda, state, pp); });
+    NR::cdf(Xv, _numFrags, [this, lambda, state, pp](int f) {
+        return weight(state, f) * _fragments[f]->opacitySca(lambda, state, pp);
+    });
 
     // randomly select a fragment
     int f = NR::locateClip(Xv, random()->uniform());
@@ -276,8 +271,8 @@ Array FragmentDustMixDecorator::emissivity(const Array& Jv) const
 
 Array FragmentDustMixDecorator::emissionSpectrum(const MaterialState* state, const Array& Jv) const
 {
-    Array ev = WEIGHT(0) * _fragments[0]->emissivity(Jv);
-    for (int f = 1; f != _numFrags; ++f) ev += WEIGHT(f) * _fragments[f]->emissivity(Jv);
+    Array ev = weight(state, 0) * _fragments[0]->emissivity(Jv);
+    for (int f = 1; f != _numFrags; ++f) ev += weight(state, f) * _fragments[f]->emissivity(Jv);
     return state->numberDensity() * ev;
 }
 
@@ -290,7 +285,7 @@ double FragmentDustMixDecorator::indicativeTemperature(const MaterialState* stat
 
     for (int f = 0; f != _numFrags; ++f)
     {
-        double w = WEIGHT(f);
+        double w = weight(state, f);
         double T = _fragments[f]->indicativeTemperature(nullptr, Jv);  // material state is not used by dust mixes
         sumwT += w * T;
         sumw += w;
@@ -351,14 +346,14 @@ double FragmentDustMixDecorator::totalMass() const
 
 double FragmentDustMixDecorator::populationNumberDensity(int f, const MaterialState* state) const
 {
-    return WEIGHT(f) * state->numberDensity();
+    return weight(state, f) * state->numberDensity();
 }
 
 ////////////////////////////////////////////////////////////////////
 
 double FragmentDustMixDecorator::populationOpacityExt(int f, double lambda, const MaterialState* state) const
 {
-    return WEIGHT(f) * _fragments[f]->opacityExt(lambda, state, nullptr);
+    return weight(state, f) * _fragments[f]->opacityExt(lambda, state, nullptr);
 }
 
 ////////////////////////////////////////////////////////////////////

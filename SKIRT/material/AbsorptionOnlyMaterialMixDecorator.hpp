@@ -100,9 +100,9 @@ public:
         material mix as a list of SnapshotParameter objects. */
     virtual vector<SnapshotParameter> parameterInfo() const override;
 
-    /** This function returns a list of StateVariable objects describing the specific state
-        variables used by the decorated material mix. */
-    virtual vector<StateVariable> specificStateVariableInfo() const override;
+    /** This function returns the list of specific state variables used by the decorated material
+        mix. */
+    virtual const StateVariableList& specificStateVariableInfo() const override;
 
     /** This function initializes any specific state variables requested by the decorated material
         mix through the specificStateVariableInfo() function except for the number density. */

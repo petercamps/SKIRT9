@@ -6,6 +6,7 @@
 #include "MediumState.hpp"
 #include "FatalError.hpp"
 #include "ProcessManager.hpp"
+#include "StateVariableList.hpp"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -45,16 +46,10 @@ void MediumState::initCommonStateVariables(const vector<StateVariable>& variable
 
 //////////////////////////////////////////////////////////////////////
 
-void MediumState::initSpecificStateVariables(const vector<StateVariable>& variables)
+void MediumState::initSpecificStateVariables(const StateVariableList& variables)
 {
-    // verify that the names of the variables are unique
-    for (auto first = variables.begin(); first != variables.end(); ++first)
-        if (!first->name().empty())
-            for (auto second = first + 1; second != variables.end(); ++second)
-                if (second->name() == first->name())
-                    throw FATALERROR("The state variables of medium component " + std::to_string(_nextComponent)
-                                     + " have duplicate name '" + first->name() + "'");
-
+    // the list starts with the number density and assigns consecutive custom indices starting at zero,
+    // so that the custom values of the component are stored contiguously after the number density
     for (const StateVariable& variable : variables)
     {
         switch (variable.identifier())
@@ -62,12 +57,15 @@ void MediumState::initSpecificStateVariables(const vector<StateVariable>& variab
             case StateVariable::Identifier::NumberDensity:
                 if (_numAggregateCells) _densityOffsets.push_back(_nextOffset);
                 _off_dens[_nextComponent] = _nextOffset++;
+                _off_cust[_nextComponent] = _nextOffset;
                 break;
             case StateVariable::Identifier::Custom:
-                if (variable.customIndex() == 0) _off_cust[_nextComponent] = _nextOffset;
-                if (_numAggregateCells && variable.quantity() == "numbervolumedensity")
-                    _densityOffsets.push_back(_nextOffset);
-                _nextOffset++;
+                for (int k = 0; k != variable.count(); ++k)
+                {
+                    if (_numAggregateCells && variable.quantity() == "numbervolumedensity")
+                        _densityOffsets.push_back(_nextOffset);
+                    _nextOffset++;
+                }
                 break;
             case StateVariable::Identifier::Volume:
             case StateVariable::Identifier::BulkVelocity:

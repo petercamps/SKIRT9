@@ -34,9 +34,12 @@
     are included. Otherwise, the probe expects a comma-separated list of variable names, zero-based
     indices, or index ranges indicated with a dash. A name selects the custom state variable with
     that name, such as \c T for the temperature or \c Z for the metallicity of a material mix
-    that stores these quantities. Examples of valid strings include: "5,1,2", "0-9,17", or
+    that stores these quantities; for a variable that represents an array, the name selects all
+    its elements. An index refers to a single custom value, i.e. to a scalar variable or to an
+    element of an array variable. Examples of valid strings include: "5,1,2", "0-9,17", or
     "T,2-4". Incorrectly formatted string segments, unknown names, and out-of-range indices are
-    ignored.
+    ignored. In the output, the elements of an array variable are described by the description of
+    the variable followed by the element index.
 
     The probe produces output for each medium component that has custom quantities, or if the \em
     variables string is nonempty, for each medium component that has custom quantities for at least

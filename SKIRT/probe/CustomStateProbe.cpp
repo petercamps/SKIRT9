@@ -9,6 +9,7 @@
 #include "MediumSystem.hpp"
 #include "NR.hpp"
 #include "ProbeFormBridge.hpp"
+#include "StateVariableList.hpp"
 #include "StringUtils.hpp"
 #include "Units.hpp"
 
@@ -16,12 +17,36 @@
 
 namespace
 {
+    // the information on a single custom value, i.e. a scalar custom state variable or an element of an array variable
+    struct CustomValue
+    {
+        string name;         // the name of the variable, if any
+        string description;  // the description of the variable, or of the element of an array variable
+        string quantity;     // the physical quantity represented by the value
+        char format;         // the output format specifier
+        int customIndex;     // the custom index of the value
+    };
+
+    // returns the information on the custom values of the specified list of state variables, in order of custom index
+    vector<CustomValue> listCustomValues(const StateVariableList& variables)
+    {
+        vector<CustomValue> result;
+        for (const StateVariable& variable : variables)
+        {
+            if (variable.identifier() != StateVariable::Identifier::Custom) continue;
+            for (int k = 0; k != variable.count(); ++k)
+                result.push_back({variable.name(), variable.elementDescription(k), variable.quantity(),
+                                  variable.format(), variable.customIndex() + k});
+        }
+        return result;
+    }
+
     // returns a list of integers corresponding to the names, indices, and index ranges in the specified string,
-    // given the descriptors of the custom state variables
+    // given the information on the custom values; the name of an array variable selects all its elements
     // - if the string is empty, all indices 0...numIndices are included
     // - otherwise, the string must be a comma-separated list of names, zero-based indices, or index ranges
     // portions of the string that don't conform to the syntax, and unknown names, are ignored
-    vector<int> listIndices(const vector<StateVariable>& descriptors, string list)
+    vector<int> listIndices(const vector<CustomValue>& descriptors, string list)
     {
         int n = descriptors.size();
         vector<int> result;
@@ -39,7 +64,7 @@ namespace
                 if (parts.size() == 1 && !StringUtils::isValidInt(parts[0]))
                 {
                     for (int i = 0; i != n; ++i)
-                        if (descriptors[i].name() == segment) result.push_back(i);
+                        if (descriptors[i].name == segment) result.push_back(i);
                 }
                 else if (parts.size() == 1)
                 {
@@ -79,11 +104,8 @@ void CustomStateProbe::probe()
         int numMedia = ms->numMedia();
         for (int h = 0; h != numMedia; ++h)
         {
-            // get the custom state variable descriptors for this medium
-            auto mix = ms->media()[h]->mix();
-            vector<StateVariable> descriptors;
-            for (const auto& candidate : mix->specificStateVariableInfo())
-                if (candidate.identifier() == StateVariable::Identifier::Custom) descriptors.push_back(candidate);
+            // get the information on the custom values for this medium
+            auto descriptors = listCustomValues(ms->media()[h]->mix()->specificStateVariableInfo());
 
             // get the indices corresponding to the user property and to the nr of custom variables for this medium
             auto indexv = listIndices(descriptors, variables());
@@ -100,7 +122,7 @@ void CustomStateProbe::probe()
                 for (int index : indexv)
                 {
                     const auto& descriptor = descriptors[index];
-                    conv[outindex] = descriptor.quantity().empty() ? 1. : units->out(descriptor.quantity(), 1.);
+                    conv[outindex] = descriptor.quantity.empty() ? 1. : units->out(descriptor.quantity, 1.);
                     outindex++;
                 }
 
@@ -109,9 +131,9 @@ void CustomStateProbe::probe()
                     for (int index : indexv)
                     {
                         const auto& descriptor = descriptors[index];
-                        string qty = descriptor.quantity();
+                        string qty = descriptor.quantity;
                         string unit = qty.empty() ? "1" : units->unit(qty);
-                        outfile.addColumn(descriptor.description(), unit, descriptor.format());
+                        outfile.addColumn(descriptor.description, unit, descriptor.format);
                     }
                 };
 
@@ -122,7 +144,7 @@ void CustomStateProbe::probe()
                     for (int index : indexv)
                     {
                         const auto& descriptor = descriptors[index];
-                        out[outindex] = conv[outindex] * ms->custom(m, h, descriptor.customIndex());
+                        out[outindex] = conv[outindex] * ms->custom(m, h, descriptor.customIndex);
                         outindex++;
                     }
                     return out;
@@ -132,7 +154,7 @@ void CustomStateProbe::probe()
                 auto weightInCell = [ms](int m) { return ms->massDensity(m); };
 
                 // get the units of the first variable being probed
-                string qty = descriptors[indexv[0]].quantity();
+                string qty = descriptors[indexv[0]].quantity;
                 string unit = qty.empty() ? "1" : units->unit(qty);
 
                 // output the requested variables for this medium

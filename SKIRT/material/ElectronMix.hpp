@@ -9,6 +9,7 @@
 #include "ComptonPhaseFunction.hpp"
 #include "DipolePhaseFunction.hpp"
 #include "MaterialMix.hpp"
+#include "StateVariableList.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -110,14 +111,14 @@ public:
         the temperature if the electron mix has thermal dispersion, and an empty list otherwise. */
     vector<SnapshotParameter> parameterInfo() const override;
 
-    /** This function returns a list of StateVariable objects describing the specific state
-        variables used by the receiving material mix. See the description of the
-        MaterialMix::specificStateVariableInfo() function for more information.
+    /** This function returns the list of specific state variables used by the receiving material
+        mix. See the description of the MaterialMix::specificStateVariableInfo() function for more
+        information.
 
         For the electron mix class, the returned list always includes the specific state variable
         for number density and, in case the electron mix has thermal dispersion, it also includes
         the custom state variable for temperature. */
-    vector<StateVariable> specificStateVariableInfo() const override;
+    const StateVariableList& specificStateVariableInfo() const override;
 
     /** This function initializes any specific state variables requested by this material mix
         except for the number density. See the description of the
@@ -201,6 +202,10 @@ public:
 private:
     // flag initialized during setup
     bool _hasDispersion{false};  // true if thermal velocity dispersion is enabled
+
+    // the specific state variables and the handle for the temperature (if any) - initialized during setup
+    StateVariableList _variables;
+    StateScalar _temperature;
 
     // the dipole and Compton phase function helper instances - initialized during setup
     DipolePhaseFunction _dpf;

@@ -9,6 +9,7 @@
 #include "DipolePhaseFunction.hpp"
 #include "MaterialMix.hpp"
 #include "PhotonPacket.hpp"
+#include "StateVariableList.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -87,13 +88,13 @@ public:
         the gas temperature. */
     vector<SnapshotParameter> parameterInfo() const override;
 
-    /** This function returns a list of StateVariable objects describing the specific state
-        variables used by the receiving material mix. See the description of the
-        MaterialMix::specificStateVariableInfo() function for more information.
+    /** This function returns the list of specific state variables used by the receiving material
+        mix. See the description of the MaterialMix::specificStateVariableInfo() function for more
+        information.
 
         The Lyman-alpha material mix requires a gas temperature in addition to the standard number
         density, so this function returns a list containing these two items. */
-    vector<StateVariable> specificStateVariableInfo() const override;
+    const StateVariableList& specificStateVariableInfo() const override;
 
     /** This function initializes the specific state variables requested by this material
         mix through the specificStateVariableInfo() function except for the number density. For the
@@ -185,6 +186,10 @@ public:
 private:
     // the dipole phase function helper instance - initialized during setup
     DipolePhaseFunction _dpf;
+
+    // the specific state variables and the handle for the temperature - initialized during setup
+    StateVariableList _variables;
+    StateScalar _temperature;
 };
 
 ////////////////////////////////////////////////////////////////////

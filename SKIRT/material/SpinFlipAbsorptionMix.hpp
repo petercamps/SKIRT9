@@ -7,6 +7,7 @@
 #define SPINFLIPABSORPTIONMIX_HPP
 
 #include "MaterialMix.hpp"
+#include "StateVariableList.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -73,6 +74,12 @@ class SpinFlipAbsorptionMix : public MaterialMix
 
     ITEM_END()
 
+    //============= Construction - Setup - Destruction =============
+
+protected:
+    /** This function assembles the list of specific state variables. */
+    void setupSelfBefore() override;
+
     //======== Capabilities =======
 
 public:
@@ -92,11 +99,10 @@ public:
         the gas temperature. */
     vector<SnapshotParameter> parameterInfo() const override;
 
-    /** This function returns a list of StateVariable objects describing the specific state
-        variables used by the receiving material mix. For this class, the function returns a list
-        containing descriptors for the properties defined in the input model, namely number density
-        and temperature. */
-    vector<StateVariable> specificStateVariableInfo() const override;
+    /** This function returns the list of specific state variables used by the receiving material
+        mix. For this class, the function returns a list containing descriptors for the properties
+        defined in the input model, namely number density and temperature. */
+    const StateVariableList& specificStateVariableInfo() const override;
 
     /** This function initializes the specific state variables requested by this material mix
         through the specificStateVariableInfo() function except for the number density. For this
@@ -149,6 +155,13 @@ public:
         self-consistently in our treatment, this value corresponds to the temperature defined by
         the input model at the start of the simulation. */
     double indicativeTemperature(const MaterialState* state, const Array& Jv) const override;
+
+    //======================== Data Members ========================
+
+private:
+    // the specific state variables and the handle for the temperature - initialized during setup
+    StateVariableList _variables;
+    StateScalar _temperature;
 };
 
 ////////////////////////////////////////////////////////////////////

@@ -491,6 +491,21 @@ void NonLTELineGasMix::setupSelfBefore()
             infile.addColumn("population of level " + std::to_string(p), "numbervolumedensity", "1/cm3");
         _initLevelPops = infile.readAllRows();
     }
+
+    // assemble the specific state variables: the effective gas temperature (including kinetic temperature and
+    // unresolved turbulence) with the standard name, the kinetic gas temperature, the number density of each
+    // collisional partner, the population of each energy level, and if requested, the line-profile-averaged
+    // mean intensity at each transition line
+    _temperature = _variables.add(StateVariable::temperature());
+    _kineticTemperature = _variables.add(StateVariable::custom("kinetic gas temperature", "temperature"));
+    for (const auto& partner : _model.colPartner)
+        _colPartnerDensities.push_back(
+            _variables.add(StateVariable::custom(partner.name + " number density", "numbervolumedensity")));
+    _levelPopulations = _variables.addArray(
+        StateVariable::custom("population of level", "numbervolumedensity").array(_model.numLevels()));
+    if (storeMeanIntensities())
+        _meanIntensities = _variables.addArray(
+            StateVariable::custom("mean intensity at line", "wavelengthmeanintensity").array(_model.numLines()));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -540,60 +555,10 @@ vector<SnapshotParameter> NonLTELineGasMix::parameterInfo() const
 
 ////////////////////////////////////////////////////////////////////
 
-namespace
+const StateVariableList& NonLTELineGasMix::specificStateVariableInfo() const
 {
-    // index of the custom variable holding the effective gas temperature
-    constexpr int TEMPERATURE = 0;
+    return _variables;
 }
-
-////////////////////////////////////////////////////////////////////
-
-vector<StateVariable> NonLTELineGasMix::specificStateVariableInfo() const
-{
-    // add the standard variable for the number density of the species under consideration, and the custom variable
-    // with the standard name for the effective gas temperature (including kinetic temperature and unresolved turbulence)
-    vector<StateVariable> result{StateVariable::numberDensity(), StateVariable::temperature(TEMPERATURE)};
-
-    // next available custom variable index
-    int index = TEMPERATURE + 1;
-
-    // add custom variable for the kinetic gas temperature (i.e. excluding turbulence)
-    const_cast<NonLTELineGasMix*>(this)->_indexKineticTemperature = index;
-    result.push_back(StateVariable::custom(index++, "kinetic gas temperature", "temperature"));
-
-    // add custom variable for the number density of each collisional partner
-    const_cast<NonLTELineGasMix*>(this)->_indexFirstColPartnerDensity = index;
-    for (const auto& partner : _model.colPartner)
-        result.push_back(StateVariable::custom(index++, partner.name + " number density", "numbervolumedensity"));
-
-    // add custom variable for the population of each energy level
-    const_cast<NonLTELineGasMix*>(this)->_indexFirstLevelPopulation = index;
-    for (int p = 0; p != _model.numLevels(); ++p)
-        result.push_back(
-            StateVariable::custom(index++, "population of level " + std::to_string(p), "numbervolumedensity"));
-
-    // if requested, add custom variable for the line-profile-averaged mean intensity at each transition line
-    if (storeMeanIntensities())
-    {
-        const_cast<NonLTELineGasMix*>(this)->_indexFirstMeanIntensity = index;
-        for (int k = 0; k != _model.numLines(); ++k)
-            result.push_back(StateVariable::custom(index++, "mean intensity at line " + std::to_string(k),
-                                                   "wavelengthmeanintensity"));
-    }
-    return result;
-}
-
-////////////////////////////////////////////////////////////////////
-
-// Macro's for accessing custom variables in the material state
-// This is an ugly hack but there does not seem to be an elegant in-language mechanism to accomplish this
-#define setKineticTemperature(value) setCustom(_indexKineticTemperature, (value))
-#define kineticTemperature() custom(_indexKineticTemperature)
-#define setColPartnerDensity(index, value) setCustom(_indexFirstColPartnerDensity + (index), (value))
-#define colPartnerDensity(index) custom(_indexFirstColPartnerDensity + (index))
-#define setLevelPopulation(index, value) setCustom(_indexFirstLevelPopulation + (index), (value))
-#define levelPopulation(index) custom(_indexFirstLevelPopulation + (index))
-#define setMeanIntensity(index, value) setCustom(_indexFirstMeanIntensity + (index), (value))
 
 ////////////////////////////////////////////////////////////////////
 
@@ -607,17 +572,17 @@ void NonLTELineGasMix::initializeSpecificState(MaterialState* state, const Array
 
         // copy kinetic temperature from import or default
         double Tkin = params.size() ? params[0] : defaultTemperature();
-        state->setKineticTemperature(Tkin);
+        _kineticTemperature(state) = Tkin;
 
         // set effective temperature, including imported or default turbulence
         double vturb = params.size() ? params[1 + numColPartners] : defaultTurbulenceVelocity();
         double Teff = Tkin + 0.5 * vturb * vturb * _model.mass / Constants::k();
-        state->setCustom(TEMPERATURE, Teff);
+        _temperature(state) = Teff;
 
         // copy collisional partner densities from import or default
         if (params.size())
         {
-            for (int c = 0; c != numColPartners; ++c) state->setColPartnerDensity(c, params[1 + c]);
+            for (int c = 0; c != numColPartners; ++c) _colPartnerDensities[c](state) = params[1 + c];
         }
         else
         {
@@ -625,7 +590,7 @@ void NonLTELineGasMix::initializeSpecificState(MaterialState* state, const Array
             if (static_cast<int>(ratios.size()) < numColPartners)
                 throw FATALERROR("The number of collision partners exceeds the number of default ratios");
             for (int c = 0; c != numColPartners; ++c)
-                state->setColPartnerDensity(c, state->numberDensity() * ratios[c]);
+                _colPartnerDensities[c](state) = state->numberDensity() * ratios[c];
         }
 
         // initialize level population using boltzmann distribution (i.e., start with LTE)
@@ -646,7 +611,8 @@ void NonLTELineGasMix::initializeSpecificState(MaterialState* state, const Array
                 for (int p = 0; p != numLevels; ++p) levelPops[p] = 0.;
                 levelPops[0] = state->numberDensity();
             }
-            for (int p = 0; p != numLevels; ++p) state->setLevelPopulation(p, levelPops[p]);
+            auto populations = _levelPopulations(state);
+            for (int p = 0; p != numLevels; ++p) populations[p] = levelPops[p];
         };
 
         if (initialLevelPopsCase() == InitialLevelPopsCase::LTE)
@@ -679,7 +645,8 @@ void NonLTELineGasMix::initializeSpecificState(MaterialState* state, const Array
             {
                 // normalize and store
                 levelPops *= state->numberDensity() / sum;
-                for (int p = 0; p != numLevels; ++p) state->setLevelPopulation(p, levelPops[p]);
+                auto populations = _levelPopulations(state);
+                for (int p = 0; p != numLevels; ++p) populations[p] = levelPops[p];
             }
             else
             {
@@ -753,13 +720,13 @@ double NonLTELineGasMix::solveLevelPopulations(MaterialState* state, const Array
     // Bul/Blu terms only act through meanJ, so a line excluded below simply keeps meanJ at its
     // default of zero rather than being removed from the model
     GasLineEmission::Environment env;
-    env.Tkin = state->kineticTemperature();
+    env.Tkin = _kineticTemperature(state);
     env.nTotal = state->numberDensity();
     int numColPartners = _model.numColPartners();
     int numLines = _model.numLines();
     int numLevels = _model.numLevels();
     env.nPartner.resize(numColPartners);
-    for (int c = 0; c != numColPartners; ++c) env.nPartner[c] = state->colPartnerDensity(c);
+    for (int c = 0; c != numColPartners; ++c) env.nPartner[c] = _colPartnerDensities[c](state);
     env.meanJ.assign(numLines, 0.);
 
     // calculate the mean intensity of the radiation field convolved over the normalized line profile g
@@ -780,7 +747,7 @@ double NonLTELineGasMix::solveLevelPopulations(MaterialState* state, const Array
 
         auto log = find<Log>();
         double center = _model.center[k];
-        double sigma = sigmaForLine(center, state->custom(TEMPERATURE), _model.mass);
+        double sigma = sigmaForLine(center, _temperature(state), _model.mass);
         double lambdamin = center - PROFILE_RANGE * sigma;
         double lambdamax = center + PROFILE_RANGE * sigma;
         int ellmin = std::lower_bound(begin(_lambdav), end(_lambdav), lambdamin) - begin(_lambdav);
@@ -829,7 +796,7 @@ double NonLTELineGasMix::solveLevelPopulations(MaterialState* state, const Array
         // there happen to be no grid points in range at all, gsum and Jsum are both zero and we skip the
         // division to avoid turning that (harmless, J=0) case into a NaN
         double J = gsum > 0. ? Jsum / gsum : Jsum;
-        if (storeMeanIntensities()) state->setMeanIntensity(k, J);
+        if (storeMeanIntensities()) _meanIntensities(state)[k] = J;
 
         if (!std::isfinite(J))
         {
@@ -850,11 +817,12 @@ double NonLTELineGasMix::solveLevelPopulations(MaterialState* state, const Array
 
     // update the level populations, keeping track of the amount of change
     double change = 0.;
+    auto populations = _levelPopulations(state);
     for (int p = 0; p != numLevels; ++p)
     {
-        double oldPop = state->levelPopulation(p);
+        double oldPop = populations[p];
         double newPop = solution[p];
-        state->setLevelPopulation(p, newPop);
+        populations[p] = newPop;
         // a population that dropped to exactly zero is a full (100%) relative change; one that
         // stayed at zero is no change -- either way, avoid the 0/0 or x/0 that oldPop/newPop would
         // otherwise produce, which would silently read as "converged" in the caller
@@ -882,10 +850,12 @@ bool NonLTELineGasMix::isSpecificStateConverged(int numCells, int /*numUpdated*/
 
         // calculate maximum relative difference between level populations of previous and current iteration
         double changeInGlobalLevelPops = 0.;
+        auto currentPops = _levelPopulations(currentAggregate);
+        auto previousPops = _levelPopulations(previousAggregate);
         for (int p = 0; p != _model.numLevels(); ++p)
         {
-            double currentPop = currentAggregate->levelPopulation(p);
-            double previousPop = previousAggregate->levelPopulation(p);
+            double currentPop = currentPops[p];
+            double previousPop = previousPops[p];
             // as in solveLevelPopulations(), avoid dividing by a previousPop that is exactly zero:
             // treat a population that appeared from zero as a full (100%) change, and one that
             // stayed at zero as no change, instead of letting a NaN silently fail the comparison below
@@ -949,11 +919,12 @@ double NonLTELineGasMix::opacityAbs(double lambda, const MaterialState* state, c
     if (state->numberDensity() > 0.)
     {
         // accumulate the opacities for all radiational transitions
+        auto populations = _levelPopulations(state);
         for (int k = 0; k != _model.numLines(); ++k)
         {
             if (_model.branchRatio[k] < lowestBranchingRatio()) continue;
             double center = _model.center[k];
-            double sigma = sigmaForLine(center, state->custom(TEMPERATURE), _model.mass);
+            double sigma = sigmaForLine(center, _temperature(state), _model.mass);
             Range range(center - PROFILE_RANGE * sigma, center + PROFILE_RANGE * sigma);
 
             // calculate opacity only if the requested wavelength is in the line profile range
@@ -961,8 +932,8 @@ double NonLTELineGasMix::opacityAbs(double lambda, const MaterialState* state, c
             {
                 int up = _model.indexUpRad[k];
                 int low = _model.indexLowRad[k];
-                double upnumber = state->levelPopulation(up);
-                double lownumber = state->levelPopulation(low);
+                double upnumber = populations[up];
+                double lownumber = populations[low];
                 double transrate = lownumber * _model.einsteinBlu[k] - upnumber * _model.einsteinBul[k];
                 if (transrate != 0. && up < maxUpperLevelForRadiation())
                 {
@@ -1043,7 +1014,7 @@ Array NonLTELineGasMix::lineEmissionSpectrum(const MaterialState* state, const A
             }
             else
             {
-                luminosities[k] = front / _model.center[k] * _model.einsteinA[k] * state->levelPopulation(up);
+                luminosities[k] = front / _model.center[k] * _model.einsteinA[k] * _levelPopulations(state)[up];
             }
         }
     }
@@ -1054,7 +1025,7 @@ Array NonLTELineGasMix::lineEmissionSpectrum(const MaterialState* state, const A
 
 double NonLTELineGasMix::indicativeTemperature(const MaterialState* state, const Array& /*Jv*/) const
 {
-    return state->custom(TEMPERATURE);
+    return _temperature(state);
 }
 
 ////////////////////////////////////////////////////////////////////

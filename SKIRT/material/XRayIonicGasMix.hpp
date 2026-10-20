@@ -502,13 +502,6 @@ public:
         may emulate secondary emission. This is used to implement fluorescence as scattering. */
     bool scatteringEmulatesSecondaryEmission() const override;
 
-    //============= Medium state setup =============
-
-    /** This function returns a list of StateVariable objects describing the specific state
-        variables used by the receiving material mix. For this class, the function returns just the
-        descriptor for the number density. */
-    vector<StateVariable> specificStateVariableInfo() const override;
-
     //============= Low-level material properties =============
 
     /** This function returns the mass of a hydrogen atom. */

@@ -9,6 +9,7 @@
 #include "EmittingGasMix.hpp"
 #include "GasLineEmission.hpp"
 #include "PhotoIonizationSolver.hpp"
+#include "StateVariableList.hpp"
 #include "StoredTable.hpp"
 #include <array>
 
@@ -535,8 +536,13 @@ public:
         metal n_X/n_H ratios (C, N, O, Ne, Mg, Si, S, Fe) followed by n_He/n_H. */
     vector<SnapshotParameter> parameterInfo() const override;
 
-    /** Returns descriptors for state variables used by this material mix. */
-    vector<StateVariable> specificStateVariableInfo() const override;
+    /** Returns the list of state variables used by this material mix, assembled during setup. The
+        variables used to select a refinement criterion or condition have short names: \c Z and
+        \c T (the standard names), \c x_HI (hydrogen neutral fraction), \c logU (ionization
+        parameter), and \c x_HII, \c x_NII, \c x_OI, \c x_OII, \c x_OIII, and \c x_SII (ion
+        fractions). The opacity tables are array variables; the extinction opacity is named \c
+        kappa_ext. */
+    const StateVariableList& specificStateVariableInfo() const override;
 
     /** Initializes specific state variables from imported or default values. */
     void initializeSpecificState(MaterialState* state, const Array& params) const override;
@@ -640,13 +646,11 @@ private:
     double getHeliumCrossSection(double frequency) const;
 
     // Each cell stores the extinction opacity at the ionizing grid points (all other grid points hold zero opacity by
-    // construction) and the effective re-emission fraction at the grid points of the re-emission range, as
-    // consecutive custom state variables; the absorption and scattering opacities follow from these two
-    int _indexFirstOpacityExt = 0;          // first index of the extinction opacity array
-    int _indexFirstReemissionFraction = 0;  // first index of the effective re-emission fraction array
-    int _numIonizingOpacityPoints = 0;      // grid points 0 .. n-1 have lambda <= _lambdaLow
-    int _firstReemissionOpacityPoint = 0;   // first grid point with _lambdaBin5 <= lambda <= _lambdaH
-    int _numReemissionOpacityPoints = 0;    // zero when reemissionFraction() is zero
+    // construction) and the effective re-emission fraction at the grid points of the re-emission range, as array
+    // state variables (see the handles below); the absorption and scattering opacities follow from these two
+    int _numIonizingOpacityPoints = 0;     // grid points 0 .. n-1 have lambda <= _lambdaLow
+    int _firstReemissionOpacityPoint = 0;  // first grid point with _lambdaBin5 <= lambda <= _lambdaH
+    int _numReemissionOpacityPoints = 0;   // zero when reemissionFraction() is zero
 
     // Radiation field wavelength grid caching
     Array _opacityWavelengthGrid;       // Cached wavelength grid for opacity calculations
@@ -657,7 +661,7 @@ private:
 
     // Get the interpolated opacity from pre-computed state variables
     // opacityType: 0=absorption, 1=scattering, 2=extinction
-    double interpolateOpacityFromState(double lambda, MaterialState* state, int opacityType) const;
+    double interpolateOpacityFromState(double lambda, const MaterialState* state, int opacityType) const;
 
     // Initialize the opacity wavelength grid from the radiation field (called during setup)
     void initializeOpacityWavelengthGrid();
@@ -744,21 +748,24 @@ private:
     // table, set in setupSelfBefore. Used when selecting between the two tables.
     double _transitionLogUMax = 0.;
 
-    // Custom state variable indices
-    int _indexHeliumAbundance = 0;
-    int _indexHNeutralFraction = 0;
-    int _indexHeNeutralFraction = 0;
-    int _indexIonizationParameter = 0;
-    int _indexLogR2 = 0;                 // log10(R2) ratio parameter
-    int _indexLogR3 = 0;                 // log10(R3) ratio parameter
-    int _indexLogR4 = 0;                 // log10(R4) ratio parameter
-    int _indexLogR5 = 0;                 // log10(R5) ratio parameter
-    int _indexNHIonized = 0;             // ionized hydrogen number density (for global convergence criterion)
-    int _indexFirstIonFractionDiag = 0;  // starting index for diagnostic ion fraction block (per-cell, dimensionless)
-    int _indexFirstIonFractionAgg =
-        0;  // starting index for n_HII-weighted ion fraction aggregates (numbervolumedensity)
-    int _indexFirstMetalAbund =
-        -1;  // starting index for 8 per-cell metal n_X/n_H slots (only when abundanceMode=PerCell; -1 otherwise)
+    // Specific state variables and their handles, assembled in setupSelfBefore
+    StateVariableList _variables;
+    StateScalar _metallicity;
+    StateScalar _temperature;
+    StateScalar _heliumAbundance;
+    StateScalar _hNeutralFraction;
+    StateScalar _heNeutralFraction;
+    StateScalar _ionizationParameter;
+    StateScalar _logR2;                    // log10(R2) ratio parameter
+    StateScalar _logR3;                    // log10(R3) ratio parameter
+    StateScalar _logR4;                    // log10(R4) ratio parameter
+    StateScalar _logR5;                    // log10(R5) ratio parameter
+    StateScalar _nHIonized;                // ionized hydrogen number density (for global convergence criterion)
+    vector<StateScalar> _ionFracDiag;      // diagnostic ion fractions and electron density (per-cell)
+    vector<StateScalar> _ionFracAgg;       // n_HII-weighted ion fraction aggregates (numbervolumedensity)
+    vector<StateScalar> _metalAbundances;  // 8 per-cell metal n_X/n_H values (only when abundanceMode=PerCell)
+    StateArray _opacityExt;                // extinction opacity at the ionizing grid points
+    StateArray _reemissionFractions;       // effective re-emission fraction at the grid points of that range
 
     // Cached lower density bound for opacity scaling (set in setupSelfBefore)
     double _nHMinOpacity = 0;

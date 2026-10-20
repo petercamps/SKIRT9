@@ -9,10 +9,10 @@
 #include "Array.hpp"
 #include "Direction.hpp"
 #include "MaterialMixProvider.hpp"
-#include "StateVariable.hpp"
 #include "UpdateStatus.hpp"
 class Configuration;
 class MaterialState;
+class StateVariableList;
 class PhotonPacket;
 class Random;
 class StokesVector;
@@ -106,7 +106,10 @@ class DisjointWavelengthGrid;
     state variables and assist with initializing their values during setup. For example, the
     specificStateVariableInfo() function returns a list of medium state variable descriptors
     specifying the specific state variables used by the material mix. This allows the medium system
-    to allocate storage for the appropriate set of state variables.
+    to allocate storage for the appropriate set of state variables. A material mix with custom
+    state variables assembles this list during setup through a StateVariableList, which hands out a
+    handle for each variable (see the StateScalar and StateArray classes); the material mix then
+    uses these handles to access the variables in the medium state.
 
     All common state variables and the number density (part of the specific state) are initialized
     by the medium system. Additional specific state variables must be initialized in the
@@ -344,19 +347,23 @@ public:
     /** This function returns a pointer to this material mix. */
     const MaterialMix* mix() override;
 
-    /** This function returns a list of StateVariable objects describing the specific state
+    /** This function returns the list of StateVariable objects describing the specific state
         variables used by the receiving material mix. This allows the MediumSystem class to
         allocate storage for the appropriate set of state variables, and it allows probing the
-        relevant medium state variables for output. See the StateVariable class for more info.
+        relevant medium state variables for output. See the StateVariable and StateVariableList
+        classes for more info.
 
-        Common state variables should \em not be listed; their presence is derived from other
-        aspects of the configured medium components. On the other hand, \em all specific state
-        variables used by the material mix must be listed, including those that should always
-        present. Variables of type Custom must be listed last. Multiple variables of type Custom
-        can be requested by supplying indices in the range \f$ 0 \le k < K\f$, where K is the total
-        number of custom variables. Each of these indices must occur in the list exactly once in
-        increasing order. */
-    virtual vector<StateVariable> specificStateVariableInfo() const = 0;
+        Common state variables are \em not listed; their presence is derived from other aspects of
+        the configured medium components. On the other hand, \em all specific state variables used
+        by the material mix are listed, starting with the number density, which is always present.
+        A material mix with custom state variables assembles the list during its setup, adding the
+        custom variables in order, and keeps it as a data member. The function may therefore be
+        called only after the material mix has been set up, and the returned reference remains
+        valid as long as the material mix exists.
+
+        The default implementation in this base class returns a list that holds just the number
+        density. */
+    virtual const StateVariableList& specificStateVariableInfo() const;
 
     /** This function initializes any specific state variables requested by this material mix
         through the specificStateVariableInfo() function except for the number density. The

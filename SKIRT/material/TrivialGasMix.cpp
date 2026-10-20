@@ -26,13 +26,6 @@ bool TrivialGasMix::hasNegativeExtinction() const
 
 ////////////////////////////////////////////////////////////////////
 
-vector<StateVariable> TrivialGasMix::specificStateVariableInfo() const
-{
-    return vector<StateVariable>{StateVariable::numberDensity()};
-}
-
-////////////////////////////////////////////////////////////////////
-
 double TrivialGasMix::mass() const
 {
     return Constants::Mproton();

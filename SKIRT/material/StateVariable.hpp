@@ -13,9 +13,10 @@
 
 /** StateVariable is a helper class for holding metadata about a medium state variable. For
     example, the MaterialMix::specificStateVariableInfo() function returns a list of StateVariable
-    instances describing the specific state variables used by the receiving material mix. This
-    allows the MediumSystem class to allocate storage for the appropriate set of state variables,
-    and it allows probing the relevant medium state variables for output.
+    instances (see the StateVariableList class) describing the specific state variables used by the
+    receiving material mix. This allows the MediumSystem class to allocate storage for the
+    appropriate set of state variables, and it allows probing the relevant medium state variables
+    for output.
 
     For each spatial cell in the simulation, the medium state includes a set of \em common state
     variables shared by all medium components and a set of \em specific state variables for each
@@ -23,9 +24,10 @@
     may be present in each of these sets.
 
     Each StateVariable instance includes an identifier specifying one of the supported state
-    variables. Multiple custom variables can be specified by adding an index \f$0 \le k < K\f$ to
-    the base identifier, where \f$K\f$ is the total number of custom variables. The StateVariable
-    instance also includes a human-readable description of the quantity being represented, a unit
+    variables. Multiple custom variables are distinguished by an index \f$0 \le k < K\f$, where
+    \f$K\f$ is the total number of custom values; the StateVariableList class assigns these indices
+    when the variables are added to the list of a material mix. The StateVariable instance also
+    includes a human-readable description of the quantity being represented, a unit
     system quantity definition (string), and a text output format specifier. This information
     allows custom variables to be output by generic probes or to be handled by portions of the code
     that cooperate specifically with this type of material mix, such as recipes for adjusting the
@@ -38,6 +40,11 @@
     temperature() and metallicity() factory functions return custom variables with these names.
     The kind of a custom variable is intensive unless it has been marked as categorical or
     extensive (see the QuantityKind enumeration).
+
+    A custom variable can also represent an array of values rather than a single value. Such a
+    variable occupies the specified number of consecutive custom indices, starting at its own
+    index. All elements of the array share the description, quantity, format, name, and kind of
+    the variable.
 
     This class includes explicit support for the known state variables. Use one of the factory
     functions to construct a StateVariable instance. */
@@ -71,23 +78,24 @@ public:
     /** This function returns a StateVariable instance of type NumberDensity. */
     static StateVariable numberDensity();
 
-    /** This function returns a StateVariable instance of type Custom with the specified index that
-        holds the metallicity of the material, with the standard name \c Z, the description
-        "metallicity", and a dimensionless quantity. */
-    static StateVariable metallicity(int customIndex);
+    /** This function returns a StateVariable instance of type Custom that holds the metallicity of
+        the material, with the standard name \c Z, the description "metallicity", and a
+        dimensionless quantity. */
+    static StateVariable metallicity();
 
-    /** This function returns a StateVariable instance of type Custom with the specified index that
-        holds the temperature of the material, with the standard name \c T, the description
-        "temperature", and the quantity "temperature". */
-    static StateVariable temperature(int customIndex);
+    /** This function returns a StateVariable instance of type Custom that holds the temperature of
+        the material, with the standard name \c T, the description "temperature", and the quantity
+        "temperature". */
+    static StateVariable temperature();
 
-    /** This function returns a StateVariable instance of type Custom with the specified index and
-        descriptive information. The latter includes a human-readable description of the quantity
-        being represented, a unit system quantity definition, and a text output format specifier,
-        i.e. 'd' for integer notation (even if the value is stored as a double), 'f' for fixed
-        point notation, 'e' for scientific notation, and 'g' for the most concise 'f' or 'e'. The
-        default format specifier is 'e'. */
-    static StateVariable custom(int customIndex, const string& description, const string& quantity, char format = 'e');
+    /** This function returns a StateVariable instance of type Custom with the specified descriptive
+        information. The latter includes a human-readable description of the quantity being
+        represented, a unit system quantity definition, and a text output format specifier, i.e.
+        'd' for integer notation (even if the value is stored as a double), 'f' for fixed point
+        notation, 'e' for scientific notation, and 'g' for the most concise 'f' or 'e'. The default
+        format specifier is 'e'. The variable receives its custom index when it is added to a
+        StateVariableList. */
+    static StateVariable custom(const string& description, const string& quantity, char format = 'e');
 
     /** This function returns a copy of this custom variable with the specified short name. The
         name must consist of one or more letters, digits, and underscores. The function throws a
@@ -102,6 +110,11 @@ public:
         throws a fatal error if this variable is not of type Custom. */
     StateVariable extensive() const;
 
+    /** This function returns a copy of this custom variable that represents an array with the
+        specified number of elements, which may be zero. The function throws a fatal error if this
+        variable is not of type Custom, or if the number of elements is negative. */
+    StateVariable array(int count) const;
+
     // ================== Querying ==================
 
 public:
@@ -109,8 +122,9 @@ public:
         same identifier; they can be told apart through the customIndex() function(). */
     Identifier identifier() const { return _identifier; }
 
-    /** This function returns the custom index for the state variable if it is of type Custom, or
-        zero otherwise. */
+    /** This function returns the custom index for the state variable if it is of type Custom and
+        it has been added to a StateVariableList, or zero otherwise. For an array variable, this
+        is the index of its first element. */
     int customIndex() const { return _customIndex; }
 
     /** This function returns human-readable description for the state variable. */
@@ -133,20 +147,38 @@ public:
         unless the variable has been marked as categorical or extensive. */
     QuantityKind kind() const { return _kind; }
 
+    /** This function returns true if the state variable represents an array, and false if it
+        represents a single value. */
+    bool isArray() const { return _isArray; }
+
+    /** This function returns the number of custom values occupied by the state variable, i.e. the
+        number of elements for an array variable, and one for any other variable. */
+    int count() const { return _count; }
+
+    /** This function returns a description of the element with the specified index of an array
+        variable, i.e. the description of the variable followed by a space and the index, or the
+        description of the variable if it does not represent an array. */
+    string elementDescription(int k) const;
+
     /** This function returns true if all fields of this state variable descriptor are equal to
         those of the other descriptor, and false otherwise. */
     bool operator==(const StateVariable& other) const
     {
         return _identifier == other._identifier && _customIndex == other._customIndex
                && _description == other._description && _quantity == other._quantity && _format == other._format
-               && _name == other._name && _kind == other._kind;
+               && _name == other._name && _kind == other._kind && _isArray == other._isArray && _count == other._count;
     }
 
     /** This function returns true if some field of this state variable descriptor differs from the
         one of the other descriptor, and false otherwise. */
     bool operator!=(const StateVariable& other) const { return !(*this == other); }
 
+    // ================== Data members ==================
+
 private:
+    // the StateVariableList class assigns the custom index
+    friend class StateVariableList;
+
     Identifier _identifier;
     int _customIndex;
     string _description;
@@ -154,6 +186,8 @@ private:
     char _format;
     string _name;
     QuantityKind _kind{QuantityKind::Intensive};
+    bool _isArray{false};
+    int _count{1};
 };
 
 ////////////////////////////////////////////////////////////////////

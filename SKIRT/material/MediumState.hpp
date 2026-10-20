@@ -7,9 +7,11 @@
 #define MEDIUMSTATE_HPP
 
 #include "Array.hpp"
+#include "Span.hpp"
 #include "StateVariable.hpp"
 #include "UpdateStatus.hpp"
 #include "Vec.hpp"
+class StateVariableList;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -54,12 +56,14 @@
      - the initCommunicate() function communicates the initialized state variable values between
        processes.
 
-    The initCommonStateVariables() and initSpecificStateVariables() functions each receive a list
-    of StateVariable objects to identify the required state variables. All required state variables
-    must be listed, including those that should always present. Variables of type Custom must be
-    listed last. Multiple variables of type Custom can be requested by supplying indices in the
-    range \f$ 0 \le k < K\f$, where K is the total number of custom variables. Each of these
-    indices must occur in the list exactly once in increasing order.
+    The initCommonStateVariables() function receives a list of StateVariable objects to identify
+    the required common state variables, including those that should always be present. The
+    initSpecificStateVariables() function receives the StateVariableList of the material mix of the
+    medium component, which starts with the number density and assigns consecutive custom indices
+    in the range \f$ 0 \le k < K\f$, where K is the total number of custom values of the
+    component (an array variable occupies as many indices as it has elements). The custom
+    variables of a component are stored contiguously for each spatial cell, so that the customs()
+    function can return a view on a range of them.
 
     <b>Synchronization</b>
 
@@ -143,9 +147,9 @@ public:
     void initCommonStateVariables(const vector<StateVariable>& variables);
 
     /** This function initializes the set of required specific state variables for the next medium
-        component. The function must be called once for each medium component, in order of
-        component index. */
-    void initSpecificStateVariables(const vector<StateVariable>& variables);
+        component, given the list of variables of its material mix. The function must be called
+        once for each medium component, in order of component index. */
+    void initSpecificStateVariables(const StateVariableList& variables);
 
     /** This function ends the initialization sequence, allocates memory for the state variables,
         and returns the total number \f$N = M (C+\sum_h S_h)\f$ of state variables. All newly
@@ -246,6 +250,22 @@ public:
     /** This function returns the value of the custom variable with index \f$i\f$ of the medium
         component with index \f$h\f$ in the spatial cell with index \f$m\f$. */
     double custom(int m, int h, int i) const { return _data[_numVars * m + _off_cust[h] + i]; }
+
+    /** This function returns a read-only view on the \f$n\f$ consecutive custom variables starting
+        at index \f$i\f$ of the medium component with index \f$h\f$ in the spatial cell with index
+        \f$m\f$. */
+    Span<const double> customs(int m, int h, int i, int n) const
+    {
+        return Span<const double>(std::begin(_data) + _numVars * m + _off_cust[h] + i, n);
+    }
+
+    /** This function returns a writable view on the \f$n\f$ consecutive custom variables starting
+        at index \f$i\f$ of the medium component with index \f$h\f$ in the spatial cell with index
+        \f$m\f$. */
+    Span<double> customs(int m, int h, int i, int n)
+    {
+        return Span<double>(std::begin(_data) + _numVars * m + _off_cust[h] + i, n);
+    }
 
     //======================== Data Members ========================
 

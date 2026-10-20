@@ -9,6 +9,7 @@
 #include "Log.hpp"
 #include "MediumSystem.hpp"
 #include "ProbeFormBridge.hpp"
+#include "StateVariableList.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -17,13 +18,7 @@
 bool hasTemperature(const MediumSystem* ms, const vector<int>& hv)
 {
     for (int h : hv)
-    {
-        auto mix = ms->media()[h]->mix();
-        for (const auto& candidate : mix->specificStateVariableInfo())
-        {
-            if (candidate.name() == "T") return true;
-        }
-    }
+        if (ms->media()[h]->mix()->specificStateVariableInfo().index("T") >= 0) return true;
     return false;
 }
 

@@ -532,6 +532,54 @@ void DiffuseIonizedGasMix::setupSelfBefore()
         _maxNH_m3 = maxHydrogenDensity() * 1e6;  // cm^-3 -> m^-3
         log->info("Hydrogen density ceiling: " + StringUtils::toString(maxHydrogenDensity(), 'e', 3) + " cm^-3");
     }
+
+    // Assemble the specific state variables; the variables used to select a refinement criterion or condition
+    // get a short name, and the metallicity and temperature get the standard names
+    _metallicity = _variables.add(StateVariable::metallicity());
+    _temperature = _variables.add(StateVariable::temperature());
+    _heliumAbundance = _variables.add(StateVariable::custom("helium abundance", ""));
+    _hNeutralFraction = _variables.add(StateVariable::custom("hydrogen neutral fraction", "").named("x_HI"));
+    _heNeutralFraction = _variables.add(StateVariable::custom("helium neutral fraction", ""));
+    _ionizationParameter = _variables.add(StateVariable::custom("ionization parameter (logU)", "").named("logU"));
+    _logR2 = _variables.add(StateVariable::custom("log ratio parameter R2", ""));
+    _logR3 = _variables.add(StateVariable::custom("log ratio parameter R3", ""));
+    _logR4 = _variables.add(StateVariable::custom("log ratio parameter R4", ""));
+    _logR5 = _variables.add(StateVariable::custom("log ratio parameter R5", ""));
+
+    // Declared as "numbervolumedensity" so calculateAggregate() automatically computes
+    // sum(n_H_ionized * V_cell) across all cells. Neutral cells contribute zero, making
+    // the aggregate sensitive only to ionized/front cells (see MediumState.hpp aggregation docs).
+    _nHIonized = _variables.add(StateVariable::custom("ionized hydrogen number density", "numbervolumedensity"));
+
+    // Diagnostic ion fractions from the full PIO solver (always stored); the ion fractions, i.e. the entries
+    // taken from the solver's ion fractions rather than its electron density, are named for the ion
+    for (int i = 0; i < numIonFracDiags; ++i)
+    {
+        auto variable = StateVariable::custom(ionFracDiagTable[i].name, "");
+        if (ionFracDiagTable[i].ionFracsIndex >= 0) variable = variable.named(ionFracDiagTable[i].name);
+        _ionFracDiag.push_back(_variables.add(variable));
+    }
+
+    // n_HII-weighted ion fraction aggregates for convergence logging
+    for (int i = 0; i < numIonFracAggs; ++i)
+        _ionFracAgg.push_back(_variables.add(StateVariable::custom(ionFracAggTable[i].name, "numbervolumedensity")));
+
+    // Per-cell metal abundance slots (only in PerCell mode). Order matches _solarAbundances
+    // and parameterInfo() snapshot columns: C, N, O, Ne, Mg, Si, S, Fe (number ratios n_X/n_H).
+    if (abundanceMode() == AbundanceMode::PerCell)
+    {
+        static const char* names[8] = {"n_C/n_H",  "n_N/n_H",  "n_O/n_H", "n_Ne/n_H",
+                                       "n_Mg/n_H", "n_Si/n_H", "n_S/n_H", "n_Fe/n_H"};
+        for (int i = 0; i < 8; ++i) _metalAbundances.push_back(_variables.add(StateVariable::custom(names[i], "")));
+    }
+
+    // Opacity tables
+    _opacityExt = _variables.addArray(StateVariable::custom("extinction opacity at wavelength", "")
+                                          .named("kappa_ext")
+                                          .array(_numIonizingOpacityPoints));
+    _reemissionFractions =
+        _variables.addArray(StateVariable::custom("effective reemission fraction at reemission wavelength", "")
+                                .array(_numReemissionOpacityPoints));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -601,134 +649,10 @@ vector<SnapshotParameter> DiffuseIonizedGasMix::parameterInfo() const
 
 ////////////////////////////////////////////////////////////////////
 
-namespace
+const StateVariableList& DiffuseIonizedGasMix::specificStateVariableInfo() const
 {
-    // indices of the custom variables holding the metallicity and the temperature
-    constexpr int METALLICITY = 0;
-    constexpr int TEMPERATURE = 1;
+    return _variables;
 }
-
-////////////////////////////////////////////////////////////////////
-
-vector<StateVariable> DiffuseIonizedGasMix::specificStateVariableInfo() const
-{
-    // Standard variables first
-    vector<StateVariable> result{StateVariable::numberDensity(), StateVariable::metallicity(METALLICITY),
-                                 StateVariable::temperature(TEMPERATURE)};
-
-    // Custom variable index counter
-    int index = TEMPERATURE + 1;
-
-    // Add custom variable for helium abundance
-    const_cast<DiffuseIonizedGasMix*>(this)->_indexHeliumAbundance = index;
-    result.push_back(StateVariable::custom(index++, "helium abundance", ""));
-
-    // Add custom variables for neutral fractions
-    const_cast<DiffuseIonizedGasMix*>(this)->_indexHNeutralFraction = index;
-    result.push_back(StateVariable::custom(index++, "hydrogen neutral fraction", ""));
-
-    const_cast<DiffuseIonizedGasMix*>(this)->_indexHeNeutralFraction = index;
-    result.push_back(StateVariable::custom(index++, "helium neutral fraction", ""));
-
-    // Add ionization parameter
-    const_cast<DiffuseIonizedGasMix*>(this)->_indexIonizationParameter = index;
-    result.push_back(StateVariable::custom(index++, "ionization parameter (logU)", ""));
-
-    // Add 5-bin ratio parameters
-    const_cast<DiffuseIonizedGasMix*>(this)->_indexLogR2 = index;
-    result.push_back(StateVariable::custom(index++, "log ratio parameter R2", ""));
-
-    const_cast<DiffuseIonizedGasMix*>(this)->_indexLogR3 = index;
-    result.push_back(StateVariable::custom(index++, "log ratio parameter R3", ""));
-
-    const_cast<DiffuseIonizedGasMix*>(this)->_indexLogR4 = index;
-    result.push_back(StateVariable::custom(index++, "log ratio parameter R4", ""));
-
-    const_cast<DiffuseIonizedGasMix*>(this)->_indexLogR5 = index;
-    result.push_back(StateVariable::custom(index++, "log ratio parameter R5", ""));
-
-    // Declared as "numbervolumedensity" so calculateAggregate() automatically computes
-    // sum(n_H_ionized * V_cell) across all cells. Neutral cells contribute zero, making
-    // the aggregate sensitive only to ionized/front cells (see MediumState.hpp aggregation docs).
-    const_cast<DiffuseIonizedGasMix*>(this)->_indexNHIonized = index;
-    result.push_back(StateVariable::custom(index++, "ionized hydrogen number density", "numbervolumedensity"));
-
-    // Diagnostic ion fractions from the full PIO solver (always stored)
-    const_cast<DiffuseIonizedGasMix*>(this)->_indexFirstIonFractionDiag = index;
-    for (int i = 0; i < numIonFracDiags; ++i)
-    {
-        result.push_back(StateVariable::custom(index++, ionFracDiagTable[i].name, ""));
-    }
-
-    // n_HII-weighted ion fraction aggregates for convergence logging
-    const_cast<DiffuseIonizedGasMix*>(this)->_indexFirstIonFractionAgg = index;
-    for (int i = 0; i < numIonFracAggs; ++i)
-    {
-        result.push_back(StateVariable::custom(index++, ionFracAggTable[i].name, "numbervolumedensity"));
-    }
-
-    // Per-cell metal abundance slots (only in PerCell mode). Order matches _solarAbundances
-    // and parameterInfo() snapshot columns: C, N, O, Ne, Mg, Si, S, Fe (number ratios n_X/n_H).
-    if (abundanceMode() == AbundanceMode::PerCell)
-    {
-        const_cast<DiffuseIonizedGasMix*>(this)->_indexFirstMetalAbund = index;
-        static const char* names[8] = {"n_C/n_H",  "n_N/n_H",  "n_O/n_H", "n_Ne/n_H",
-                                       "n_Mg/n_H", "n_Si/n_H", "n_S/n_H", "n_Fe/n_H"};
-        for (int i = 0; i < 8; ++i) result.push_back(StateVariable::custom(index++, names[i], ""));
-    }
-    else
-    {
-        const_cast<DiffuseIonizedGasMix*>(this)->_indexFirstMetalAbund = -1;
-    }
-
-    const_cast<DiffuseIonizedGasMix*>(this)->_indexFirstOpacityExt = index;
-    for (int i = 0; i < _numIonizingOpacityPoints; i++)
-    {
-        result.push_back(StateVariable::custom(index++, "extinction opacity at wavelength " + std::to_string(i), ""));
-    }
-
-    const_cast<DiffuseIonizedGasMix*>(this)->_indexFirstReemissionFraction = index;
-    for (int i = 0; i < _numReemissionOpacityPoints; i++)
-    {
-        result.push_back(StateVariable::custom(
-            index++, "effective reemission fraction at wavelength " + std::to_string(_firstReemissionOpacityPoint + i),
-            ""));
-    }
-
-    return result;
-}
-
-////////////////////////////////////////////////////////////////////
-
-// Macro helpers for accessing custom variables in the material state
-#define heliumAbundance() custom(_indexHeliumAbundance)
-#define hNeutralFraction() custom(_indexHNeutralFraction)
-#define heNeutralFraction() custom(_indexHeNeutralFraction)
-#define ionizationParameter() custom(_indexIonizationParameter)
-#define logR2() custom(_indexLogR2)
-#define logR3() custom(_indexLogR3)
-#define logR4() custom(_indexLogR4)
-#define logR5() custom(_indexLogR5)
-#define opacityExtAtIndex(i) custom(_indexFirstOpacityExt + (i))
-#define reemissionFractionAtIndex(i) custom(_indexFirstReemissionFraction + (i) - _firstReemissionOpacityPoint)
-
-#define setHeliumAbundance(value) setCustom(_indexHeliumAbundance, (value))
-#define setHNeutralFraction(value) setCustom(_indexHNeutralFraction, (value))
-#define setHeNeutralFraction(value) setCustom(_indexHeNeutralFraction, (value))
-#define setIonizationParameter(value) setCustom(_indexIonizationParameter, (value))
-#define setLogR2(value) setCustom(_indexLogR2, (value))
-#define setLogR3(value) setCustom(_indexLogR3, (value))
-#define setLogR4(value) setCustom(_indexLogR4, (value))
-#define setLogR5(value) setCustom(_indexLogR5, (value))
-#define nHIonized() custom(_indexNHIonized)
-#define setNHIonized(value) setCustom(_indexNHIonized, (value))
-#define ionFracDiag(i) custom(_indexFirstIonFractionDiag + (i))
-#define setIonFracDiag(i, value) setCustom(_indexFirstIonFractionDiag + (i), (value))
-#define ionFracAgg(i) custom(_indexFirstIonFractionAgg + (i))
-#define setIonFracAgg(i, value) setCustom(_indexFirstIonFractionAgg + (i), (value))
-#define setOpacityExtAtIndex(i, value) setCustom(_indexFirstOpacityExt + (i), (value))
-#define setReemissionFractionAtIndex(i, value) \
-    setCustom(_indexFirstReemissionFraction + (i) - _firstReemissionOpacityPoint, (value))
 
 ////////////////////////////////////////////////////////////////////
 
@@ -764,23 +688,23 @@ void DiffuseIonizedGasMix::initializeSpecificState(MaterialState* state, const A
         }
 
         // Set metallicity and temperature
-        state->setCustom(METALLICITY, Z_cell);
-        state->setCustom(TEMPERATURE, imported ? params[1] : defaultTemperature());
+        _metallicity(state) = Z_cell;
+        _temperature(state) = imported ? params[1] : defaultTemperature();
 
         // Per-cell metal abundances (PerCell mode only). Snapshot params come in the order
         // declared by parameterInfo(): Z, T, C, N, O, Ne, Mg, Si, S, Fe, [He].
         int paramIdx = 2;
         if (abundanceMode() == AbundanceMode::PerCell)
         {
-            for (int i = 0; i < 8; ++i) state->setCustom(_indexFirstMetalAbund + i, params[paramIdx++]);
+            for (int i = 0; i < 8; ++i) _metalAbundances[i](state) = params[paramIdx++];
 
             // Diagnostic: track cells whose imported (n_N, n_C / n_H) imply dN, dC outside
             // the stab cross. Outside-cross cells get endpoint-clamped T/kappa silently.
             // Counts are logged once at the first convergence check (see isSpecificStateConverged).
             const double eps = 1e-30;
             const double Zfrac = Z_cell / _solarZ;
-            const double n_C_imported = state->custom(_indexFirstMetalAbund + 0);
-            const double n_N_imported = state->custom(_indexFirstMetalAbund + 1);
+            const double n_C_imported = _metalAbundances[0](state);
+            const double n_N_imported = _metalAbundances[1](state);
             const double dN_cell = std::log10(std::max(n_N_imported, eps) / std::max(_solarAbundances[1] * Zfrac, eps));
             const double dC_cell = std::log10(std::max(n_C_imported, eps) / std::max(_solarAbundances[0] * Zfrac, eps));
             if (dN_cell < _stabDNmin || dN_cell > _stabDNmax) ++dNoutOfCrossCount;
@@ -791,32 +715,31 @@ void DiffuseIonizedGasMix::initializeSpecificState(MaterialState* state, const A
         // PerCell mode reads the 9th snapshot column (n_He/n_H) here, overwriting the
         // Gutkin Y(Z) baseline resolved above. SolarScaled keeps the Gutkin value.
         if (abundanceMode() == AbundanceMode::PerCell) yHe = params[paramIdx++];
-        state->setHeliumAbundance(yHe);
+        _heliumAbundance(state) = yHe;
 
         // Initial neutral fractions - start with quasi-ionized gas
-        state->setHNeutralFraction(minNeutralFraction);   // Essentially zero
-        state->setHeNeutralFraction(minNeutralFraction);  // Essentially zero
+        _hNeutralFraction(state) = minNeutralFraction;   // Essentially zero
+        _heNeutralFraction(state) = minNeutralFraction;  // Essentially zero
 
         // Initialize ionized H density reflecting the fully-ionized initial condition,
         // so the first previousAggregate correctly represents the starting state.
         double n_H_init = convertTotalDensityToHydrogenDensity(state->numberDensity(), yHe);
-        state->setNHIonized(n_H_init * (1.0 - minNeutralFraction));
+        _nHIonized(state) = n_H_init * (1.0 - minNeutralFraction);
 
         // Initialize radiation field parameters to defaults
-        state->setIonizationParameter(_logFloor);
-        state->setLogR2(_logFloor);
-        state->setLogR3(_logFloor);
-        state->setLogR4(_logFloor);
-        state->setLogR5(_logFloor);
+        _ionizationParameter(state) = _logFloor;
+        _logR2(state) = _logFloor;
+        _logR3(state) = _logFloor;
+        _logR4(state) = _logFloor;
+        _logR5(state) = _logFloor;
 
         // Initialize diagnostic ion fractions and aggregates to zero
-        for (int i = 0; i < numIonFracDiags; ++i) state->setIonFracDiag(i, 0.0);
-        for (int i = 0; i < numIonFracAggs; ++i) state->setIonFracAgg(i, 0.0);
+        for (int i = 0; i < numIonFracDiags; ++i) _ionFracDiag[i](state) = 0.0;
+        for (int i = 0; i < numIonFracAggs; ++i) _ionFracAgg[i](state) = 0.0;
 
         // Initialize opacity arrays with zeros
-        for (int i = 0; i < _numIonizingOpacityPoints; i++) state->setOpacityExtAtIndex(i, 0.0);
-        for (int i = _firstReemissionOpacityPoint; i < _firstReemissionOpacityPoint + _numReemissionOpacityPoints; i++)
-            state->setReemissionFractionAtIndex(i, 0.0);
+        for (double& value : _opacityExt(state)) value = 0.0;
+        for (double& value : _reemissionFractions(state)) value = 0.0;
     }
 }
 
@@ -830,23 +753,23 @@ UpdateStatus DiffuseIonizedGasMix::updateSpecificState(MaterialState* state, con
     if (state->numberDensity() > 0.)
     {
         // For convergence check: save previous state
-        double oldT = state->custom(TEMPERATURE);
-        double oldLogU = state->ionizationParameter();
+        double oldT = _temperature(state);
+        double oldLogU = _ionizationParameter(state);
 
         // Calculate and store ionization parameter
         double n_total = state->numberDensity();
-        double He_abundance = state->heliumAbundance();
+        double He_abundance = _heliumAbundance(state);
         double n_H = convertTotalDensityToHydrogenDensity(n_total, He_abundance);
         double newLogU = calculateIonizationParameter(Jv, n_H);
-        state->setIonizationParameter(newLogU);
+        _ionizationParameter(state) = newLogU;
 
         // Calculate and store 5-bin ratio parameters
         double logR2_val, logR3_val, logR4_val, logR5_val;
         calculate5BinRatioParameters(Jv, logR2_val, logR3_val, logR4_val, logR5_val);
-        state->setLogR2(logR2_val);
-        state->setLogR3(logR3_val);
-        state->setLogR4(logR4_val);
-        state->setLogR5(logR5_val);
+        _logR2(state) = logR2_val;
+        _logR3(state) = logR3_val;
+        _logR4(state) = logR4_val;
+        _logR5(state) = logR5_val;
 
         // Update temperature from STAB before ionization balance (PIO solver needs T)
         if (useCloudyTemperature())
@@ -858,7 +781,7 @@ UpdateStatus DiffuseIonizedGasMix::updateSpecificState(MaterialState* state, con
         // Uses converged Jv and current T to compute all ion fractions self-consistently.
         constexpr double cm3PerM3 = 1e6;
         double nH_cgs = n_H / cm3PerM3;  // m^-3 -> cm^-3
-        double T = state->custom(TEMPERATURE);
+        double T = _temperature(state);
         double solverIonFracs[PhotoIonizationSolver::totalStages] = {};
         bool hasSolverIonFracs = false;
 
@@ -875,41 +798,41 @@ UpdateStatus DiffuseIonizedGasMix::updateSpecificState(MaterialState* state, con
             // H/He neutral fractions from the full solver
             double h0 = std::max(minNeutralFraction, std::min(result.ionFracs[0], maxNeutralFraction));
             double he0 = std::max(minNeutralFraction, std::min(result.ionFracs[2], maxNeutralFraction));
-            state->setHNeutralFraction(h0);
-            state->setHeNeutralFraction(he0);
+            _hNeutralFraction(state) = h0;
+            _heNeutralFraction(state) = he0;
 
             // Store diagnostic ion fractions
             for (int i = 0; i < numIonFracDiags; ++i)
             {
                 if (ionFracDiagTable[i].ionFracsIndex >= 0)
-                    state->setIonFracDiag(i, result.ionFracs[ionFracDiagTable[i].ionFracsIndex]);
+                    _ionFracDiag[i](state) = result.ionFracs[ionFracDiagTable[i].ionFracsIndex];
                 else
-                    state->setIonFracDiag(i, result.ne);
+                    _ionFracDiag[i](state) = result.ne;
             }
 
             // Store n_HII-weighted ion fraction aggregates: x_ion * n_HII [m^-3]
             double nHII = n_H * (1.0 - h0);
             for (int i = 0; i < numIonFracAggs; ++i)
-                state->setIonFracAgg(i, result.ionFracs[ionFracAggTable[i].ionFracsIndex] * nHII);
+                _ionFracAgg[i](state) = result.ionFracs[ionFracAggTable[i].ionFracsIndex] * nHII;
         }
         else
         {
-            state->setHNeutralFraction(1.0);
-            state->setHeNeutralFraction(1.0);
-            for (int i = 0; i < numIonFracDiags; ++i) state->setIonFracDiag(i, 0.0);
-            for (int i = 0; i < numIonFracAggs; ++i) state->setIonFracAgg(i, 0.0);
+            _hNeutralFraction(state) = 1.0;
+            _heNeutralFraction(state) = 1.0;
+            for (int i = 0; i < numIonFracDiags; ++i) _ionFracDiag[i](state) = 0.0;
+            for (int i = 0; i < numIonFracAggs; ++i) _ionFracAgg[i](state) = 0.0;
         }
 
         // Pre-compute opacity arrays
         precomputeOpacityArrays(state, hasSolverIonFracs ? solverIonFracs : nullptr);
 
         // Update ionized H density for global convergence criterion
-        state->setNHIonized(n_H * (1.0 - state->hNeutralFraction()));
+        _nHIonized(state) = n_H * (1.0 - _hNeutralFraction(state));
 
         // Check per-cell convergence: cell fails if either T or logU changed significantly.
         // Only check logU for cells above the emission floor; cells below have noisy logU
         // from MC noise but contribute zero emission, so their convergence is irrelevant.
-        double newT = state->custom(TEMPERATURE);
+        double newT = _temperature(state);
         double changeT = (oldT > 0.) ? std::abs(newT - oldT) / oldT : 0.;
         bool logURelevant = (newLogU > _minLogUEmit);
         double changeLogU =
@@ -970,8 +893,8 @@ bool DiffuseIonizedGasMix::isSpecificStateConverged(int /*numCells*/, int numUpd
     // Global criterion: relative change in total ionized H between consecutive iterations.
     // Neutral cells contribute zero to the aggregate, so this is sensitive only to ionized/front
     // cells. Prevents fake-convergence when trivially-neutral bulk cells dominate the per-cell count.
-    double currentTotalIonizedH = currentAggregate->nHIonized();
-    double previousTotalIonizedH = previousAggregate->nHIonized();
+    double currentTotalIonizedH = _nHIonized(currentAggregate);
+    double previousTotalIonizedH = _nHIonized(previousAggregate);
     double globalChange =
         std::abs(currentTotalIonizedH - previousTotalIonizedH) / std::max(currentTotalIonizedH, minDivisionSafe);
     bool globalConverged = globalChange <= maxChangeInGlobalIonizedH();
@@ -1035,12 +958,12 @@ bool DiffuseIonizedGasMix::isSpecificStateConverged(int /*numCells*/, int numUpd
         string ionStr = "  Ion fractions (n_HII-weighted):";
         for (int i = 0; i < numIonFracAggs; ++i)
         {
-            double currentVal = currentAggregate->ionFracAgg(i);
+            double currentVal = _ionFracAgg[i](currentAggregate);
             double meanIonFrac = currentVal / currentTotalIonizedH;
             ionStr += " " + string(ionFracAggTable[i].name).substr(16)  // strip "nHII_weighted_" prefix
                       + "=" + StringUtils::toString(meanIonFrac, 'e', 3);
             // Also log iteration-to-iteration change
-            double previousVal = previousAggregate->ionFracAgg(i);
+            double previousVal = _ionFracAgg[i](previousAggregate);
             if (previousVal > 0.)
             {
                 double prevMean = previousVal / std::max(previousTotalIonizedH, minDivisionSafe);
@@ -1112,11 +1035,8 @@ double DiffuseIonizedGasMix::opacityAbs(double lambda, const MaterialState* stat
     // Return zero opacity if no material or outside ionizing wavelength range
     if (state->numberDensity() <= 0. || lambda > _lambdaLow) return 0.;
 
-    // Use pre-computed opacity array with interpolation
-    MaterialState* nonConstState = const_cast<MaterialState*>(state);
-
-    // Use interpolation with absorption opacity type (0)
-    return interpolateOpacityFromState(lambda, nonConstState, 0);
+    // Use pre-computed opacity array with interpolation, with absorption opacity type (0)
+    return interpolateOpacityFromState(lambda, state, 0);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1129,11 +1049,8 @@ double DiffuseIonizedGasMix::opacitySca(double lambda, const MaterialState* stat
     // Reemission only in 1-6 Ryd; precomputed scattering is zero beyond
     if (lambda > _lambdaLow) return 0.;
 
-    // Use pre-computed opacity array with interpolation
-    MaterialState* nonConstState = const_cast<MaterialState*>(state);
-
-    // Use interpolation with scattering opacity type (1)
-    return interpolateOpacityFromState(lambda, nonConstState, 1);
+    // Use pre-computed opacity array with interpolation, with scattering opacity type (1)
+    return interpolateOpacityFromState(lambda, state, 1);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1143,11 +1060,8 @@ double DiffuseIonizedGasMix::opacityExt(double lambda, const MaterialState* stat
     // Return zero opacity if no material or outside ionizing wavelength range
     if (state->numberDensity() <= 0. || lambda > _lambdaLow) return 0.;
 
-    // Use pre-computed opacity array with interpolation
-    MaterialState* nonConstState = const_cast<MaterialState*>(state);
-
-    // Use interpolation with extinction opacity type (2)
-    return interpolateOpacityFromState(lambda, nonConstState, 2);
+    // Use pre-computed opacity array with interpolation, with extinction opacity type (2)
+    return interpolateOpacityFromState(lambda, state, 2);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1174,16 +1088,10 @@ bool DiffuseIonizedGasMix::peeloffScattering(double& I, double& Q, double& U, do
 
         switch (channel)
         {
-            case ReemissionChannel::Hydrogen:
-                newLambda = sampleHydrogenLymanContinuum(state->custom(TEMPERATURE));
-                break;
-            case ReemissionChannel::HeliumLyC:
-                newLambda = sampleHeliumLymanContinuum(state->custom(TEMPERATURE));
-                break;
+            case ReemissionChannel::Hydrogen: newLambda = sampleHydrogenLymanContinuum(_temperature(state)); break;
+            case ReemissionChannel::HeliumLyC: newLambda = sampleHeliumLymanContinuum(_temperature(state)); break;
             case ReemissionChannel::HeliumNpEv: newLambda = Constants::c() / helium19p8EvFreq; break;
-            case ReemissionChannel::HeliumTPC:
-                newLambda = sampleHeliumTwoPhotonContinuum(state->custom(TEMPERATURE));
-                break;
+            case ReemissionChannel::HeliumTPC: newLambda = sampleHeliumTwoPhotonContinuum(_temperature(state)); break;
             case ReemissionChannel::HeliumLyA:
                 // This should not happen as selectReemissionChannel turns this into absorbed or TPC
                 scatinfo->lambda = 0.;
@@ -1232,16 +1140,10 @@ void DiffuseIonizedGasMix::performScattering(double lambda, const MaterialState*
 
         switch (channel)
         {
-            case ReemissionChannel::Hydrogen:
-                newLambda = sampleHydrogenLymanContinuum(state->custom(TEMPERATURE));
-                break;
-            case ReemissionChannel::HeliumLyC:
-                newLambda = sampleHeliumLymanContinuum(state->custom(TEMPERATURE));
-                break;
+            case ReemissionChannel::Hydrogen: newLambda = sampleHydrogenLymanContinuum(_temperature(state)); break;
+            case ReemissionChannel::HeliumLyC: newLambda = sampleHeliumLymanContinuum(_temperature(state)); break;
             case ReemissionChannel::HeliumNpEv: newLambda = Constants::c() / helium19p8EvFreq; break;
-            case ReemissionChannel::HeliumTPC:
-                newLambda = sampleHeliumTwoPhotonContinuum(state->custom(TEMPERATURE));
-                break;
+            case ReemissionChannel::HeliumTPC: newLambda = sampleHeliumTwoPhotonContinuum(_temperature(state)); break;
             case ReemissionChannel::HeliumLyA:
                 // This should not happen as selectReemissionChannel turns this into absorbed or TPC
                 newLambda = 0.;
@@ -1321,12 +1223,12 @@ Array DiffuseIonizedGasMix::emissionSpectrum(const MaterialState* state, const A
     Array emission(numWavelengths);
 
     if (state->numberDensity() <= 0.) return emission;
-    if (state->ionizationParameter() <= _minLogUEmit) return emission;
+    if (_ionizationParameter(state) <= _minLogUEmit) return emission;
 
     // Cell properties in CGS
-    double T = state->custom(TEMPERATURE);
+    double T = _temperature(state);
     if (T <= 0.) return emission;
-    double yHe = state->heliumAbundance();
+    double yHe = _heliumAbundance(state);
     double nHm3 = state->numberDensity() / (1.0 + yHe);
     double nH = nHm3 / cm3PerM3;  // [cm^-3]
     double V_cm3 = state->volume() * 1e6;
@@ -1364,12 +1266,12 @@ Array DiffuseIonizedGasMix::lineEmissionSpectrum(const MaterialState* state, con
     Array luminosities(_numLines);
 
     if (state->numberDensity() <= 0.) return luminosities;
-    if (state->ionizationParameter() <= _minLogUEmit) return luminosities;
+    if (_ionizationParameter(state) <= _minLogUEmit) return luminosities;
 
     // Cell properties in CGS
-    double T = state->custom(TEMPERATURE);
+    double T = _temperature(state);
     if (T <= 0.) return luminosities;
-    double yHe = state->heliumAbundance();
+    double yHe = _heliumAbundance(state);
     double nHm3 = state->numberDensity() / (1.0 + yHe);
     double nH = nHm3 / cm3PerM3;  // [cm^-3]
     double V_cm3 = state->volume() * 1e6;
@@ -1449,7 +1351,7 @@ Array DiffuseIonizedGasMix::lineEmissionSpectrum(const MaterialState* state, con
 
 double DiffuseIonizedGasMix::indicativeTemperature(const MaterialState* state, const Array&) const
 {
-    return state->custom(TEMPERATURE);
+    return _temperature(state);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1457,21 +1359,21 @@ double DiffuseIonizedGasMix::indicativeTemperature(const MaterialState* state, c
 void DiffuseIonizedGasMix::updateTemperatureFromStab(MaterialState* state) const
 {
     // Get current parameters
-    double Z = state->custom(METALLICITY);
+    double Z = _metallicity(state);
     double n_total = state->numberDensity();
-    double He_abundance = state->heliumAbundance();
+    double He_abundance = _heliumAbundance(state);
     double n_H = convertTotalDensityToHydrogenDensity(n_total, He_abundance);
-    double logU = state->ionizationParameter();
-    double logR2 = state->logR2();
-    double logR3 = state->logR3();
-    double logR4 = state->logR4();
-    double logR5 = state->logR5();
+    double logU = _ionizationParameter(state);
+    double logR2 = _logR2(state);
+    double logR3 = _logR3(state);
+    double logR4 = _logR4(state);
+    double logR5 = _logR5(state);
 
     // If all R values are invalid (at initial values) or ionization parameter below emission floor,
     // set temperature to floor. emissionSpectrum() also gates on _minLogUEmit, keeping state consistent.
     if ((logR2 <= _logFloor && logR3 <= _logFloor && logR4 <= _logFloor && logR5 <= _logFloor) || logU <= _minLogUEmit)
     {
-        state->setCustom(TEMPERATURE, _minTEmit);
+        _temperature(state) = _minTEmit;
         return;
     }
 
@@ -1526,7 +1428,7 @@ void DiffuseIonizedGasMix::updateTemperatureFromStab(MaterialState* state) const
     }
 
     double newTemperature = std::pow(10.0, logT);
-    state->setCustom(TEMPERATURE, newTemperature);
+    _temperature(state) = newTemperature;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1698,7 +1600,7 @@ void DiffuseIonizedGasMix::calculateReemissionProbabilities(const MaterialState*
     // Following CMACIONIZE PhysicalDiffuseReemissionHandler::set_reemission_probabilities
     // Many of the following are in CGS, but ratios are used eventually
 
-    const double T = state->custom(TEMPERATURE);
+    const double T = _temperature(state);
     const double T4 = T * 1e-4;  // Temperature in units of 10^4 K
 
     // Hydrogen reemission probability
@@ -1734,9 +1636,9 @@ void DiffuseIonizedGasMix::calculateReemissionProbabilities(const MaterialState*
     data.cumulativeProbabilities[ReemissionChannel::HeliumLyA] = 1.0;  // Ensures total probability = 1
 
     // Calculate H vs He absorption probability using wavelength-dependent cross-sections
-    const double h0 = state->hNeutralFraction();
-    const double he0 = state->heNeutralFraction();
-    const double AHe = state->heliumAbundance();
+    const double h0 = _hNeutralFraction(state);
+    const double he0 = _heNeutralFraction(state);
+    const double AHe = _heliumAbundance(state);
 
     if (h0 > 0. || (he0 > 0. && AHe > 0.))
     {
@@ -1838,9 +1740,9 @@ int DiffuseIonizedGasMix::selectReemissionChannel(const MaterialState* state, do
                 // Special handling for Helium Lyman alpha (on-the-spot absorption)
                 if (i == ReemissionChannel::HeliumLyA)
                 {
-                    const double h0 = state->hNeutralFraction();
-                    const double he0 = state->heNeutralFraction();
-                    const double T = state->custom(TEMPERATURE);
+                    const double h0 = _hNeutralFraction(state);
+                    const double he0 = _heNeutralFraction(state);
+                    const double T = _temperature(state);
 
                     // Calculate on-the-spot absorption probability
                     const double sqrtT_nH0 = std::sqrt(T) * h0;
@@ -2053,7 +1955,8 @@ double DiffuseIonizedGasMix::getHeliumCrossSection(double frequency) const
 
 ////////////////////////////////////////////////////////////////////
 
-double DiffuseIonizedGasMix::interpolateOpacityFromState(double lambda, MaterialState* state, int opacityType) const
+double DiffuseIonizedGasMix::interpolateOpacityFromState(double lambda, const MaterialState* state,
+                                                         int opacityType) const
 {
     // no opacity outside the range covered by the grid; at the blue end that range starts at the left border of the
     // first radiation field bin rather than at its characteristic wavelength, because a photon in the lower half of
@@ -2064,14 +1967,16 @@ double DiffuseIonizedGasMix::interpolateOpacityFromState(double lambda, Material
 
     // stored opacity of the requested type at a given grid index; the absorption and scattering parts are rebuilt
     // from the extinction opacity and the effective re-emission fraction with the same arithmetic that split them
-    auto stored = [this, state, opacityType](int k) {
+    auto opacities = _opacityExt(state);
+    auto fractions = _reemissionFractions(state);
+    auto stored = [this, opacities, fractions, opacityType](int k) {
         if (k >= _numIonizingOpacityPoints) return 0.;
-        double ext = state->opacityExtAtIndex(k);
+        double ext = opacities[k];
         if (opacityType == 2) return ext;
         bool inReemission =
             k >= _firstReemissionOpacityPoint && k < _firstReemissionOpacityPoint + _numReemissionOpacityPoints;
-        if (opacityType == 0) return inReemission ? ext * (1.0 - state->reemissionFractionAtIndex(k)) : ext;
-        return inReemission ? ext * state->reemissionFractionAtIndex(k) : 0.;
+        if (opacityType == 0) return inReemission ? ext * (1.0 - fractions[k - _firstReemissionOpacityPoint]) : ext;
+        return inReemission ? ext * fractions[k - _firstReemissionOpacityPoint] : 0.;
     };
 
     // only the two grid points bracketing lambda are read, with the same bracketing as NR::clampedValue; a photon
@@ -2162,11 +2067,15 @@ void DiffuseIonizedGasMix::precomputeOpacityArrays(MaterialState* state, const d
     // grid points beyond the ionizing range hold zero opacity and are not stored
     const int numWavelengths = _numIonizingOpacityPoints;
 
+    // views on the opacity arrays stored in the medium state
+    auto opacityExt = _opacityExt(state);
+    auto fractions = _reemissionFractions(state);
+
     // Get actual density
     double n_total = state->numberDensity();
-    double He_abundance = state->heliumAbundance();
+    double He_abundance = _heliumAbundance(state);
     double n_H = convertTotalDensityToHydrogenDensity(n_total, He_abundance);
-    double logU = state->ionizationParameter();
+    double logU = _ionizationParameter(state);
 
     // Scale down opacity for cells below the table's minimum density
     // to avoid an over-opaque medium at low densities (StoredTable clamps to boundary)
@@ -2242,9 +2151,9 @@ void DiffuseIonizedGasMix::precomputeOpacityArrays(MaterialState* state, const d
                     heliumScatProb += data.probabilities[ReemissionChannel::HeliumTPC] * heliumTpcHIonizingFraction;
 
                     // Handle Helium Lyman alpha on-the-spot absorption
-                    const double h0 = state->hNeutralFraction();
-                    const double he0 = state->heNeutralFraction();
-                    const double T = state->custom(TEMPERATURE);
+                    const double h0 = _hNeutralFraction(state);
+                    const double he0 = _heNeutralFraction(state);
+                    const double T = _temperature(state);
                     const double sqrtT_nH0 = std::sqrt(T) * h0;
                     const double pHots = sqrtT_nH0 / (sqrtT_nH0 + heliumLyaOtsCoeff * he0);
                     heliumScatProb += data.probabilities[ReemissionChannel::HeliumLyA] * (1.0 - pHots);
@@ -2260,11 +2169,11 @@ void DiffuseIonizedGasMix::precomputeOpacityArrays(MaterialState* state, const d
             if (lambda <= _lambdaLow)
             {
                 double opacityValue = 0.0;
-                double logR2 = state->logR2();
-                double logR3 = state->logR3();
-                double logR4 = state->logR4();
-                double logR5 = state->logR5();
-                double Z = state->custom(METALLICITY);
+                double logR2 = _logR2(state);
+                double logR3 = _logR3(state);
+                double logR4 = _logR4(state);
+                double logR5 = _logR5(state);
+                double Z = _metallicity(state);
 
                 TableSelection choice = selectTable(logU);
                 // Standard opacity reconstructed via bracket+linterp+separable on the dN/dC
@@ -2327,9 +2236,9 @@ void DiffuseIonizedGasMix::precomputeOpacityArrays(MaterialState* state, const d
 
         // the absorption part is totalOpacity * (1 - f) and the scattering part totalOpacity * f, with f the
         // effective re-emission fraction (interpolateOpacityFromState)
-        state->setOpacityExtAtIndex(i, totalOpacity);
+        opacityExt[i] = totalOpacity;
         if (i >= _firstReemissionOpacityPoint && i < _firstReemissionOpacityPoint + _numReemissionOpacityPoints)
-            state->setReemissionFractionAtIndex(i, probReemission * reemissionFraction());
+            fractions[i - _firstReemissionOpacityPoint] = probReemission * reemissionFraction();
     }
 }
 
@@ -2350,7 +2259,7 @@ void DiffuseIonizedGasMix::buildPerCellAbundances(const MaterialState* state, do
     {
         // Read per-cell metal abundances from snapshot-filled state slots.
         // Order matches _solarAbundances and parameterInfo(): C, N, O, Ne, Mg, Si, S, Fe.
-        for (int i = 0; i < 8; ++i) abund[i] = state->custom(_indexFirstMetalAbund + i);
+        for (int i = 0; i < 8; ++i) abund[i] = _metalAbundances[i](state);
     }
     else
     {
@@ -2358,7 +2267,7 @@ void DiffuseIonizedGasMix::buildPerCellAbundances(const MaterialState* state, do
         // linscale[i] carries the per-element linear scaling on top of solar*Zfrac*g.
         // Order MUST match _solarAbundances: {C, N, O, Ne, Mg, Si, S, Fe}; only C and N
         // are user-tunable, the rest follow the solar pattern (factor 1).
-        const double Zfrac = state->custom(METALLICITY) / _solarZ;
+        const double Zfrac = _metallicity(state) / _solarZ;
         const double dN = std::log10(solarScalingN());
         const double dC = std::log10(solarScalingC());
         const double scaledZfrac = Zfrac * gutkinCompensation(dN, dC);
@@ -2393,9 +2302,9 @@ void DiffuseIonizedGasMix::computeCellDeltas(const MaterialState* state, double&
         // cells; for arbitrary cells (MEGATRON), projects onto the (dN, dC) that would
         // reproduce the imported N and C abundances under the recipe family.
         constexpr double eps = 1e-30;
-        const double Zfrac = state->custom(METALLICITY) / _solarZ;
-        const double n_C_imported = state->custom(_indexFirstMetalAbund + 0);
-        const double n_N_imported = state->custom(_indexFirstMetalAbund + 1);
+        const double Zfrac = _metallicity(state) / _solarZ;
+        const double n_C_imported = _metalAbundances[0](state);
+        const double n_N_imported = _metalAbundances[1](state);
         const double a = std::max(n_N_imported, eps) / std::max(_solarAbundances[1] * Zfrac, eps);
         const double b = std::max(n_C_imported, eps) / std::max(_solarAbundances[0] * Zfrac, eps);
         const double g = (mTotSol - mNSol * a - mCSol * b) / mRestSol;

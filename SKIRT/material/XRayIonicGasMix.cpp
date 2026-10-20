@@ -732,13 +732,6 @@ bool XRayIonicGasMix::scatteringEmulatesSecondaryEmission() const
 
 ////////////////////////////////////////////////////////////////////
 
-vector<StateVariable> XRayIonicGasMix::specificStateVariableInfo() const
-{
-    return vector<StateVariable>{StateVariable::numberDensity()};
-}
-
-////////////////////////////////////////////////////////////////////
-
 double XRayIonicGasMix::mass() const
 {
     return Constants::Mproton();

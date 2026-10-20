@@ -20,9 +20,6 @@ namespace
     constexpr double la = Constants::lambdaLya();     // central Lyman-alpha wavelength
     constexpr double Aa = Constants::EinsteinALya();  // Einstein A coefficient for Lyman-alpha transition
 
-    // index of the custom state variable holding the temperature
-    constexpr int TEMPERATURE = 0;
-
     // returns the Lyman-alpha scattering cross section per hydrogen atom
     // at the given photon wavelength and gas temperature
     double section(double lambda, double T)
@@ -42,6 +39,7 @@ void LyaNeutralHydrogenGasMix::setupSelfBefore()
     MaterialMix::setupSelfBefore();
 
     _dpf.initialize(random(), includePolarization());
+    _temperature = _variables.add(StateVariable::temperature());
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -88,9 +86,9 @@ vector<SnapshotParameter> LyaNeutralHydrogenGasMix::parameterInfo() const
 
 ////////////////////////////////////////////////////////////////////
 
-vector<StateVariable> LyaNeutralHydrogenGasMix::specificStateVariableInfo() const
+const StateVariableList& LyaNeutralHydrogenGasMix::specificStateVariableInfo() const
 {
-    return vector<StateVariable>{StateVariable::numberDensity(), StateVariable::temperature(TEMPERATURE)};
+    return _variables;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -104,7 +102,7 @@ void LyaNeutralHydrogenGasMix::initializeSpecificState(MaterialState* state, con
         double temperature = params.size() ? params[0] : defaultTemperature();
 
         // make sure the temperature is at least the local universe CMB temperature
-        state->setCustom(TEMPERATURE, max(Constants::Tcmb(), temperature));
+        _temperature(state) = max(Constants::Tcmb(), temperature);
     }
 }
 
@@ -149,7 +147,7 @@ double LyaNeutralHydrogenGasMix::opacityAbs(double /*lambda*/, const MaterialSta
 double LyaNeutralHydrogenGasMix::opacitySca(double lambda, const MaterialState* state, const PhotonPacket* /*pp*/) const
 {
     double n = state->numberDensity();
-    return n > 0. ? n * section(lambda, state->custom(TEMPERATURE)) : 0.;
+    return n > 0. ? n * section(lambda, _temperature(state)) : 0.;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -157,7 +155,7 @@ double LyaNeutralHydrogenGasMix::opacitySca(double lambda, const MaterialState* 
 double LyaNeutralHydrogenGasMix::opacityExt(double lambda, const MaterialState* state, const PhotonPacket* /*pp*/) const
 {
     double n = state->numberDensity();
-    return n > 0. ? n * section(lambda, state->custom(TEMPERATURE)) : 0.;
+    return n > 0. ? n * section(lambda, _temperature(state)) : 0.;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -168,7 +166,7 @@ void LyaNeutralHydrogenGasMix::setScatteringInfoIfNeeded(PhotonPacket::Scatterin
     if (!scatinfo->valid)
     {
         scatinfo->valid = true;
-        double T = state->custom(TEMPERATURE);
+        double T = _temperature(state);
         double vth = sqrt(2. * kB / mp * T);   // thermal velocity for T
         double a = Aa * la / 4. / M_PI / vth;  // Voigt parameter
         double x;
@@ -242,7 +240,7 @@ void LyaNeutralHydrogenGasMix::performScattering(double lambda, const MaterialSt
 
 double LyaNeutralHydrogenGasMix::indicativeTemperature(const MaterialState* state, const Array& /*Jv*/) const
 {
-    return state->custom(TEMPERATURE);
+    return _temperature(state);
 }
 
 ////////////////////////////////////////////////////////////////////
