@@ -49,10 +49,11 @@
     scattering cross section, because that value does not vary significantly for small wavelength
     shifts (and it does not vary at all for Thomson scattering).
 
-    If the electron mix is associated with an ImportedMedium and the \em importTemperature flag for
-    the medium is enabled, the local dispersion temperature is obtained from the imported file.
-    Otherwise, the value configured for the \em defaultTemperature property is used instead,
-    resulting in a constant temperature across space. */
+    If the electron mix has thermal dispersion and is associated with an ImportedMedium, it imports
+    the local dispersion temperature from the input model, which must then provide a temperature
+    column. For a geometric medium, the value configured for the \em defaultTemperature property is
+    used instead, resulting in a constant temperature across space. The temperature is stored in
+    the custom state variable with the standard name \c T. */
 class ElectronMix : public MaterialMix
 {
     ITEM_CONCRETE(ElectronMix, MaterialMix, "a population of electrons")
@@ -65,6 +66,7 @@ class ElectronMix : public MaterialMix
         ATTRIBUTE_DEFAULT_VALUE(includeThermalDispersion, "false")
         ATTRIBUTE_RELEVANT_IF(includeThermalDispersion, "Panchromatic")
         ATTRIBUTE_DISPLAYED_IF(includeThermalDispersion, "Level2")
+        ATTRIBUTE_INSERT(includeThermalDispersion, "includeThermalDispersion:CustomMediumState")
 
         PROPERTY_DOUBLE(defaultTemperature, "the default temperature of the electron population")
         ATTRIBUTE_QUANTITY(defaultTemperature, "temperature")
@@ -103,13 +105,18 @@ public:
     //======== Medium state setup =======
 
 public:
+    /** This function returns the number and type of import parameters required by this particular
+        material mix as a list of SnapshotParameter objects. For this class, the function returns
+        the temperature if the electron mix has thermal dispersion, and an empty list otherwise. */
+    vector<SnapshotParameter> parameterInfo() const override;
+
     /** This function returns a list of StateVariable objects describing the specific state
         variables used by the receiving material mix. See the description of the
         MaterialMix::specificStateVariableInfo() function for more information.
 
         For the electron mix class, the returned list always includes the specific state variable
         for number density and, in case the electron mix has thermal dispersion, it also includes
-        the specific state variable for temperature. */
+        the custom state variable for temperature. */
     vector<StateVariable> specificStateVariableInfo() const override;
 
     /** This function initializes any specific state variables requested by this material mix
@@ -117,10 +124,9 @@ public:
         MaterialMix::initializeSpecificState() function for more information.
 
         For this class, in case the electron mix has thermal dispersion, the function initializes
-        the temperature to the specified imported temperature, or if this is not available, to the
+        the temperature to the imported temperature, or for a geometric medium, to the
         user-configured default temperature for this electron mix. */
-    void initializeSpecificState(MaterialState* state, double metallicity, double temperature,
-                                 const Array& params) const override;
+    void initializeSpecificState(MaterialState* state, const Array& params) const override;
 
     //======== Low-level material properties =======
 

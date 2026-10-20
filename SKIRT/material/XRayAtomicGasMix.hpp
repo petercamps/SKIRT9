@@ -125,10 +125,9 @@ namespace ElectronScatteringHelper
     If this material mix is associated with a geometric medium component, the geometry defines the
     spatial density distribution \f$n_\mathrm{H}\f$. Alternatively, if the material mix is
     associated with a subclass of ImportedMedium, the spatial density distribution is read from an
-    input file. In that case, the ski file attributes \em importMetallicity, \em importTemperature,
-    and \em importVariableMixParams must be left at 'false'. For example, if bulk velocities are
-    also imported for this medium component (i.e. \em importVelocity is 'true'), the column order
-    would be \f[ ..., n_\mathrm{H}, v_\mathrm{x}, v_\mathrm{y}, v_\mathrm{z} \f]
+    input file. The material mix does not import any other quantities. For example, if bulk
+    velocities are also imported for this medium component (i.e. \em importVelocity is 'true'),
+    the column order would be \f[ ..., n_\mathrm{H}, v_\mathrm{x}, v_\mathrm{y}, v_\mathrm{z} \f]
 
     The relative abundances of the 30 elements in the gas and the temperature of the gas are
     configured in the ski file as constant properties. In other words, the abundances and the

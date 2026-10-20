@@ -77,17 +77,13 @@ ParticleSnapshot::~ParticleSnapshot() {}
 void ParticleSnapshot::readAndClose()
 {
     // read the particle info into memory
-    // if the user configured a temperature cutoff, we skip high-temperature particles
     // if the user configured a mass-density policy, we skip zero-mass particles
-    int numTempIgnored = 0;
     int numMassIgnored = 0;
     int numBiasIgnored = 0;
     Array row;
     while (infile()->readRow(row))
     {
-        if (useTemperatureCutoff() && row[temperatureIndex()] > maxTemperature())
-            numTempIgnored++;
-        else if (hasMassDensityPolicy() && row[massIndex()] == 0.)
+        if (hasMassDensityPolicy() && row[massIndex()] == 0.)
             numMassIgnored++;
         else if (hasBias() && row[biasIndex()] == 0.)
             numBiasIgnored++;
@@ -99,14 +95,12 @@ void ParticleSnapshot::readAndClose()
     close();
 
     // log the number of particles
-    if (!numTempIgnored && !numMassIgnored && !numBiasIgnored)
+    if (!numMassIgnored && !numBiasIgnored)
     {
         log()->info("  Number of particles: " + std::to_string(_propv.size()));
     }
     else
     {
-        if (numTempIgnored)
-            log()->info("  Number of high-temperature particles ignored: " + std::to_string(numTempIgnored));
         if (numMassIgnored) log()->info("  Number of zero-mass particles ignored: " + std::to_string(numMassIgnored));
         if (numBiasIgnored) log()->info("  Number of zero-bias particles ignored: " + std::to_string(numBiasIgnored));
         log()->info("  Number of particles retained: " + std::to_string(_propv.size()));
@@ -117,7 +111,6 @@ void ParticleSnapshot::readAndClose()
     {
         // build a list of compact smoothed particle objects that we can organize in a search structure
         double totalOriginalMass = 0;
-        double totalMetallicMass = 0;
         double totalEffectiveMass = 0;
         int numParticles = _propv.size();
         _pv.reserve(numParticles);
@@ -126,22 +119,20 @@ void ParticleSnapshot::readAndClose()
             const Array& prop = _propv[m];
 
             double originalMass = prop[massIndex()];
-            double metallicMass = originalMass * (useMetallicity() ? prop[metallicityIndex()] : 1.);
-            double effectiveMass = metallicMass * multiplier();
+            double effectiveMass = originalMass * multiplier();
 
             _pv.emplace_back(prop[positionIndex() + 0], prop[positionIndex() + 1], prop[positionIndex() + 2],
                              prop[sizeIndex()], effectiveMass);
 
             totalOriginalMass += originalMass;
-            totalMetallicMass += metallicMass;
             totalEffectiveMass += effectiveMass;
         }
 
         // log mass statistics
-        logMassStatistics(0, totalOriginalMass, totalMetallicMass, totalEffectiveMass);
+        logMassStatistics(totalOriginalMass, totalEffectiveMass);
 
         // if one of the total masses is negative, suppress the complete mass distribution
-        if (totalOriginalMass < 0 || totalMetallicMass < 0 || totalEffectiveMass < 0)
+        if (totalOriginalMass < 0 || totalEffectiveMass < 0)
         {
             log()->warning("  Total imported mass is negative; suppressing the complete mass distribution");
             _propv.clear();

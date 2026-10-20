@@ -33,19 +33,6 @@ class ImportedMedium : public Medium, public SiteListInterface
         ATTRIBUTE_MAX_VALUE(massFraction, "1]")
         ATTRIBUTE_DEFAULT_VALUE(massFraction, "1")
 
-        PROPERTY_BOOL(importMetallicity, "import a metallicity column")
-        ATTRIBUTE_DEFAULT_VALUE(importMetallicity, "false")
-
-        PROPERTY_BOOL(importTemperature, "import a temperature column")
-        ATTRIBUTE_DEFAULT_VALUE(importTemperature, "false")
-
-        PROPERTY_DOUBLE(maxTemperature, "the maximum temperature for included mass (or zero to include all)")
-        ATTRIBUTE_QUANTITY(maxTemperature, "temperature")
-        ATTRIBUTE_MIN_VALUE(maxTemperature, "[0 K")
-        ATTRIBUTE_MAX_VALUE(maxTemperature, "1000000 K]")
-        ATTRIBUTE_DEFAULT_VALUE(maxTemperature, "0 K")
-        ATTRIBUTE_RELEVANT_IF(maxTemperature, "importTemperature")
-
         PROPERTY_BOOL(importVelocity, "import velocity components (3 columns)")
         ATTRIBUTE_DEFAULT_VALUE(importVelocity, "false")
         ATTRIBUTE_RELEVANT_IF(importVelocity, "Panchromatic")
@@ -57,23 +44,13 @@ class ImportedMedium : public Medium, public SiteListInterface
         ATTRIBUTE_DISPLAYED_IF(importMagneticField, "Level3")
         ATTRIBUTE_INSERT(importMagneticField, "importMagneticField:MagneticField")
 
-        PROPERTY_BOOL(importVariableMixParams, "import parameter(s) to select a spatially varying material mix")
-        ATTRIBUTE_DEFAULT_VALUE(importVariableMixParams, "false")
-        ATTRIBUTE_DISPLAYED_IF(importVariableMixParams, "(!NonIdentitySpatialCellLibrary)&Level2")
-
         PROPERTY_STRING(useColumns, "a list of names corresponding to columns in the file to be imported")
         ATTRIBUTE_DEFAULT_VALUE(useColumns, "")
         ATTRIBUTE_REQUIRED_IF(useColumns, "false")
         ATTRIBUTE_DISPLAYED_IF(useColumns, "Level3")
 
-        PROPERTY_ITEM(materialMix, MaterialMix, "the material type and properties throughout the medium")
+        PROPERTY_ITEM(materialMix, MaterialMixProvider, "the material mix or material mix family for the medium")
         ATTRIBUTE_DEFAULT_VALUE(materialMix, "MeanInterstellarDustMix")
-        ATTRIBUTE_RELEVANT_IF(materialMix, "!importVariableMixParams")
-
-        PROPERTY_ITEM(materialMixFamily, MaterialMixFamily,
-                      "the material mix family addressed by the imported parameter(s)")
-        ATTRIBUTE_DEFAULT_VALUE(materialMixFamily, "SelectDustMixFamily")
-        ATTRIBUTE_RELEVANT_IF(materialMixFamily, "importVariableMixParams")
 
     ITEM_END()
 
@@ -103,29 +80,24 @@ public:
     int dimension() const override;
 
     /** This function returns the MaterialMix object defining the material properties for the
-        medium at the specified position.
-
-        If the \em importVariableMixParams flag is enabled, the appropriate material mix is
-        selected from the configured material mix family based on the value of the imported
-        parameters for the specified position. If the flag is disabled, the fixed configured
+        medium at the specified position. For a medium configured with a material mix family, the
+        appropriate material mix is selected from the family based on the values of the imported
+        parameters for the specified position. For a medium configured with a material mix, that
         material mix is returned regardless of position. */
     const MaterialMix* mix(Position bfr) const override;
 
     /** This function returns a default MaterialMix object representative of the material
-        properties of the medium.
-
-        If the \em importVariableMixParams flag is enabled, a default material mix is selected from
-        the configured material mix family using the appropriate number of parameters with a value
-        of zero. If the flag is disabled, the fixed configured material mix is returned. */
+        properties of the medium: a default member of the configured material mix family, or the
+        configured material mix. */
     const MaterialMix* mix() const override;
 
-    /** This function returns the configured value of the \em importVariableMixParams flag. If
-        true, this medium may return a different MaterialMix object depending on the specified
-        position. If false, the same object is always returned. */
+    /** This function returns true if the medium is configured with a material mix family, so that
+        it may return a different MaterialMix object depending on the specified position, and false
+        if it is configured with a material mix, so that the same object is always returned. */
     bool hasVariableMix() const override;
 
-    /** This function returns the capabilities of the configured material mix family if the \em
-        importVariableMixParams flag is enabled, and of the configured material mix otherwise. */
+    /** This function returns the capabilities of the configured material mix or material mix
+        family. */
     MaterialMixProvider::Capabilities capabilities() const override;
 
     /** This function returns true if the \em importVelocity flag is enabled for the medium. */
@@ -144,33 +116,13 @@ public:
         the snapshot object; otherwise it returns a zero magnetic field. */
     Vec magneticField(Position bfr) const override;
 
-    /** This function returns true if the medium has a gas or electron material mix and the \em
-        importMetallicity flag is enabled for the medium. */
-    bool hasMetallicity() const override;
-
-    /** This function returns the metallicity of the medium at the specified position, if defined
-        in the input model. Specifically, if the medium has a gas or electron material mix and the
-        \em importMetallicity flag is enabled, the function returns the imported metallicity at the
-        specified position. Otherwise, the function returns zero. */
-    double metallicity(Position bfr) const override;
-
-    /** This function returns true if the medium has a gas or electron material mix and the \em
-        importTemperature flag is enabled for the medium. */
-    bool hasTemperature() const override;
-
-    /** This function returns the temperature of the medium at the specified position, if defined
-        in the input model. Specifically, if the medium has a gas or electron material mix and the
-        \em importTemperature flag is enabled, the function returns the imported temperature at the
-        specified position. Otherwise, the function returns zero. */
-    double temperature(Position bfr) const override;
-
     /** This function returns true if custom input model parameters are available for this medium.
         See the parameters() function for more information. */
     bool hasParameters() const override;
 
     /** This function returns the descriptors of the custom input model parameters returned by the
-        parameters() function: those requested by the configured material mix, or an empty list if
-        the medium is configured with a material mix family. */
+        parameters() function: those requested by the configured material mix or material mix
+        family. */
     vector<SnapshotParameter> parameterInfo() const override;
 
     /** If custom input model parameters are available for this medium, this function stores the
@@ -178,14 +130,12 @@ public:
         the domain, the parameter values default to zero. If no custom input model parameters are
         available for this medium, the array is resized to zero length.
 
-        For an imported medium that is configured with a material mix, custom input model
-        parameters are imported from the snapshot as requested by the MaterialMix::parameterInfo()
-        function. The number and order of parameters returned by this function then reflects the
-        number and order of parameter descriptions returned by the MaterialMix::parameterInfo()
-        function. If the medium is configured with a material mix \em family, any imported
-        parameters are used to select a member of the material mix family at each location, and
-        this function returns an empty array. In other words, requests by material mix family
-        members for custom input model parameters are ignored. */
+        Custom input model parameters are imported from the snapshot as requested by the
+        parameterInfo() function of the configured material mix or material mix family. The number
+        and order of parameters returned by this function then reflects the number and order of
+        parameter descriptions returned by that function. For a material mix family, the
+        parameters select a member of the family at each location; requests by the members of the
+        family for custom input model parameters are ignored. */
     void parameters(Position bfr, Array& params) const override;
 
     /** This function returns the number density of the medium at the specified position. */
@@ -193,33 +143,33 @@ public:
 
     /** This function returns the total number of material entities in the medium. The function
         uses the default material mix (the one at the origin) throughout the complete spatial
-        domain; if the \em importVariableMixParams flag is enabled, this is an approximation. */
+        domain; for a material mix family, this is an approximation. */
     double number() const override;
 
     /** This function returns the mass density of the medium at the specified position. */
     double massDensity(Position bfr) const override;
 
     /** This function returns the total mass in the medium. The function uses the default material
-        mix (the one at the origin) throughout the complete spatial domain; if the \em
-        importVariableMixParams flag is enabled, this is an approximation. */
+        mix (the one at the origin) throughout the complete spatial domain; for a material
+        mix family, this is an approximation. */
     double mass() const override;
 
     /** This function returns the optical depth of the medium at wavelength \f$\lambda\f$ along the
         full X axis of the model coordinate system. The function uses the default material mix (the
-        one at the origin) throughout the complete spatial domain; if the \em
-        importVariableMixParams flag is enabled, this is an approximation. */
+        one at the origin) throughout the complete spatial domain; for a material
+        mix family, this is an approximation. */
     double opticalDepthX(double lambda) const override;
 
     /** This function returns the optical depth of the medium at wavelength \f$\lambda\f$ along the
         full Y axis of the model coordinate system. The function uses the default material mix (the
-        one at the origin) throughout the complete spatial domain; if the \em
-        importVariableMixParams flag is enabled, this is an approximation. */
+        one at the origin) throughout the complete spatial domain; for a material
+        mix family, this is an approximation. */
     double opticalDepthY(double lambda) const override;
 
     /** This function returns the optical depth of the medium at wavelength \f$\lambda\f$ along the
         full Z axis of the model coordinate system. The function uses the default material mix (the
-        one at the origin) throughout the complete spatial domain; if the \em
-        importVariableMixParams flag is enabled, this is an approximation. */
+        one at the origin) throughout the complete spatial domain; for a material
+        mix family, this is an approximation. */
     double opticalDepthZ(double lambda) const override;
 
     /** This function generates a random position sampled from the medium's spatial density

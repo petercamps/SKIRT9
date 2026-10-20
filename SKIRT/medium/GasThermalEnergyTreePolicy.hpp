@@ -22,10 +22,9 @@ class Medium;
 
     The tree is constructed before the medium state, including the gas temperature, has been
     initialized. The policy therefore uses the temperature imported by the medium components, i.e.
-    the temperature column of imported media with the \em importTemperature flag enabled (see the
-    ImportedMedium::temperature() function). An imported medium that also imports variable mix
-    parameters does not offer its imported temperature in this way, and is thus treated as not
-    importing a temperature. Gas medium components that do not import a temperature are ignored,
+    the temperature column of imported media whose material mix or material mix family requests the
+    temperature as an imported quantity (see the Medium::parameterInfo() and Medium::parameters()
+    functions). Gas medium components that do not import a temperature are ignored,
     and setup logs a warning listing them. If none of the gas medium components imports a
     temperature, setup reports a fatal error.
 
@@ -77,6 +76,7 @@ private:
     // data members initialized by setupSelfBefore()
     vector<int> _hv;            // the indices of the gas medium components that import a temperature
     vector<Medium*> _media;     // the corresponding medium components
+    vector<int> _indexv;        // the index of the temperature among the imported parameters of each component
     vector<double> _averageTv;  // the average temperature of each of these medium components
     double _maxEnergy{0.};      // the maximum thermal energy in a node, without the constant factor
 };

@@ -36,7 +36,7 @@ vector<SnapshotParameter> SelectDustMixFamily::parameterInfo() const
 
 ////////////////////////////////////////////////////////////////////
 
-const MaterialMix* SelectDustMixFamily::mix(double /*metallicity*/, double /*temperature*/, const Array& parameters)
+const MaterialMix* SelectDustMixFamily::mix(const Array& parameters)
 {
     long numMixes = _dustMixes.size();
     long index = max(0L, min(std::lround(parameters[0]), numMixes - 1));

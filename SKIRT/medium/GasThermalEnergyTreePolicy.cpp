@@ -16,6 +16,26 @@ namespace
 {
     // the number of positions used to estimate the average temperature of a medium component
     const int numTemperatureSamples = 100000;
+
+    // returns the index of the temperature among the imported parameters of the specified medium, or -1 if the
+    // medium does not import a temperature
+    int temperatureIndex(const Medium* medium)
+    {
+        auto info = medium->parameterInfo();
+        int numParams = info.size();
+        for (int i = 0; i != numParams; ++i)
+            if (info[i].identifier() == SnapshotParameter::Identifier::Temperature) return i;
+        return -1;
+    }
+
+    // returns the temperature imported by the specified medium at the specified position, given the index of the
+    // temperature among its imported parameters
+    double temperature(const Medium* medium, int index, Position bfr)
+    {
+        Array params;
+        medium->parameters(bfr, params);
+        return params[index];
+    }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -32,10 +52,12 @@ void GasThermalEnergyTreePolicy::setupSelfBefore()
         for (int h : ms->mediumIndices(MaterialMix::MaterialType::Gas))
         {
             Medium* medium = ms->media()[h];
-            if (medium->hasTemperature())
+            int index = temperatureIndex(medium);
+            if (index >= 0)
             {
                 _hv.push_back(h);
                 _media.push_back(medium);
+                _indexv.push_back(index);
             }
             else
                 ignored += (ignored.empty() ? "" : ", ") + std::to_string(h);
@@ -48,10 +70,12 @@ void GasThermalEnergyTreePolicy::setupSelfBefore()
 
     // estimate the average temperature and the total thermal energy of these components (without the constant factor)
     double total = 0.;
-    for (Medium* medium : _media)
+    for (size_t k = 0; k != _media.size(); ++k)
     {
+        Medium* medium = _media[k];
         double sumT = 0.;
-        for (int i = 0; i != numTemperatureSamples; ++i) sumT += medium->temperature(medium->generatePosition());
+        for (int i = 0; i != numTemperatureSamples; ++i)
+            sumT += temperature(medium, _indexv[k], medium->generatePosition());
         _averageTv.push_back(sumT / numTemperatureSamples);
         total += medium->number() * _averageTv.back();
     }
@@ -82,7 +106,7 @@ bool GasThermalEnergyTreePolicy::needsSubdivide(TreeNodeEvaluation& node) const
                 if (densityv[i] > 0.)
                 {
                     sumn += densityv[i];
-                    sumnT += densityv[i] * _media[k]->temperature(positionv[i]);
+                    sumnT += densityv[i] * temperature(_media[k], _indexv[k], positionv[i]);
                 }
             }
             energy += number * (sumn > 0. ? sumnT / sumn : _averageTv[k]);

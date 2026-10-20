@@ -17,16 +17,17 @@ void MetallicityProbe::probe()
         // locate the medium system
         auto ms = find<MediumSystem>();
 
-        // build a list of indices for gas medium components that store metallicity
-        vector<int> hv;
+        // build a list of indices for gas medium components that store metallicity, i.e. that have a custom state
+        // variable with the standard name for the metallicity, together with the custom index of that variable
+        vector<std::pair<int, int>> hiv;
         for (int h : ms->gasMediumIndices())
         {
             auto mix = ms->media()[h]->mix();
             for (const auto& candidate : mix->specificStateVariableInfo())
             {
-                if (candidate.identifier() == StateVariable::Identifier::Metallicity)
+                if (candidate.name() == "Z")
                 {
-                    hv.push_back(h);
+                    hiv.emplace_back(h, candidate.customIndex());
                     break;
                 }
             }
@@ -36,12 +37,14 @@ void MetallicityProbe::probe()
         ProbeFormBridge bridge(this, form());
 
         // produce output for each of the detected components, if any
-        for (int h : hv)
+        for (const auto& hi : hiv)
         {
+            int h = hi.first;
+            int i = hi.second;
             string sh = std::to_string(h);
 
             // define the call-back functions that will be passed to the bridge
-            auto valueInCell = [ms, h](int m) { return ms->metallicity(m, h); };
+            auto valueInCell = [ms, h, i](int m) { return ms->custom(m, h, i); };
             auto weightInCell = [ms, h](int m) { return ms->massDensity(m, h); };
 
             // produce output

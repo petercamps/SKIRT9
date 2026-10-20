@@ -20,14 +20,13 @@
     Refer to the description of the TextInFile class for information on overall formatting and on
     how to include header lines specifying the units for each column in the input file. In case the
     input file has no unit specifications, the default units mentioned below are used instead. The
-    number of columns in the input file depends on the options configured by the user for this
-    CylindricalCellGeometry instance:
+    input file should contain 7 columns:
 
     \f[ R_\mathrm{min}\,(\mathrm{pc}) \quad \varphi_\mathrm{min}\,(\mathrm{deg}) \quad
     z_\mathrm{min}\,(\mathrm{pc}) \quad R_\mathrm{max}\,(\mathrm{pc}) \quad
     \varphi_\mathrm{max}\,(\mathrm{deg}) \quad z_\mathrm{max}\,(\mathrm{pc}) \quad \{\,
     \rho\,(\text{M}_\odot\,\text{pc}^{-3}) \;\;|\;\; M\,(\text{M}_\odot) \;\;|\;\;
-    n\,(\text{cm}^{-3}) \;\;|\;\; N\,(1) \,\} \quad [Z\,(1)] \quad [T\,(\mathrm{K})] \f]
+    n\,(\text{cm}^{-3}) \;\;|\;\; N\,(1) \,\} \f]
 
     The first six columns specify the coordinates of the bordering planes and cylinders of the
     cell. The \em autoRevolve property controls a feature to automatically revolve 2D data to 3D.
@@ -37,15 +36,7 @@
     density \f$\rho\f$, the integrated mass \f$M\f$, the average number density \f$n\f$, or the
     integrated number density \f$N\f$ for the cell. The precise units for this field are irrelevant
     because the total mass in the geometry will be normalized to unity after importing the data.
-    However, the import procedure still insists on knowing the units.
-
-    If the \em importMetallicity option is enabled, the next column specifies a "metallicity"
-    fraction, which in this context is simply multiplied with the mass/density column to obtain the
-    actual mass/density of the cell. If the \em importTemperature option is enabled, the next
-    column specifies a temperature. If this temperature is higher than the maximum configured
-    temperature, the mass and density of the cell are set to zero, regardless of the mass or
-    density specified in the seventh column. If the \em importTemperature option is disabled, or
-    the maximum temperature value is set to zero, such a cutoff is not applied. */
+    However, the import procedure still insists on knowing the units. */
 class CylindricalCellGeometry : public ImportedGeometry
 {
     /** The enumeration type indicating the type of mass quantity to be imported. */

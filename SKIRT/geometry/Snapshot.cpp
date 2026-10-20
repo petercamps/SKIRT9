@@ -186,22 +186,6 @@ void Snapshot::importCurrentMass()
 
 ////////////////////////////////////////////////////////////////////
 
-void Snapshot::importMetallicity()
-{
-    _metallicityIndex = _nextIndex++;
-    _infile->addColumn("metallicity");
-}
-
-////////////////////////////////////////////////////////////////////
-
-void Snapshot::importTemperature()
-{
-    _temperatureIndex = _nextIndex++;
-    _infile->addColumn("temperature", "temperature", "K");
-}
-
-////////////////////////////////////////////////////////////////////
-
 void Snapshot::importVelocity()
 {
     _velocityIndex = _nextIndex;
@@ -295,11 +279,9 @@ void Snapshot::importParameters(const vector<SnapshotParameter>& parameters)
 
 ////////////////////////////////////////////////////////////////////
 
-void Snapshot::setMassDensityPolicy(double multiplier, double maxTemperature, bool useMetallicity)
+void Snapshot::setMassDensityPolicy(double multiplier)
 {
     _multiplier = multiplier;
-    _maxTemperature = maxTemperature;
-    _useMetallicity = useMetallicity;
     _hasDensityPolicy = true;
 }
 
@@ -312,16 +294,13 @@ void Snapshot::setNeedGetEntities()
 
 ////////////////////////////////////////////////////////////////////
 
-void Snapshot::logMassStatistics(int numIgnored, double totalOriginalMass, double totalMetallicMass,
-                                 double totalEffectiveMass)
+void Snapshot::logMassStatistics(double totalOriginalMass, double totalEffectiveMass)
 {
     auto massUnit = holdsNumber() ? "" : units()->umass();
     auto massToString = [this](double mass) {
         return StringUtils::toString(holdsNumber() ? mass : units()->omass(mass), 'e', 4);
     };
-    if (numIgnored) log()->info("  Ignored mass in " + std::to_string(numIgnored) + " high-temperature cells");
     log()->info("  Total original mass : " + massToString(totalOriginalMass) + " " + massUnit);
-    if (useMetallicity()) log()->info("  Total metallic mass : " + massToString(totalMetallicMass) + " " + massUnit);
     log()->info("  Total effective mass: " + massToString(totalEffectiveMass) + " " + massUnit);
 }
 
@@ -334,39 +313,24 @@ void Snapshot::calculateDensityAndMass(Array& rhov, Array& cumrhov, double& mass
     rhov.resize(numCells);
     Array Mv(numCells);
 
-    // get the maximum temperature, or zero of there is none
-    double maxT = useTemperatureCutoff() ? maxTemperature() : 0.;
-
     // initialize statistics
     double totalOriginalMass = 0.;
-    double totalMetallicMass = 0.;
     double totalEffectiveMass = 0.;
 
     // loop over all cells
-    int numIgnored = 0;
     for (int m = 0; m != numCells; ++m)
     {
         const Array& prop = properties(m);
 
-        // original mass is zero if temperature is above cutoff or if imported mass/density is not positive
-        double originalDensity = 0.;
-        double originalMass = 0.;
-        if (maxT && prop[temperatureIndex()] > maxT)
-        {
-            numIgnored++;
-        }
-        else
-        {
-            // use density or mass or both, depending on availability
-            double V = volume(m);
-            originalDensity = max(0., densityIndex() >= 0 ? prop[densityIndex()] : prop[massIndex()] / V);
-            originalMass = max(0., massIndex() >= 0 ? prop[massIndex()] : prop[densityIndex()] * V);
-        }
+        // original mass is zero if imported mass/density is not positive;
+        // use density or mass or both, depending on availability
+        double V = volume(m);
+        double originalDensity = max(0., densityIndex() >= 0 ? prop[densityIndex()] : prop[massIndex()] / V);
+        double originalMass = max(0., massIndex() >= 0 ? prop[massIndex()] : prop[densityIndex()] * V);
 
         // determine effective mass
-        double effectiveDensity = originalDensity * (useMetallicity() ? prop[metallicityIndex()] : 1.) * multiplier();
-        double metallicMass = originalMass * (useMetallicity() ? prop[metallicityIndex()] : 1.);
-        double effectiveMass = metallicMass * multiplier();
+        double effectiveDensity = originalDensity * multiplier();
+        double effectiveMass = originalMass * multiplier();
 
         // store density and mass for this cell
         rhov[m] = effectiveDensity;
@@ -374,7 +338,6 @@ void Snapshot::calculateDensityAndMass(Array& rhov, Array& cumrhov, double& mass
 
         // accumulate statistics
         totalOriginalMass += originalMass;
-        totalMetallicMass += metallicMass;
         totalEffectiveMass += effectiveMass;
     }
 
@@ -385,7 +348,7 @@ void Snapshot::calculateDensityAndMass(Array& rhov, Array& cumrhov, double& mass
     mass = totalEffectiveMass;
 
     // log mass statistics
-    logMassStatistics(numIgnored, totalOriginalMass, totalMetallicMass, totalEffectiveMass);
+    logMassStatistics(totalOriginalMass, totalEffectiveMass);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -425,16 +388,6 @@ double Snapshot::metallicity(int m) const
 
 ////////////////////////////////////////////////////////////////////
 
-double Snapshot::metallicity(Position bfr) const
-{
-    thread_local EntityCollection entities;  // can be reused for all queries in a given execution thread
-    getEntities(entities, bfr);
-    return entities.averageValue([this](int m) { return metallicity(m); },
-                                 [this](int m) { return massForAveraging(m); });
-}
-
-////////////////////////////////////////////////////////////////////
-
 double Snapshot::age(int m) const
 {
     return properties(m)[ageIndex()];
@@ -445,16 +398,6 @@ double Snapshot::age(int m) const
 double Snapshot::temperature(int m) const
 {
     return properties(m)[temperatureIndex()];
-}
-
-////////////////////////////////////////////////////////////////////
-
-double Snapshot::temperature(Position bfr) const
-{
-    thread_local EntityCollection entities;  // can be reused for all queries in a given execution thread
-    getEntities(entities, bfr);
-    return entities.averageValue([this](int m) { return temperature(m); },
-                                 [this](int m) { return massForAveraging(m); });
 }
 
 ////////////////////////////////////////////////////////////////////

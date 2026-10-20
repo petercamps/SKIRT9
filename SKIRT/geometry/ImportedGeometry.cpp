@@ -15,13 +15,9 @@ void ImportedGeometry::setupSelfAfter()
     // create the snapshot with preconfigured mass or density column
     _snapshot = createAndOpenSnapshot();
 
-    // add optional columns if applicable
-    if (_importMetallicity) _snapshot->importMetallicity();
-    if (_importTemperature) _snapshot->importTemperature();
-
     // set the density policy;
     // our total mass is normalized to unity, so the constant mass multiplier can have an arbitrary value
-    _snapshot->setMassDensityPolicy(1., _importTemperature ? _maxTemperature : 0., true);
+    _snapshot->setMassDensityPolicy(1.);
 
     // read the data from file
     _snapshot->readAndClose();

@@ -4,6 +4,8 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "StateVariable.hpp"
+#include "FatalError.hpp"
+#include <cctype>
 
 //////////////////////////////////////////////////////////////////////
 
@@ -42,16 +44,16 @@ StateVariable StateVariable::numberDensity()
 
 //////////////////////////////////////////////////////////////////////
 
-StateVariable StateVariable::metallicity()
+StateVariable StateVariable::metallicity(int customIndex)
 {
-    return StateVariable(Identifier::Metallicity, 0, "metallicity", "", 'e');
+    return custom(customIndex, "metallicity", "").named("Z");
 }
 
 //////////////////////////////////////////////////////////////////////
 
-StateVariable StateVariable::temperature()
+StateVariable StateVariable::temperature(int customIndex)
 {
-    return StateVariable(Identifier::Temperature, 0, "temperature", "temperature", 'e');
+    return custom(customIndex, "temperature", "temperature").named("T");
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -59,6 +61,41 @@ StateVariable StateVariable::temperature()
 StateVariable StateVariable::custom(int customIndex, const string& description, const string& quantity, char format)
 {
     return StateVariable(Identifier::Custom, customIndex, description, quantity, format);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+StateVariable StateVariable::named(const string& name) const
+{
+    if (_identifier != Identifier::Custom) throw FATALERROR("Only a custom state variable can have a name");
+    bool valid = !name.empty();
+    for (char c : name)
+        if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') valid = false;
+    if (!valid) throw FATALERROR("Invalid state variable name '" + name + "'");
+
+    StateVariable result = *this;
+    result._name = name;
+    return result;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+StateVariable StateVariable::categorical() const
+{
+    if (_identifier != Identifier::Custom) throw FATALERROR("Only a custom state variable can be categorical");
+    StateVariable result = *this;
+    result._kind = QuantityKind::Categorical;
+    return result;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+StateVariable StateVariable::extensive() const
+{
+    if (_identifier != Identifier::Custom) throw FATALERROR("Only a custom state variable can be extensive");
+    StateVariable result = *this;
+    result._kind = QuantityKind::Extensive;
+    return result;
 }
 
 //////////////////////////////////////////////////////////////////////

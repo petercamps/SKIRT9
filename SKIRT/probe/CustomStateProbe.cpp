@@ -16,12 +16,14 @@
 
 namespace
 {
-    // returns a list of integers corresponding to the indices and index ranges in the specified string
+    // returns a list of integers corresponding to the names, indices, and index ranges in the specified string,
+    // given the descriptors of the custom state variables
     // - if the string is empty, all indices 0...numIndices are included
-    // - otherwise, the string must be a comma-separated list of zero-based indices or index ranges
-    // portions of the string that don't conform to the syntax are ignored
-    vector<int> listIndices(int n, string list)
+    // - otherwise, the string must be a comma-separated list of names, zero-based indices, or index ranges
+    // portions of the string that don't conform to the syntax, and unknown names, are ignored
+    vector<int> listIndices(const vector<StateVariable>& descriptors, string list)
     {
+        int n = descriptors.size();
         vector<int> result;
         list = StringUtils::squeeze(list);
         if (list.empty())
@@ -30,12 +32,17 @@ namespace
         }
         else
         {
-            for (const string& segment : StringUtils::split(list, ","))
+            for (string segment : StringUtils::split(list, ","))
             {
+                segment = StringUtils::squeeze(segment);
                 auto parts = StringUtils::split(segment, "-");
-                if (parts.size() == 1)
+                if (parts.size() == 1 && !StringUtils::isValidInt(parts[0]))
                 {
-                    if (!StringUtils::isValidInt(parts[0])) continue;
+                    for (int i = 0; i != n; ++i)
+                        if (descriptors[i].name() == segment) result.push_back(i);
+                }
+                else if (parts.size() == 1)
+                {
                     int index = StringUtils::toInt(parts[0]);
                     if (index >= n) continue;
                     result.push_back(index);
@@ -79,7 +86,7 @@ void CustomStateProbe::probe()
                 if (candidate.identifier() == StateVariable::Identifier::Custom) descriptors.push_back(candidate);
 
             // get the indices corresponding to the user property and to the nr of custom variables for this medium
-            auto indexv = listIndices(descriptors.size(), indices());
+            auto indexv = listIndices(descriptors, variables());
 
             // if there are custom variables to be probed for this medium
             if (!indexv.empty())

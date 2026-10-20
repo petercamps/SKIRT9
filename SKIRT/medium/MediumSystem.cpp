@@ -37,7 +37,7 @@ namespace
 {
     // This helper class performs spatial sampling of the medium properties within a given cell and
     // for a given medium component. The number of samples to be taken can be specified separately
-    // for the density and for all other properties (velocity, magnetic field, metallicity, ...).
+    // for the density and for all other properties (velocity, magnetic field, imported parameters).
     // The main reason for bundling this functionality in its own class/object is to allow caching
     // the random sampling positions with the corresponding sampled density values in a cell.
     // The constructor takes arguments that depend only on the simulation configuration and thus
@@ -141,34 +141,6 @@ namespace
             Vec Bsum;
             for (int n = 0; n != _numPropertySamples; ++n) Bsum += _media[h]->magneticField(_positions[n]);
             return Bsum / _numPropertySamples;
-        }
-
-        // Returns the central or density-averaged metallicity in the cell for the given medium component.
-        double metallicity(int h)
-        {
-            if (_numPropertySamples == 1) return _media[h]->metallicity(_center);
-            double nsum = 0;
-            double Zsum = 0.;
-            for (int n = 0; n != _numPropertySamples; ++n)
-            {
-                nsum += _densities(h, n);
-                Zsum += _densities(h, n) * _media[h]->metallicity(_positions[n]);
-            }
-            return nsum > 0. ? Zsum / nsum : 0.;
-        }
-
-        // Returns the central or density-averaged temperature in the cell for the given medium component.
-        double temperature(int h)
-        {
-            if (_numPropertySamples == 1) return _media[h]->temperature(_center);
-            double nsum = 0;
-            double Tsum = 0.;
-            for (int n = 0; n != _numPropertySamples; ++n)
-            {
-                nsum += _densities(h, n);
-                Tsum += _densities(h, n) * _media[h]->temperature(_positions[n]);
-            }
-            return nsum > 0. ? Tsum / nsum : 0.;
         }
 
         // Returns the central or sampled custom parameter values in the cell for the given medium component:
@@ -362,8 +334,7 @@ void MediumSystem::setupSelfAfter()
         // construct a property sampler to be shared by all cells handled in the loop below
         bool hasProperty = _config->hasMovingMedia() || _config->hasMagneticField();
         for (int h = 0; h != _numMedia; ++h)
-            if (_media[h]->hasMetallicity() || _media[h]->hasTemperature() || _media[h]->hasParameters())
-                hasProperty = true;
+            if (_media[h]->hasParameters()) hasProperty = true;
         PropertySampler sampler(_media, _grid, dic ? 0 : _config->numDensitySamples(),
                                 hasProperty ? _config->numPropertySamples() : 0);
 
@@ -441,15 +412,14 @@ void MediumSystem::setupSelfAfter()
                 }
 
                 // specific state variables other than density:
-                // retrieve value sampled from corresponding medium component
+                // retrieve the imported parameters sampled from the corresponding medium component, except for a
+                // medium with a variable mix, for which the parameters have already selected the material mix
                 for (int h = 0; h != _numMedia; ++h)
                 {
-                    double Z = _media[h]->hasMetallicity() ? sampler.metallicity(h) : -1.;
-                    double T = _media[h]->hasTemperature() ? sampler.temperature(h) : -1.;
                     Array params;
-                    if (_media[h]->hasParameters()) sampler.parameters(h, params);
+                    if (_media[h]->hasParameters() && !_media[h]->hasVariableMix()) sampler.parameters(h, params);
                     MaterialState mst(_state, m, h);
-                    mix(m, h)->initializeSpecificState(&mst, Z, T, params);
+                    mix(m, h)->initializeSpecificState(&mst, params);
                 }
             }
             log->infoIfElapsed("Determined medium properties: ", currentChunkSize);
@@ -629,20 +599,6 @@ double MediumSystem::numberDensity(int m, int h) const
 double MediumSystem::massDensity(int m, int h) const
 {
     return _state.numberDensity(m, h) * mix(m, h)->mass();
-}
-
-////////////////////////////////////////////////////////////////////
-
-double MediumSystem::metallicity(int m, int h) const
-{
-    return _state.metallicity(m, h);
-}
-
-////////////////////////////////////////////////////////////////////
-
-double MediumSystem::temperature(int m, int h) const
-{
-    return _state.temperature(m, h);
 }
 
 ////////////////////////////////////////////////////////////////////

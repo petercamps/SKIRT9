@@ -525,7 +525,8 @@ bool NonLTELineGasMix::hasLineEmission() const
 
 vector<SnapshotParameter> NonLTELineGasMix::parameterInfo() const
 {
-    vector<SnapshotParameter> result;
+    // add the kinetic gas temperature
+    vector<SnapshotParameter> result{SnapshotParameter::temperature()};
 
     // add the number density of each collisional partner
     for (const auto& partner : _model.colPartner)
@@ -539,14 +540,22 @@ vector<SnapshotParameter> NonLTELineGasMix::parameterInfo() const
 
 ////////////////////////////////////////////////////////////////////
 
+namespace
+{
+    // index of the custom variable holding the effective gas temperature
+    constexpr int TEMPERATURE = 0;
+}
+
+////////////////////////////////////////////////////////////////////
+
 vector<StateVariable> NonLTELineGasMix::specificStateVariableInfo() const
 {
-    // add standard variables for the number density of the species under consideration
-    // and for the effective gas temperature (including kinetic temperature and unresolved turbulence)
-    vector<StateVariable> result{StateVariable::numberDensity(), StateVariable::temperature()};
+    // add the standard variable for the number density of the species under consideration, and the custom variable
+    // with the standard name for the effective gas temperature (including kinetic temperature and unresolved turbulence)
+    vector<StateVariable> result{StateVariable::numberDensity(), StateVariable::temperature(TEMPERATURE)};
 
     // next available custom variable index
-    int index = 0;
+    int index = TEMPERATURE + 1;
 
     // add custom variable for the kinetic gas temperature (i.e. excluding turbulence)
     const_cast<NonLTELineGasMix*>(this)->_indexKineticTemperature = index;
@@ -588,8 +597,7 @@ vector<StateVariable> NonLTELineGasMix::specificStateVariableInfo() const
 
 ////////////////////////////////////////////////////////////////////
 
-void NonLTELineGasMix::initializeSpecificState(MaterialState* state, double /*metallicity*/, double temperature,
-                                               const Array& params) const
+void NonLTELineGasMix::initializeSpecificState(MaterialState* state, const Array& params) const
 {
     // if the cell does not contain any material for this component, leave all properties at zero values
     if (state->numberDensity() > 0.)
@@ -598,18 +606,18 @@ void NonLTELineGasMix::initializeSpecificState(MaterialState* state, double /*me
         int numLevels = _model.numLevels();
 
         // copy kinetic temperature from import or default
-        double Tkin = temperature >= 0. ? temperature : defaultTemperature();
+        double Tkin = params.size() ? params[0] : defaultTemperature();
         state->setKineticTemperature(Tkin);
 
         // set effective temperature, including imported or default turbulence
-        double vturb = params.size() ? params[numColPartners] : defaultTurbulenceVelocity();
+        double vturb = params.size() ? params[1 + numColPartners] : defaultTurbulenceVelocity();
         double Teff = Tkin + 0.5 * vturb * vturb * _model.mass / Constants::k();
-        state->setTemperature(Teff);
+        state->setCustom(TEMPERATURE, Teff);
 
         // copy collisional partner densities from import or default
         if (params.size())
         {
-            for (int c = 0; c != numColPartners; ++c) state->setColPartnerDensity(c, params[c]);
+            for (int c = 0; c != numColPartners; ++c) state->setColPartnerDensity(c, params[1 + c]);
         }
         else
         {
@@ -772,7 +780,7 @@ double NonLTELineGasMix::solveLevelPopulations(MaterialState* state, const Array
 
         auto log = find<Log>();
         double center = _model.center[k];
-        double sigma = sigmaForLine(center, state->temperature(), _model.mass);
+        double sigma = sigmaForLine(center, state->custom(TEMPERATURE), _model.mass);
         double lambdamin = center - PROFILE_RANGE * sigma;
         double lambdamax = center + PROFILE_RANGE * sigma;
         int ellmin = std::lower_bound(begin(_lambdav), end(_lambdav), lambdamin) - begin(_lambdav);
@@ -945,7 +953,7 @@ double NonLTELineGasMix::opacityAbs(double lambda, const MaterialState* state, c
         {
             if (_model.branchRatio[k] < lowestBranchingRatio()) continue;
             double center = _model.center[k];
-            double sigma = sigmaForLine(center, state->temperature(), _model.mass);
+            double sigma = sigmaForLine(center, state->custom(TEMPERATURE), _model.mass);
             Range range(center - PROFILE_RANGE * sigma, center + PROFILE_RANGE * sigma);
 
             // calculate opacity only if the requested wavelength is in the line profile range
@@ -1046,7 +1054,7 @@ Array NonLTELineGasMix::lineEmissionSpectrum(const MaterialState* state, const A
 
 double NonLTELineGasMix::indicativeTemperature(const MaterialState* state, const Array& /*Jv*/) const
 {
-    return state->temperature();
+    return state->custom(TEMPERATURE);
 }
 
 ////////////////////////////////////////////////////////////////////

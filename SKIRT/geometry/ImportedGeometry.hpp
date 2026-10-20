@@ -25,19 +25,6 @@ class ImportedGeometry : public GenGeometry, public SiteListInterface
 
         ATTRIBUTE_SUB_PROPERTIES_HERE(ImportedGeometry)
 
-        PROPERTY_BOOL(importMetallicity, "import a metallicity column")
-        ATTRIBUTE_DEFAULT_VALUE(importMetallicity, "false")
-
-        PROPERTY_BOOL(importTemperature, "import a temperature column")
-        ATTRIBUTE_DEFAULT_VALUE(importTemperature, "false")
-
-        PROPERTY_DOUBLE(maxTemperature, "the maximum temperature for included mass (or zero to include all)")
-        ATTRIBUTE_QUANTITY(maxTemperature, "temperature")
-        ATTRIBUTE_MIN_VALUE(maxTemperature, "[0 K")
-        ATTRIBUTE_MAX_VALUE(maxTemperature, "1000000 K]")
-        ATTRIBUTE_DEFAULT_VALUE(maxTemperature, "0 K")
-        ATTRIBUTE_RELEVANT_IF(maxTemperature, "importTemperature")
-
         PROPERTY_STRING(useColumns, "a list of names corresponding to columns in the file to be imported")
         ATTRIBUTE_DEFAULT_VALUE(useColumns, "")
         ATTRIBUTE_REQUIRED_IF(useColumns, "false")

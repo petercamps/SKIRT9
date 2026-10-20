@@ -20,9 +20,9 @@
     gas must be defined by the input model and are considered to be constant during the simulation.
     In this context, this material mix offers a configuration property to specify a default gas
     temperature that is used by geometric media as a fixed temperature across the spatial domain.
-    Imported media offer an \em importTemperature flag that allows defining a different gas
-    temperature for each particle or cell. In this case, the default dust temperature configured
-    for the material mix is ignored.
+    For an imported medium, the material mix imports the gas temperature for each particle or cell,
+    and the default temperature configured for the material mix is ignored. The temperature is
+    stored in the custom state variable with the standard name \c T.
 
     This material mix also offers a configuration property to enable or disable support for
     polarization. It returns one of the \c Lya or \c LyaPolarization scattering modes depending on
@@ -35,7 +35,7 @@ class LyaNeutralHydrogenGasMix : public MaterialMix
 {
     ITEM_CONCRETE(LyaNeutralHydrogenGasMix, MaterialMix, "neutral hydrogen for Lyman-alpha line transfer")
         ATTRIBUTE_TYPE_DISPLAYED_IF(LyaNeutralHydrogenGasMix, "Resonance")
-        ATTRIBUTE_TYPE_INSERT(LyaNeutralHydrogenGasMix, "GasMix")
+        ATTRIBUTE_TYPE_INSERT(LyaNeutralHydrogenGasMix, "GasMix,CustomMediumState")
 
         PROPERTY_DOUBLE(defaultTemperature, "the default temperature of the neutral hydrogen gas")
         ATTRIBUTE_QUANTITY(defaultTemperature, "temperature")
@@ -82,6 +82,11 @@ public:
     //======== Medium state setup =======
 
 public:
+    /** This function returns the number and type of import parameters required by this particular
+        material mix as a list of SnapshotParameter objects. For this class, the function returns
+        the gas temperature. */
+    vector<SnapshotParameter> parameterInfo() const override;
+
     /** This function returns a list of StateVariable objects describing the specific state
         variables used by the receiving material mix. See the description of the
         MaterialMix::specificStateVariableInfo() function for more information.
@@ -92,12 +97,10 @@ public:
 
     /** This function initializes the specific state variables requested by this material
         mix through the specificStateVariableInfo() function except for the number density. For the
-        Lyman-alpha material mix, the function initializes the temperature to the specified
-        imported temperature, or if this is not available, to the user-configured default
-        temperature for this material mix. The metallicity and custom parameter arguments are
-        ignored. */
-    void initializeSpecificState(MaterialState* state, double metallicity, double temperature,
-                                 const Array& params) const override;
+        Lyman-alpha material mix, the function initializes the temperature to the imported
+        temperature, or for a geometric medium, to the user-configured default temperature for this
+        material mix. */
+    void initializeSpecificState(MaterialState* state, const Array& params) const override;
 
     //======== Low-level material properties =======
 

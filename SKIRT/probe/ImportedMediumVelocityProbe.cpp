@@ -11,24 +11,14 @@
 
 ////////////////////////////////////////////////////////////////////
 
-void ImportedMediumVelocityProbe::probeImportedMedium(const string& sh, const ImportedMedium* medium,
+void ImportedMediumVelocityProbe::probeImportedMedium(const string& sh, const ImportedMedium* /*medium*/,
                                                       const Snapshot* snapshot)
 {
     if (snapshot->hasVelocity())
     {
         // define call-back functions to retrieve the probed quantity and corresponding weight for a given entity
-        // for dust media, use the gas density rather than the dust density for weighting the probed quantity
-        bool dust = medium->mix()->isDust() && snapshot->hasMetallicity();
         auto getValue = [](const Snapshot* snapshot, int m) { return snapshot->velocity(m); };
-        auto getWeight = [dust](const Snapshot* snapshot, int m) {
-            double w = snapshot->density(m);
-            if (dust)
-            {
-                double Z = snapshot->metallicity(m);
-                w = Z > 0. ? w / Z : 0.;
-            }
-            return w;
-        };
+        auto getWeight = [](const Snapshot* snapshot, int m) { return snapshot->density(m); };
 
         // construct a bridge and produce output
         ProbeFormBridge bridge(this, form());

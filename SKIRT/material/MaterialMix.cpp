@@ -132,9 +132,28 @@ vector<SnapshotParameter> MaterialMix::parameterInfo() const
 
 ////////////////////////////////////////////////////////////////////
 
-void MaterialMix::initializeSpecificState(MaterialState* /*state*/, double /*metallicity*/, double /*temperature*/,
-                                          const Array& /*params*/) const
-{}
+bool MaterialMix::hasVariableMix() const
+{
+    return false;
+}
+
+////////////////////////////////////////////////////////////////////
+
+const MaterialMix* MaterialMix::mix(const Array& /*parameters*/)
+{
+    return this;
+}
+
+////////////////////////////////////////////////////////////////////
+
+const MaterialMix* MaterialMix::mix()
+{
+    return this;
+}
+
+////////////////////////////////////////////////////////////////////
+
+void MaterialMix::initializeSpecificState(MaterialState* /*state*/, const Array& /*params*/) const {}
 
 ////////////////////////////////////////////////////////////////////
 

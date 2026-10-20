@@ -6,8 +6,10 @@
 #ifndef MATERIALMIXPROVIDER_HPP
 #define MATERIALMIXPROVIDER_HPP
 
+#include "Array.hpp"
 #include "SimulationItem.hpp"
 #include "SnapshotParameter.hpp"
+class MaterialMix;
 
 ////////////////////////////////////////////////////////////////////
 
@@ -113,6 +115,22 @@ public:
         the capabilities shared by all its members. The function may be called before the receiving
         item has been set up, and it does not construct any material mix. */
     virtual Capabilities capabilities() const = 0;
+
+    /** This function returns true if the imported quantities select a material mix for each
+        position, as for a material mix family, and false if they initialize the medium state of a
+        single material mix. */
+    virtual bool hasVariableMix() const = 0;
+
+    /** This function returns (a pointer to) the material mix for the specified values of the
+        imported quantities, in the order returned by the parameterInfo() function. A material mix
+        returns itself, and a material mix family returns one of its members. The receiving item
+        retains ownership of the returned material mix. */
+    virtual const MaterialMix* mix(const Array& parameters) = 0;
+
+    /** This function returns (a pointer to) a material mix representative of this material mix or
+        family. A material mix returns itself, and a material mix family returns a default member.
+        The receiving item retains ownership of the returned material mix. */
+    virtual const MaterialMix* mix() = 0;
 };
 
 ////////////////////////////////////////////////////////////////////

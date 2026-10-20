@@ -17,6 +17,9 @@ namespace
 {
     // transition wavelength from Compton to Thomson scattering
     const double comptonWL = 9.999999e-9;  // 10 nm
+
+    // index of the custom state variable holding the temperature, if any
+    constexpr int TEMPERATURE = 0;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -71,26 +74,34 @@ bool ElectronMix::hasScatteringDispersion() const
 
 ////////////////////////////////////////////////////////////////////
 
+vector<SnapshotParameter> ElectronMix::parameterInfo() const
+{
+    bool hasDispersion = includeThermalDispersion() && !find<Configuration>()->oligochromatic();
+    if (hasDispersion) return {SnapshotParameter::temperature()};
+    return {};
+}
+
+////////////////////////////////////////////////////////////////////
+
 vector<StateVariable> ElectronMix::specificStateVariableInfo() const
 {
     vector<StateVariable> result{StateVariable::numberDensity()};
-    if (_hasDispersion) result.push_back(StateVariable::temperature());
+    if (_hasDispersion) result.push_back(StateVariable::temperature(TEMPERATURE));
     return result;
 }
 
 ////////////////////////////////////////////////////////////////////
 
-void ElectronMix::initializeSpecificState(MaterialState* state, double /*metallicity*/, double temperature,
-                                          const Array& /*params*/) const
+void ElectronMix::initializeSpecificState(MaterialState* state, const Array& params) const
 {
     // leave the temperature at zero if the cell does not contain any material for this component
     if (_hasDispersion && state->numberDensity() > 0.)
     {
-        // if no temperature was imported, use default value
-        if (temperature < 0) temperature = defaultTemperature();
+        // use the imported temperature, or for a geometric medium, the default value
+        double temperature = params.size() ? params[0] : defaultTemperature();
 
         // make sure the temperature is at least the local universe CMB temperature
-        state->setTemperature(max(Constants::Tcmb(), temperature));
+        state->setCustom(TEMPERATURE, max(Constants::Tcmb(), temperature));
     }
 }
 
@@ -180,7 +191,7 @@ bool ElectronMix::peeloffScattering(double& I, double& Q, double& U, double& V, 
     {
         // draw a random electron velocity unless a previous peel-off stored this already
         scatinfo = const_cast<PhotonPacket*>(pp)->getScatteringInfo();
-        generateElectronVelocityIfNeeded(scatinfo, state->temperature(), random());
+        generateElectronVelocityIfNeeded(scatinfo, state->custom(TEMPERATURE), random());
 
         // adjust the wavelength
         lambda = PhotonPacket::shiftedReceptionWavelength(lambda, pp->direction(), scatinfo->velocity);
@@ -210,7 +221,7 @@ void ElectronMix::performScattering(double lambda, const MaterialState* state, P
     {
         // draw a random electron velocity unless a previous peel-off stored this already
         scatinfo = pp->getScatteringInfo();
-        generateElectronVelocityIfNeeded(scatinfo, state->temperature(), random());
+        generateElectronVelocityIfNeeded(scatinfo, state->custom(TEMPERATURE), random());
 
         // adjust the wavelength
         lambda = PhotonPacket::shiftedReceptionWavelength(lambda, pp->direction(), scatinfo->velocity);
@@ -235,7 +246,7 @@ void ElectronMix::performScattering(double lambda, const MaterialState* state, P
 
 double ElectronMix::indicativeTemperature(const MaterialState* state, const Array& /*Jv*/) const
 {
-    return _hasDispersion ? state->temperature() : 0.;
+    return _hasDispersion ? state->custom(TEMPERATURE) : 0.;
 }
 
 ////////////////////////////////////////////////////////////////////

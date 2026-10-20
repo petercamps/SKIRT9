@@ -124,10 +124,8 @@ public:
         number of imported parameter values as requested through the parameterInfo() function, i.e.
         a weight factor per fragment. It then copies these weights into the corresponding specific
         state variables. If the \em params array is empty, the function sets all the weights in the
-        specific state to a value of one. The \em metallicity and \em temperature arguments are
-        ignored. */
-    void initializeSpecificState(MaterialState* state, double metallicity, double temperature,
-                                 const Array& params) const override;
+        specific state to a value of one. */
+    void initializeSpecificState(MaterialState* state, const Array& params) const override;
 
     //======== Low-level material properties =======
 

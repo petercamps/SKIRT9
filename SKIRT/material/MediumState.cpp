@@ -16,8 +16,6 @@ void MediumState::initConfiguration(int numCells, int numMedia, int numAggregate
     _numAggregateCells = numAggregateCells;
 
     _off_dens.resize(_numMedia);
-    _off_meta.resize(_numMedia);
-    _off_temp.resize(_numMedia);
     _off_cust.resize(_numMedia);
 }
 
@@ -39,8 +37,6 @@ void MediumState::initCommonStateVariables(const vector<StateVariable>& variable
                 _nextOffset += 3;
                 break;
             case StateVariable::Identifier::NumberDensity:
-            case StateVariable::Identifier::Metallicity:
-            case StateVariable::Identifier::Temperature:
             case StateVariable::Identifier::Custom:
                 throw FATALERROR("Requesting common state variable of unsupported type");
         }
@@ -51,6 +47,14 @@ void MediumState::initCommonStateVariables(const vector<StateVariable>& variable
 
 void MediumState::initSpecificStateVariables(const vector<StateVariable>& variables)
 {
+    // verify that the names of the variables are unique
+    for (auto first = variables.begin(); first != variables.end(); ++first)
+        if (!first->name().empty())
+            for (auto second = first + 1; second != variables.end(); ++second)
+                if (second->name() == first->name())
+                    throw FATALERROR("The state variables of medium component " + std::to_string(_nextComponent)
+                                     + " have duplicate name '" + first->name() + "'");
+
     for (const StateVariable& variable : variables)
     {
         switch (variable.identifier())
@@ -59,8 +63,6 @@ void MediumState::initSpecificStateVariables(const vector<StateVariable>& variab
                 if (_numAggregateCells) _densityOffsets.push_back(_nextOffset);
                 _off_dens[_nextComponent] = _nextOffset++;
                 break;
-            case StateVariable::Identifier::Metallicity: _off_meta[_nextComponent] = _nextOffset++; break;
-            case StateVariable::Identifier::Temperature: _off_temp[_nextComponent] = _nextOffset++; break;
             case StateVariable::Identifier::Custom:
                 if (variable.customIndex() == 0) _off_cust[_nextComponent] = _nextOffset;
                 if (_numAggregateCells && variable.quantity() == "numbervolumedensity")
@@ -223,20 +225,6 @@ void MediumState::setMagneticField(int m, Vec value)
 void MediumState::setNumberDensity(int m, int h, double value)
 {
     _data[_numVars * m + _off_dens[h]] = value;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-void MediumState::setMetallicity(int m, int h, double value)
-{
-    _data[_numVars * m + _off_meta[h]] = value;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-void MediumState::setTemperature(int m, int h, double value)
-{
-    _data[_numVars * m + _off_temp[h]] = value;
 }
 
 //////////////////////////////////////////////////////////////////////

@@ -12,7 +12,8 @@
 
 ////////////////////////////////////////////////////////////////////
 
-// return true if any of the medium components with the given indices store temperature in the medium state
+// return true if any of the medium components with the given indices store temperature in the medium state,
+// i.e. have a custom state variable with the standard name for the temperature
 bool hasTemperature(const MediumSystem* ms, const vector<int>& hv)
 {
     for (int h : hv)
@@ -20,7 +21,7 @@ bool hasTemperature(const MediumSystem* ms, const vector<int>& hv)
         auto mix = ms->media()[h]->mix();
         for (const auto& candidate : mix->specificStateVariableInfo())
         {
-            if (candidate.identifier() == StateVariable::Identifier::Temperature) return true;
+            if (candidate.name() == "T") return true;
         }
     }
     return false;

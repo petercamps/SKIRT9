@@ -363,6 +363,12 @@
     tabulated T and kappa. PerCell uses the snapshot's abundances in the
     emission calculation via 9 imported columns (8 metals + He); the stab
     T/kappa stay on the Gutkin baseline.
+
+    For an imported medium, the mix imports the metallicity and the temperature, followed in
+    PerCell mode by the 9 abundance columns. For a geometric medium, it uses the configured
+    default metallicity and temperature; PerCell mode then is not available. The metallicity and
+    the temperature are stored in the custom state variables with the standard names \c Z and \c
+    T.
 */
 class DiffuseIonizedGasMix : public EmittingGasMix
 {
@@ -524,17 +530,16 @@ public:
     //======== Medium state setup =======
 
 public:
-    /** Returns descriptors for snapshot-import columns required by this material mix.
-        When abundanceMode=PerCell, requests 9 columns: 8 metal n_X/n_H ratios (C, N,
-        O, Ne, Mg, Si, S, Fe) followed by n_He/n_H. SolarScaled requires no columns. */
+    /** Returns descriptors for snapshot-import columns required by this material mix: the
+        metallicity and the temperature, followed, when abundanceMode=PerCell, by 9 columns: 8
+        metal n_X/n_H ratios (C, N, O, Ne, Mg, Si, S, Fe) followed by n_He/n_H. */
     vector<SnapshotParameter> parameterInfo() const override;
 
     /** Returns descriptors for state variables used by this material mix. */
     vector<StateVariable> specificStateVariableInfo() const override;
 
     /** Initializes specific state variables from imported or default values. */
-    void initializeSpecificState(MaterialState* state, double metallicity, double temperature,
-                                 const Array& params) const override;
+    void initializeSpecificState(MaterialState* state, const Array& params) const override;
 
     //======== Medium state updates =======
 

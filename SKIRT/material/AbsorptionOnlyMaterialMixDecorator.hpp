@@ -106,8 +106,7 @@ public:
 
     /** This function initializes any specific state variables requested by the decorated material
         mix through the specificStateVariableInfo() function except for the number density. */
-    virtual void initializeSpecificState(MaterialState* state, double metallicity, double temperature,
-                                         const Array& params) const override;
+    virtual void initializeSpecificState(MaterialState* state, const Array& params) const override;
 
     //======== Medium state updates =======
 

@@ -22,8 +22,10 @@ namespace
     constexpr Range absorptionRange(lambdaSF * (1. - 0.03), lambdaSF * (1. + 0.03));
 
     // indices for custom state variables
-    constexpr int NEUTRAL_SURFACE_DENSITY = 0;
-    constexpr int ATOMIC_FRACTION = 1;
+    constexpr int METALLICITY = 0;
+    constexpr int TEMPERATURE = 1;
+    constexpr int NEUTRAL_SURFACE_DENSITY = 2;
+    constexpr int ATOMIC_FRACTION = 3;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -65,7 +67,8 @@ bool SpinFlipHydrogenGasMix::hasLineEmission() const
 
 vector<SnapshotParameter> SpinFlipHydrogenGasMix::parameterInfo() const
 {
-    return {SnapshotParameter::custom("neutral hydrogen mass surface density", "masssurfacedensity", "Msun/pc2")};
+    return {SnapshotParameter::metallicity(), SnapshotParameter::temperature(),
+            SnapshotParameter::custom("neutral hydrogen mass surface density", "masssurfacedensity", "Msun/pc2")};
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -73,24 +76,25 @@ vector<SnapshotParameter> SpinFlipHydrogenGasMix::parameterInfo() const
 vector<StateVariable> SpinFlipHydrogenGasMix::specificStateVariableInfo() const
 {
     return vector<StateVariable>{
-        StateVariable::numberDensity(), StateVariable::metallicity(), StateVariable::temperature(),
+        StateVariable::numberDensity(), StateVariable::metallicity(METALLICITY),
+        StateVariable::temperature(TEMPERATURE),
         StateVariable::custom(NEUTRAL_SURFACE_DENSITY, "neutral hydrogen mass surface density", "masssurfacedensity"),
         StateVariable::custom(ATOMIC_FRACTION, "atomic hydrogen fraction", "")};
 }
 
 ////////////////////////////////////////////////////////////////////
 
-void SpinFlipHydrogenGasMix::initializeSpecificState(MaterialState* state, double metallicity, double temperature,
-                                                     const Array& params) const
+void SpinFlipHydrogenGasMix::initializeSpecificState(MaterialState* state, const Array& params) const
 {
     // leave the properties at zero if the cell does not contain any material for this component
     if (state->numberDensity() > 0.)
     {
-        // if no value was imported, use default value
+        // use the imported values, or for a geometric medium, the default values
         // make sure the temperature is at least the local universe CMB temperature
-        state->setMetallicity(metallicity >= 0. ? metallicity : defaultMetallicity());
-        state->setTemperature(max(Constants::Tcmb(), temperature >= 0. ? temperature : defaultTemperature()));
-        state->setCustom(NEUTRAL_SURFACE_DENSITY, params.size() ? params[0] : defaultNeutralSurfaceDensity());
+        bool imported = params.size() > 0;
+        state->setCustom(METALLICITY, imported ? params[0] : defaultMetallicity());
+        state->setCustom(TEMPERATURE, max(Constants::Tcmb(), imported ? params[1] : defaultTemperature()));
+        state->setCustom(NEUTRAL_SURFACE_DENSITY, imported ? params[2] : defaultNeutralSurfaceDensity());
         state->setCustom(ATOMIC_FRACTION, 0.);
     }
 }
@@ -109,7 +113,7 @@ UpdateStatus SpinFlipHydrogenGasMix::updateSpecificState(MaterialState* state, c
         double SigmaHIpH2 = state->custom(NEUTRAL_SURFACE_DENSITY);
 
         // get the dust-to-gas ratio (metallicity scaled to solar value)
-        double DMW = state->metallicity() / 0.0127;
+        double DMW = state->custom(METALLICITY) / 0.0127;
 
         // get the radiation field
         // scaled to the reference Milky Way radiation field at 1000 Angstrom
@@ -196,7 +200,7 @@ double SpinFlipHydrogenGasMix::opacityAbs(double lambda, const MaterialState* st
     if (absorptionRange.contains(lambda))
     {
         double number = state->numberDensity() * state->custom(ATOMIC_FRACTION);
-        if (number > 0.) return crossSection(lambda, state->temperature()) * number;
+        if (number > 0.) return crossSection(lambda, state->custom(TEMPERATURE)) * number;
     }
     return 0.;
 }
@@ -252,7 +256,7 @@ Array SpinFlipHydrogenGasMix::lineEmissionSpectrum(const MaterialState* state, c
 
 double SpinFlipHydrogenGasMix::indicativeTemperature(const MaterialState* state, const Array& /*Jv*/) const
 {
-    return state->temperature();
+    return state->custom(TEMPERATURE);
 }
 
 ////////////////////////////////////////////////////////////////////

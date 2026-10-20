@@ -161,13 +161,13 @@
     relevant collisional partner species, the kinetic gas temperature, and the turbulence velocity.
     These values remain constant during the simulation. Most often, this information will be read
     from an input file by associating the NonLTELineGasMix with a subclass of ImportedMedium.
-    For that medium component, the ski file attribute \em importTemperature <b>must</b> be set to
-    'true', and \em importMetallicity and \em importVariableMixParams must be left at 'false'. The
-    additional columns required by the material mix are automatically imported and are expected
+    The columns required by the material mix are automatically imported and are expected
     <b>after</b> all other columns. For example, if bulk velocities are also imported for this
     medium component (i.e. \em importVelocity is 'true'), the column order would be \f[ ...,
-    n_\mathrm{mol}, T_\mathrm{kin}, v_\mathrm{x}, v_\mathrm{y}, v_\mathrm{z}, n_\mathrm{col1} [,
-    n_\mathrm{col1}, ...], v_\mathrm{turb}\f]
+    n_\mathrm{mol}, v_\mathrm{x}, v_\mathrm{y}, v_\mathrm{z}, T_\mathrm{kin}, n_\mathrm{col1} [,
+    n_\mathrm{col1}, ...], v_\mathrm{turb}\f] The effective temperature, which includes the
+    unresolved turbulence, is stored in the custom state variable with the standard name \c T,
+    next to the kinetic temperature.
 
     For basic testing purposes, the NonLTELineGasMix can also be associated with a geometric
     medium component. The geometry then defines the spatial density distribution of the species
@@ -634,10 +634,9 @@ public:
 
 public:
     /** This function returns the number and type of import parameters required by this particular
-        material mix as a list of SnapshotParameter objects. For this class, the function returns a
-        descriptor for the number densities of the collisional partners and for the turbulence
-        velocity. Importing the kinetic gas temperature should be enabled through the corresponding
-        standard configuration flag. */
+        material mix as a list of SnapshotParameter objects. For this class, the function returns
+        descriptors for the kinetic gas temperature, for the number densities of the collisional
+        partners, and for the turbulence velocity, in that order. */
     vector<SnapshotParameter> parameterInfo() const override;
 
     /** This function returns a list of StateVariable objects describing the specific state
@@ -649,11 +648,10 @@ public:
 
     /** This function initializes the specific state variables requested by this material mix
         through the specificStateVariableInfo() function except for the number density of the
-        species under consideration. For this class, the function uses the imported values, or if
-        not available, the user-configured default values. The level populations are left at zero.
-        */
-    void initializeSpecificState(MaterialState* state, double metallicity, double temperature,
-                                 const Array& params) const override;
+        species under consideration. For this class, the function uses the imported values, or for a
+        geometric medium, the user-configured default values. The level populations are left at
+        zero. */
+    void initializeSpecificState(MaterialState* state, const Array& params) const override;
 
     //======== Medium state updates =======
 

@@ -39,9 +39,9 @@ void XRayIonicGasMixFamily::setupSelfBefore()
         case ElectronScattering::FreeBound: _boundElectrons = XRayIonicGasMix::ElectronScattering::FreeBound; break;
     }
 
-    // create a default empty mix
-    Array abundances(0., _ionNames.size());
-    mix(0., 0., abundances);
+    // create a default empty mix, with zero temperature and abundances
+    Array parameters(0., _ionNames.size() + 1);
+    mix(parameters);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -63,16 +63,18 @@ XRayIonicGasMixFamily::Capabilities XRayIonicGasMixFamily::capabilities() const
 vector<SnapshotParameter> XRayIonicGasMixFamily::parameterInfo() const
 {
     vector<SnapshotParameter> descriptors;
+    descriptors.push_back(SnapshotParameter::temperature());
     for (const string& ionName : _ionNames) descriptors.push_back(SnapshotParameter::custom(ionName));
     return descriptors;
 }
 
 ////////////////////////////////////////////////////////////////////
 
-const MaterialMix* XRayIonicGasMixFamily::mix(double /*Z*/, double T, const Array& parameters)
+const MaterialMix* XRayIonicGasMixFamily::mix(const Array& parameters)
 {
-    // convert Array to vector
-    vector<double> abundances(begin(parameters), end(parameters));
+    // split the parameters in the temperature and the abundances
+    double T = parameters[0];
+    vector<double> abundances(begin(parameters) + 1, end(parameters));
 
     // look for duplicates
     for (const XRayIonicGasMix* mix : _mixes)

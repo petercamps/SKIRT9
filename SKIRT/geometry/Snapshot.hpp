@@ -192,12 +192,6 @@ public:
         %SED families. The default unit is Msun. */
     void importCurrentMass();
 
-    /** This function configures the snapshot to import a (dimensionless) metallicity fraction. */
-    void importMetallicity();
-
-    /** This function configures the snapshot to import a temperature. The default unit is K. */
-    void importTemperature();
-
     /** This function configures the snapshot to import a velocity with three components
         \f$(v_\text{x},v_\text{y},v_\text{z})\f$, \f$(v_\text{R},v_\varphi,v_\text{z})\f$ or
         \f$(v_\text{r},v_\theta,v_\varphi)\f$. The default unit is km/s. */
@@ -228,20 +222,11 @@ public:
         the importMass() and importDensity() functions was invoked, attempting to obtain mass or
         mass density values results in undefined behavior.
 
-        If the policy is set during configuration, the argument values determine the heuristic for
-        calculating the mass or density for each entity:
-
-        - If the \em maxTemperature argument is positive, and the temperature field is being
-        imported and its value for a given entity is positive as well, and the imported temperature
-        is above the maximum temperature, then the mass or density corresponding to this entity is
-        considered to be zero.
-
-        - Otherwise, the intrinsic mass or mass density is obtained from the mass or density fields
-        using a mechanism that depends on the snapshot type and possibly on the configuration. If
-        the \em useMetallicity argument is true, and the metallicity field is being imported, this
-        intrinsic value is multiplied by the metallicity fraction. Finally, it is multiplied by the
+        If the policy is set during configuration, the intrinsic mass or mass density of each
+        entity is obtained from the mass or density fields using a mechanism that depends on the
+        snapshot type and possibly on the configuration. This intrinsic value is multiplied by the
         value of the \em multiplier argument to obtain the final result. */
-    void setMassDensityPolicy(double multiplier, double maxTemperature, bool useMetallicity);
+    void setMassDensityPolicy(double multiplier);
 
     /** This function notifies the snapshot that one of the getEntities() functions may be called
         during the simulation, implying that the snapshot must prebuild the required search data
@@ -316,24 +301,9 @@ protected:
         if the user did not configure the mass or mass density policy, for use by subclasses. */
     double multiplier() const { return _multiplier; }
 
-    /** This function returns the maximum temperature configured by the user for an entity to have
-        mass, or zero if the user did not configure the mass or mass density policy, for use by
-        subclasses. */
-    double maxTemperature() const { return _maxTemperature; }
-
     /** This function returns true if the user configured the mass or mass density policy and false
         otherwise, for use by subclasses. */
     bool hasMassDensityPolicy() const { return _hasDensityPolicy; }
-
-    /** This function returns true if the user configured the mass or mass density policy with a
-        request to use the metallicity, and the metallicity field is being imported. Returns false
-        otherwise. For use by subclasses. */
-    bool useMetallicity() const { return _hasDensityPolicy && _useMetallicity && _metallicityIndex >= 0; }
-
-    /** This function returns true if the user configured the mass or mass density policy with a
-        nonzero maximum temperature and the temperature field is being imported. Returns false
-        otherwise. For use by subclasses. */
-    bool useTemperatureCutoff() const { return _hasDensityPolicy && _maxTemperature > 0 && _temperatureIndex >= 0; }
 
     /** This function returns true if one of the getEntities() functions may be called during the
         simulation, implying that the snapshot must prebuild the required search data structures.
@@ -345,8 +315,7 @@ protected:
 protected:
     /** This function issues log messages with statistics on the imported masses. It is provided
         here for use by subclasses. */
-    void logMassStatistics(int numIgnored, double totalOriginalMass, double totalMetallicMass,
-                           double totalEffectiveMass);
+    void logMassStatistics(double totalOriginalMass, double totalEffectiveMass);
 
     /** This function is provided here for use by subclasses that describe the snapshot through
         cells (as opposed to particles). It determines the densities and the cumulative mass
@@ -472,18 +441,14 @@ public:
         range, the behavior is undefined. */
     double currentMass(int m) const;
 
-    /** This function returns true if the metallicity is being imported, and false otherwise. */
+    /** This function returns true if the metallicity is being imported, i.e. if it is one of the
+        parameters configured through importParameters(), and false otherwise. */
     bool hasMetallicity() const { return _metallicityIndex >= 0; }
 
     /** This function returns the metallicity of the entity with index \f$0\le m \le
         N_\mathrm{ent}-1\f$. If the metallicity is not being imported, or the index is out of
         range, the behavior is undefined. */
     double metallicity(int m) const;
-
-    /** This function returns the metallicity at the specified point
-        \f${\bf{r}}\f$. If the point is outside the domain, the function returns zero. If the
-        metallicity is not being imported, the behavior is undefined. */
-    double metallicity(Position bfr) const;
 
     /** This function returns true if the age is being imported, and false otherwise. */
     bool hasAge() const { return _ageIndex >= 0; }
@@ -493,18 +458,14 @@ public:
         */
     double age(int m) const;
 
-    /** This function returns true if the temperature is being imported, and false otherwise. */
+    /** This function returns true if the temperature is being imported, i.e. if it is one of the
+        parameters configured through importParameters(), and false otherwise. */
     bool hasTemperature() const { return _temperatureIndex >= 0; }
 
     /** This function returns the temperature of the entity with index \f$0\le m \le
         N_\mathrm{ent}-1\f$. If the temperature is not being imported, or the index is out of
         range, the behavior is undefined. */
     double temperature(int m) const;
-
-    /** This function returns the temperature at the specified point
-        \f${\bf{r}}\f$. If the point is outside the domain, the function returns zero. If the
-        temperature is not being imported, the behavior is undefined. */
-    double temperature(Position bfr) const;
 
     /** This function returns true if the velocity is being imported, and false otherwise. */
     bool hasVelocity() const { return _velocityIndex >= 0; }
@@ -569,7 +530,7 @@ public:
         of each parameter (see the QuantityKind enumeration). An intensive parameter is averaged
         over the entities, weighted by the weight of each entity at the point (e.g., the smoothing
         kernel value) times the mass returned by the massForAveraging() function, as for the
-        temperature() function. If these weights add up to zero, the value is zero. A categorical
+        velocity() function. If these weights add up to zero, the value is zero. A categorical
         parameter is taken from the entity with the largest weight at the point. */
     void parameters(Position bfr, Array& params) const;
 
@@ -628,8 +589,6 @@ private:
 
     // mass and mass density policy
     double _multiplier{0.};
-    double _maxTemperature{0.};
-    bool _useMetallicity{false};
     bool _hasDensityPolicy{false};
     bool _holdsNumber{false};  // true if snapshot holds number (density); false if it holds mass (density)
     bool _needGetEntities{false};

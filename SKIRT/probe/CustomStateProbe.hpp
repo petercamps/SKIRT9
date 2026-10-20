@@ -28,16 +28,19 @@
     to advertise the units for each of the frames. The file header lists just the units of the
     quantity stored in the first frame.
 
-    The \em indices option allows specifying a subset of the custom state quantities to be probed.
-    This allows restricting the probe to quantities with the same units or otherwise grouping or
-    reordering quantities. If the \em indices string is empty, all custom quantities are included.
-    Otherwise, the probe expects a comma-separated list of zero-based indices or index ranges
-    indicated with a dash. Examples of valid strings include: "5,1,2" or "0-9,17". Incorrectly
-    formatted string segments and out-of-range indices are ignored.
+    The \em variables option allows specifying a subset of the custom state quantities to be
+    probed. This allows restricting the probe to quantities with the same units or otherwise
+    grouping or reordering quantities. If the \em variables string is empty, all custom quantities
+    are included. Otherwise, the probe expects a comma-separated list of variable names, zero-based
+    indices, or index ranges indicated with a dash. A name selects the custom state variable with
+    that name, such as \c T for the temperature or \c Z for the metallicity of a material mix
+    that stores these quantities. Examples of valid strings include: "5,1,2", "0-9,17", or
+    "T,2-4". Incorrectly formatted string segments, unknown names, and out-of-range indices are
+    ignored.
 
     The probe produces output for each medium component that has custom quantities, or if the \em
-    indices string is nonempty, for each medium component that has custom quantities for at least
-    one of the specified indices.
+    variables string is nonempty, for each medium component that has custom quantities for at least
+    one of the specified names or indices.
 
     There is also an option to decide whether the probe should be performed after setup or after
     the full simulation run. The latter option is meaningful if the custom medium state may change
@@ -47,9 +50,10 @@ class CustomStateProbe : public SpatialGridWhenFormProbe
     ITEM_CONCRETE(CustomStateProbe, SpatialGridWhenFormProbe, "internal spatial grid: custom medium state quantities")
         ATTRIBUTE_TYPE_DISPLAYED_IF(CustomStateProbe, "Level3&CustomMediumState")
 
-        PROPERTY_STRING(indices, "zero-based indices or index ranges of quantities to probe, or empty for all")
-        ATTRIBUTE_DEFAULT_VALUE(indices, "")
-        ATTRIBUTE_REQUIRED_IF(indices, "false")
+        PROPERTY_STRING(variables,
+                        "names, zero-based indices, or index ranges of quantities to probe, or empty for all")
+        ATTRIBUTE_DEFAULT_VALUE(variables, "")
+        ATTRIBUTE_REQUIRED_IF(variables, "false")
 
     ITEM_END()
 

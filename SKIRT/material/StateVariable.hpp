@@ -7,6 +7,7 @@
 #define STATEVARIABLE_HPP
 
 #include "Basics.hpp"
+#include "QuantityKind.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -30,6 +31,14 @@
     that cooperate specifically with this type of material mix, such as recipes for adjusting the
     medium state based on the calculated radiation field.
 
+    A custom variable can also have a short name and a kind. The name consists of letters, digits,
+    and underscores, and must be unique among the variables of a material mix. Two names are
+    standard, so that the rest of the code can find these quantities in any material mix that
+    stores them: \c T for the temperature of the material, and \c Z for its metallicity. The
+    temperature() and metallicity() factory functions return custom variables with these names.
+    The kind of a custom variable is intensive unless it has been marked as categorical or
+    extensive (see the QuantityKind enumeration).
+
     This class includes explicit support for the known state variables. Use one of the factory
     functions to construct a StateVariable instance. */
 class StateVariable
@@ -39,7 +48,7 @@ class StateVariable
 public:
     /** This enumeration lists the identifiers for the supported state variables as indicated in
         the table in the class header. */
-    enum class Identifier { Volume, BulkVelocity, MagneticField, NumberDensity, Metallicity, Temperature, Custom };
+    enum class Identifier { Volume, BulkVelocity, MagneticField, NumberDensity, Custom };
 
     // ================== Constructing ==================
 
@@ -62,11 +71,15 @@ public:
     /** This function returns a StateVariable instance of type NumberDensity. */
     static StateVariable numberDensity();
 
-    /** This function returns a StateVariable instance of type Metallicity. */
-    static StateVariable metallicity();
+    /** This function returns a StateVariable instance of type Custom with the specified index that
+        holds the metallicity of the material, with the standard name \c Z, the description
+        "metallicity", and a dimensionless quantity. */
+    static StateVariable metallicity(int customIndex);
 
-    /** This function returns a StateVariable instance of type Temperature. */
-    static StateVariable temperature();
+    /** This function returns a StateVariable instance of type Custom with the specified index that
+        holds the temperature of the material, with the standard name \c T, the description
+        "temperature", and the quantity "temperature". */
+    static StateVariable temperature(int customIndex);
 
     /** This function returns a StateVariable instance of type Custom with the specified index and
         descriptive information. The latter includes a human-readable description of the quantity
@@ -75,6 +88,19 @@ public:
         point notation, 'e' for scientific notation, and 'g' for the most concise 'f' or 'e'. The
         default format specifier is 'e'. */
     static StateVariable custom(int customIndex, const string& description, const string& quantity, char format = 'e');
+
+    /** This function returns a copy of this custom variable with the specified short name. The
+        name must consist of one or more letters, digits, and underscores. The function throws a
+        fatal error if this is not the case, or if this variable is not of type Custom. */
+    StateVariable named(const string& name) const;
+
+    /** This function returns a copy of this custom variable marked as categorical. The function
+        throws a fatal error if this variable is not of type Custom. */
+    StateVariable categorical() const;
+
+    /** This function returns a copy of this custom variable marked as extensive. The function
+        throws a fatal error if this variable is not of type Custom. */
+    StateVariable extensive() const;
 
     // ================== Querying ==================
 
@@ -99,12 +125,21 @@ public:
         scientific notation, and 'g' for the most concise 'f' or 'e'. */
     char format() const { return _format; }
 
+    /** This function returns the short name of the state variable, or the empty string if it has
+        no name. */
+    const string& name() const { return _name; }
+
+    /** This function returns the kind of the state variable, which is QuantityKind::Intensive
+        unless the variable has been marked as categorical or extensive. */
+    QuantityKind kind() const { return _kind; }
+
     /** This function returns true if all fields of this state variable descriptor are equal to
         those of the other descriptor, and false otherwise. */
     bool operator==(const StateVariable& other) const
     {
         return _identifier == other._identifier && _customIndex == other._customIndex
-               && _description == other._description && _quantity == other._quantity && _format == other._format;
+               && _description == other._description && _quantity == other._quantity && _format == other._format
+               && _name == other._name && _kind == other._kind;
     }
 
     /** This function returns true if some field of this state variable descriptor differs from the
@@ -117,6 +152,8 @@ private:
     string _description;
     string _quantity;
     char _format;
+    string _name;
+    QuantityKind _kind{QuantityKind::Intensive};
 };
 
 ////////////////////////////////////////////////////////////////////

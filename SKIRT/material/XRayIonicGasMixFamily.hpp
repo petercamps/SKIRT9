@@ -18,8 +18,9 @@
     electronScattering, and \em resonantScattering. These properties can be found in the
     XRayIonicGasMix class.
 
-    The \em ions property defines which ions must be imported. An ion can still have zero
-    abundance in a given cell. As described in the XRayIonicGasMix class, that ion is then simply
+    The family imports the temperature of the gas, followed by the abundance of each ion. The \em
+    ions property defines which ions must be imported. An ion can still have zero abundance in a
+    given cell. As described in the XRayIonicGasMix class, that ion is then simply
     left out of the mix constructed for that cell.
 
     This family will also reuse mixes for cells with duplicate import parameters (ion abundances
@@ -77,7 +78,8 @@ public:
     Capabilities capabilities() const override;
 
     /** This function returns the number and type of parameters used by family. For this class,
-        this is all the relative abundances for the user-specified ions. */
+        this is the temperature of the gas, followed by the relative abundances for the
+        user-specified ions. */
     vector<SnapshotParameter> parameterInfo() const override;
 
     /** This function returns (a pointer to) the XRayIonicGasMix corresponding to the given parameter
@@ -86,7 +88,7 @@ public:
 
         The number and type of parameters must match the information returned by the
         parameterInfo() function; if not the behavior is undefined. */
-    const MaterialMix* mix(double Z, double T, const Array& parameters) override;
+    const MaterialMix* mix(const Array& parameters) override;
 
     /** This function returns (a pointer to) the default XRayIonicGasMix, corresponding to
         the parameters all set to zero. The default mix is created during setup, so this function

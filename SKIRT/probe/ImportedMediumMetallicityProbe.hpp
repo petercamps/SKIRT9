@@ -11,16 +11,12 @@
 ////////////////////////////////////////////////////////////////////
 
 /** ImportedMediumMetallicityProbe probes the metallicity of each imported medium component in the
-    simulation for which that information is available. The probe uses the data as represented by
+    simulation for which that information is available, i.e. for which the material mix requests
+    the metallicity as an imported quantity. The probe uses the data as represented by
     the imported snapshot, without involving the spatial grid of the simulation. The metallicity is
     (mass or number) density-weighted where necessary, i.e. when the probe is associated with a
     form that projects the quantity along a path, or when two or more smoothed particles in the
-    imported data overlap.
-
-    For dust medium components, the weighting is based on the (dusty) gas density rather than the
-    dust density itself. In other words, the probe uses the medium density before the automatic
-    multiplication with metallicity occurs, but ignoring any cells or particles that do not contain
-    dust (because the corresponding information is removed during import). */
+    imported data overlap. */
 class ImportedMediumMetallicityProbe : public InputModelFormProbe
 {
     ITEM_CONCRETE(ImportedMediumMetallicityProbe, InputModelFormProbe, "imported medium: metallicity")

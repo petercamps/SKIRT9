@@ -71,10 +71,9 @@ vector<StateVariable> AbsorptionOnlyMaterialMixDecorator::specificStateVariableI
 
 ////////////////////////////////////////////////////////////////////
 
-void AbsorptionOnlyMaterialMixDecorator::initializeSpecificState(MaterialState* state, double metallicity,
-                                                                 double temperature, const Array& params) const
+void AbsorptionOnlyMaterialMixDecorator::initializeSpecificState(MaterialState* state, const Array& params) const
 {
-    return materialMix()->initializeSpecificState(state, metallicity, temperature, params);
+    return materialMix()->initializeSpecificState(state, params);
 }
 
 ////////////////////////////////////////////////////////////////////

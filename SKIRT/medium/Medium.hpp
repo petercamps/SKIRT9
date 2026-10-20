@@ -110,32 +110,15 @@ public:
         */
     virtual Vec magneticField(Position bfr) const = 0;
 
-    /** This function returns true if the metallicity() function for this medium may return a
-        nonzero value for some positions. */
-    virtual bool hasMetallicity() const = 0;
-
-    /** This function returns the metallicity of the medium at the specified position as defined in
-        the input model, or zero if the input model does not define a metallicity for this medium
-        (at all, or at the given position). */
-    virtual double metallicity(Position bfr) const = 0;
-
-    /** This function returns true if the temperature() function for this medium may return a
-        nonzero value for some positions. */
-    virtual bool hasTemperature() const = 0;
-
-    /** This function returns the temperature of the medium at the specified position as defined in
-        the input model, or zero if the input model does not define a temperature for this medium
-        (at all, or at the given position). */
-    virtual double temperature(Position bfr) const = 0;
-
     /** This function returns true if the parameters() function for this medium returns a nonempty
         array. */
     virtual bool hasParameters() const = 0;
 
-    /** This function returns the descriptors of the custom input model parameters returned by the
-        parameters() function for this medium, in the same order, or an empty list if there are
-        none. The kind of each parameter determines how the values of several samples in a spatial
-        cell are combined (see the QuantityKind enumeration). */
+    /** This function returns the descriptors of the quantities that this medium imports for its
+        material mix or material mix family, which the parameters() function returns in the same
+        order, or an empty list if there are none. The kind of each parameter determines how the
+        values of several samples in a spatial cell are combined (see the QuantityKind
+        enumeration). */
     virtual vector<SnapshotParameter> parameterInfo() const = 0;
 
     /** If custom input model parameters are available for this medium, this function stores the

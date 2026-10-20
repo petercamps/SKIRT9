@@ -62,7 +62,8 @@ public:
         The selected central line wavelength is adjusted with a random Doppler shift corresponding
         to the thermal motion of the particle emitting that line. The particle velocity is drawn
         from a Maxwell-Boltzman distribution parametrized by the temperature of the medium in the
-        emitting cell (obtained from the medium state) and the mass of the emitting particle
+        emitting cell (obtained from the custom state variable with the standard name \c T) and
+        the mass of the emitting particle
         (obtained from the emitting material mix). If the temperature is zero or unavailable, or if
         the particle mass is zero, no thermal Doppler shift is added. The function further obtains
         the bulk velocity of the cell and applies the corresponding macroscopic Doppler shift.
@@ -89,6 +90,7 @@ private:
     Array _centers;               // the central line wavelengths published by the material mix
     int _numLines{0};             // the number of lines published by the material mix
     bool _hasTemperature{false};  // true if the component's medium state has a temperature
+    int _temperatureIndex{0};     // the custom index of the temperature variable (only if hasTemperature is true)
     Array _masses;                // the particle masses published by the material mix (only if hasTemperature is true)
 
     Array _Lv;           // the relative bolometric luminosity of each spatial cell (normalized to unity)

@@ -5,7 +5,6 @@
 
 #include "ImportedMedium.hpp"
 #include "Configuration.hpp"
-#include "FatalError.hpp"
 #include "Snapshot.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -18,43 +17,15 @@ void ImportedMedium::setupSelfAfter()
     _snapshot = createAndOpenSnapshot();
 
     // add optional standard columns if applicable
-    if (_importMetallicity) _snapshot->importMetallicity();
-    if (_importTemperature) _snapshot->importTemperature();
     if (hasVelocity()) _snapshot->importVelocity();
     if (_importMagneticField) _snapshot->importMagneticField();
 
-    // get the snapshot parameters requested by the material mix (family)
-    vector<SnapshotParameter> parameterInfo =
-        _importVariableMixParams ? _materialMixFamily->parameterInfo() : _materialMix->parameterInfo();
-
-    // define function to discover standard snapshot parameters
-    using Identifier = SnapshotParameter::Identifier;
-    auto hasParam = [&parameterInfo](Identifier identifier) {
-        for (const auto& param : parameterInfo)
-            if (param.identifier() == identifier) return true;
-        return false;
-    };
-
-    // verify that material mix is not requesting metallicity or temperature, as these are available separately
-    if (hasParam(Identifier::Metallicity))
-        throw FATALERROR("Material mix is not allowed to request Metallicity as a custom parameter");
-    if (hasParam(Identifier::Temperature))
-        throw FATALERROR("Material mix is not allowed to request Temperature as a custom parameter");
-
-    // add requested snapshot parameter columns if applicable
+    // add the columns for the quantities requested by the material mix or material mix family
+    vector<SnapshotParameter> parameterInfo = _materialMix->parameterInfo();
     if (!parameterInfo.empty()) _snapshot->importParameters(parameterInfo);
 
     // set the density policy
-    if (capabilities().materialType == MaterialMix::MaterialType::Dust)
-    {
-        // for dust, use temperature cutoff and metallicity multiplier
-        _snapshot->setMassDensityPolicy(_massFraction, _importTemperature ? _maxTemperature : 0., _importMetallicity);
-    }
-    else
-    {
-        // for gas and electrons, do not use temperature or metallicity
-        _snapshot->setMassDensityPolicy(_massFraction, 0., false);
-    }
+    _snapshot->setMassDensityPolicy(_massFraction);
 
     // notify about building search data structures if needed
     if (find<Configuration>()->snapshotsNeedGetEntities()) _snapshot->setNeedGetEntities();
@@ -81,40 +52,35 @@ int ImportedMedium::dimension() const
 
 const MaterialMix* ImportedMedium::mix(Position bfr) const
 {
-    if (_importVariableMixParams)
+    if (_materialMix->hasVariableMix())
     {
         Array params;
         _snapshot->parameters(bfr, params);
-        double Z = _importMetallicity ? _snapshot->metallicity(bfr) : -1.;
-        double T = _importTemperature ? _snapshot->temperature(bfr) : -1.;
-        return _materialMixFamily->mix(Z, T, params);
+        return _materialMix->mix(params);
     }
     else
-        return _materialMix;
+        return _materialMix->mix();
 }
 
 //////////////////////////////////////////////////////////////////////
 
 const MaterialMix* ImportedMedium::mix() const
 {
-    if (_importVariableMixParams)
-        return _materialMixFamily->mix();
-    else
-        return _materialMix;
+    return _materialMix->mix();
 }
 
 //////////////////////////////////////////////////////////////////////
 
 MaterialMixProvider::Capabilities ImportedMedium::capabilities() const
 {
-    return _importVariableMixParams ? _materialMixFamily->capabilities() : _materialMix->capabilities();
+    return _materialMix->capabilities();
 }
 
 //////////////////////////////////////////////////////////////////////
 
 bool ImportedMedium::hasVariableMix() const
 {
-    return _importVariableMixParams;
+    return _materialMix->hasVariableMix();
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -154,46 +120,16 @@ Vec ImportedMedium::magneticField(Position bfr) const
 
 ////////////////////////////////////////////////////////////////////
 
-bool ImportedMedium::hasMetallicity() const
-{
-    return !_importVariableMixParams && _importMetallicity && !materialMix()->isDust();
-}
-
-////////////////////////////////////////////////////////////////////
-
-double ImportedMedium::metallicity(Position bfr) const
-{
-    if (hasMetallicity()) return _snapshot->metallicity(bfr);
-    return 0.;
-}
-
-////////////////////////////////////////////////////////////////////
-
-bool ImportedMedium::hasTemperature() const
-{
-    return !_importVariableMixParams && _importTemperature && !materialMix()->isDust();
-}
-
-////////////////////////////////////////////////////////////////////
-
-double ImportedMedium::temperature(Position bfr) const
-{
-    if (hasTemperature()) return _snapshot->temperature(bfr);
-    return 0.;
-}
-
-////////////////////////////////////////////////////////////////////
-
 bool ImportedMedium::hasParameters() const
 {
-    return !_importVariableMixParams && _snapshot->hasParameters();
+    return _snapshot->hasParameters();
 }
 
 ////////////////////////////////////////////////////////////////////
 
 vector<SnapshotParameter> ImportedMedium::parameterInfo() const
 {
-    return _importVariableMixParams ? vector<SnapshotParameter>() : _materialMix->parameterInfo();
+    return _materialMix->parameterInfo();
 }
 
 ////////////////////////////////////////////////////////////////////

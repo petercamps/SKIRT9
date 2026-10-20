@@ -23,11 +23,11 @@
 
     As the opacity of the 21 cm line depends on the gas temperature as well as the neutral atomic
     hydrogen density \f$n_\mathrm{HI}\f$, this information is read from an input file by
-    associating the SpinFlipAbsorptionMix with a subclass of ImportedMedium. For that medium
-    component, the ski file attribute \em importTemperature <b>must</b> be set to 'true', and \em
-    importMetallicity and \em importVariableMixParams must be left at 'false'. For example, if bulk
-    velocities are also imported for this medium component (i.e. \em importVelocity is 'true'), the
-    column order would be \f[ ..., T, v_\mathrm{x}, v_\mathrm{y}, v_\mathrm{z} \f]
+    associating the SpinFlipAbsorptionMix with a subclass of ImportedMedium. The material mix
+    imports the gas temperature, which is stored in the custom state variable with the standard
+    name \c T. For example, if bulk velocities are also imported for this medium component (i.e.
+    \em importVelocity is 'true'), the column order would be \f[ ..., v_\mathrm{x}, v_\mathrm{y},
+    v_\mathrm{z}, T \f]
 
     For basic testing purposes, the SpinFlipAbsorptionMix can also be associated with a geometric
     medium component. The geometry then defines the spatial density distribution (i.e.
@@ -62,7 +62,7 @@
 class SpinFlipAbsorptionMix : public MaterialMix
 {
     ITEM_CONCRETE(SpinFlipAbsorptionMix, MaterialMix, "A gas mix supporting the spin-flip 21 cm hydrogen absorption")
-        ATTRIBUTE_TYPE_INSERT(SpinFlipAbsorptionMix, "GasMix")
+        ATTRIBUTE_TYPE_INSERT(SpinFlipAbsorptionMix, "GasMix,CustomMediumState")
 
         PROPERTY_DOUBLE(defaultTemperature, "the default temperature of the gas")
         ATTRIBUTE_QUANTITY(defaultTemperature, "temperature")
@@ -87,6 +87,11 @@ public:
     //======== Medium state setup =======
 
 public:
+    /** This function returns the number and type of import parameters required by this particular
+        material mix as a list of SnapshotParameter objects. For this class, the function returns
+        the gas temperature. */
+    vector<SnapshotParameter> parameterInfo() const override;
+
     /** This function returns a list of StateVariable objects describing the specific state
         variables used by the receiving material mix. For this class, the function returns a list
         containing descriptors for the properties defined in the input model, namely number density
@@ -95,10 +100,9 @@ public:
 
     /** This function initializes the specific state variables requested by this material mix
         through the specificStateVariableInfo() function except for the number density. For this
-        class, the function initializes the temperature to the specified imported value, or if not
-        available, to the user-configured default value. */
-    void initializeSpecificState(MaterialState* state, double metallicity, double temperature,
-                                 const Array& params) const override;
+        class, the function initializes the temperature to the imported value, or for a geometric
+        medium, to the user-configured default value. */
+    void initializeSpecificState(MaterialState* state, const Array& params) const override;
 
     //======== Low-level material properties =======
 

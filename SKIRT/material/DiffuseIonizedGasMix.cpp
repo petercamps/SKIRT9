@@ -580,7 +580,7 @@ Array DiffuseIonizedGasMix::lineEmissionMasses() const
 
 vector<SnapshotParameter> DiffuseIonizedGasMix::parameterInfo() const
 {
-    vector<SnapshotParameter> result;
+    vector<SnapshotParameter> result{SnapshotParameter::metallicity(), SnapshotParameter::temperature()};
     if (abundanceMode() == AbundanceMode::PerCell)
     {
         // 8 metal number ratios n_X/n_H, dimensionless. Order MUST match _solarAbundances:
@@ -601,14 +601,23 @@ vector<SnapshotParameter> DiffuseIonizedGasMix::parameterInfo() const
 
 ////////////////////////////////////////////////////////////////////
 
+namespace
+{
+    // indices of the custom variables holding the metallicity and the temperature
+    constexpr int METALLICITY = 0;
+    constexpr int TEMPERATURE = 1;
+}
+
+////////////////////////////////////////////////////////////////////
+
 vector<StateVariable> DiffuseIonizedGasMix::specificStateVariableInfo() const
 {
     // Standard variables first
-    vector<StateVariable> result{StateVariable::numberDensity(), StateVariable::metallicity(),
-                                 StateVariable::temperature()};
+    vector<StateVariable> result{StateVariable::numberDensity(), StateVariable::metallicity(METALLICITY),
+                                 StateVariable::temperature(TEMPERATURE)};
 
     // Custom variable index counter
-    int index = 0;
+    int index = TEMPERATURE + 1;
 
     // Add custom variable for helium abundance
     const_cast<DiffuseIonizedGasMix*>(this)->_indexHeliumAbundance = index;
@@ -723,22 +732,20 @@ vector<StateVariable> DiffuseIonizedGasMix::specificStateVariableInfo() const
 
 ////////////////////////////////////////////////////////////////////
 
-void DiffuseIonizedGasMix::initializeSpecificState(MaterialState* state, double metallicity, double temperature,
-                                                   const Array& params) const
+void DiffuseIonizedGasMix::initializeSpecificState(MaterialState* state, const Array& params) const
 {
     // If the cell doesn't contain any material, leave all properties at zero
     if (state->numberDensity() > 0.)
     {
-        // Hard gate: PerCell metal mode requires a per-cell metallicity column. Falling
-        // back to defaultMetallicity() while feeding non-solar N/C/etc. would silently
-        // mismatch the stab Z axis vs the analytical abundance vector, so refuse to run.
-        if (abundanceMode() == AbundanceMode::PerCell && metallicity < 0.)
-            throw FATALERROR("DiffuseIonizedGasMix: PerCell abundance mode requires a per-cell "
-                             "metallicity column in the snapshot (map your simulation's gas "
-                             "metallicity to the 'Z' parameter); a cell has no imported metallicity.");
+        // Hard gate: PerCell metal mode requires imported abundances, and thus an imported
+        // medium; a geometric medium provides no parameters at all.
+        bool imported = params.size() > 0;
+        if (abundanceMode() == AbundanceMode::PerCell && !imported)
+            throw FATALERROR("DiffuseIonizedGasMix: PerCell abundance mode requires an imported medium "
+                             "that provides the metallicity and the per-cell abundances");
 
         // Resolve cell metallicity (used by all abundance/He modes below)
-        const double Z_cell = (metallicity >= 0.) ? metallicity : defaultMetallicity();
+        const double Z_cell = imported ? params[0] : defaultMetallicity();
 
         // Default helium: Gutkin Y(Z). PerCell mode overwrites this with the snapshot
         // column below.
@@ -757,12 +764,12 @@ void DiffuseIonizedGasMix::initializeSpecificState(MaterialState* state, double 
         }
 
         // Set metallicity and temperature
-        state->setMetallicity(Z_cell);
-        state->setTemperature(temperature >= 0. ? temperature : defaultTemperature());
+        state->setCustom(METALLICITY, Z_cell);
+        state->setCustom(TEMPERATURE, imported ? params[1] : defaultTemperature());
 
         // Per-cell metal abundances (PerCell mode only). Snapshot params come in the order
-        // declared by parameterInfo(): C, N, O, Ne, Mg, Si, S, Fe, [He].
-        int paramIdx = 0;
+        // declared by parameterInfo(): Z, T, C, N, O, Ne, Mg, Si, S, Fe, [He].
+        int paramIdx = 2;
         if (abundanceMode() == AbundanceMode::PerCell)
         {
             for (int i = 0; i < 8; ++i) state->setCustom(_indexFirstMetalAbund + i, params[paramIdx++]);
@@ -823,7 +830,7 @@ UpdateStatus DiffuseIonizedGasMix::updateSpecificState(MaterialState* state, con
     if (state->numberDensity() > 0.)
     {
         // For convergence check: save previous state
-        double oldT = state->temperature();
+        double oldT = state->custom(TEMPERATURE);
         double oldLogU = state->ionizationParameter();
 
         // Calculate and store ionization parameter
@@ -851,7 +858,7 @@ UpdateStatus DiffuseIonizedGasMix::updateSpecificState(MaterialState* state, con
         // Uses converged Jv and current T to compute all ion fractions self-consistently.
         constexpr double cm3PerM3 = 1e6;
         double nH_cgs = n_H / cm3PerM3;  // m^-3 -> cm^-3
-        double T = state->temperature();
+        double T = state->custom(TEMPERATURE);
         double solverIonFracs[PhotoIonizationSolver::totalStages] = {};
         bool hasSolverIonFracs = false;
 
@@ -902,7 +909,7 @@ UpdateStatus DiffuseIonizedGasMix::updateSpecificState(MaterialState* state, con
         // Check per-cell convergence: cell fails if either T or logU changed significantly.
         // Only check logU for cells above the emission floor; cells below have noisy logU
         // from MC noise but contribute zero emission, so their convergence is irrelevant.
-        double newT = state->temperature();
+        double newT = state->custom(TEMPERATURE);
         double changeT = (oldT > 0.) ? std::abs(newT - oldT) / oldT : 0.;
         bool logURelevant = (newLogU > _minLogUEmit);
         double changeLogU =
@@ -1167,10 +1174,16 @@ bool DiffuseIonizedGasMix::peeloffScattering(double& I, double& Q, double& U, do
 
         switch (channel)
         {
-            case ReemissionChannel::Hydrogen: newLambda = sampleHydrogenLymanContinuum(state->temperature()); break;
-            case ReemissionChannel::HeliumLyC: newLambda = sampleHeliumLymanContinuum(state->temperature()); break;
+            case ReemissionChannel::Hydrogen:
+                newLambda = sampleHydrogenLymanContinuum(state->custom(TEMPERATURE));
+                break;
+            case ReemissionChannel::HeliumLyC:
+                newLambda = sampleHeliumLymanContinuum(state->custom(TEMPERATURE));
+                break;
             case ReemissionChannel::HeliumNpEv: newLambda = Constants::c() / helium19p8EvFreq; break;
-            case ReemissionChannel::HeliumTPC: newLambda = sampleHeliumTwoPhotonContinuum(state->temperature()); break;
+            case ReemissionChannel::HeliumTPC:
+                newLambda = sampleHeliumTwoPhotonContinuum(state->custom(TEMPERATURE));
+                break;
             case ReemissionChannel::HeliumLyA:
                 // This should not happen as selectReemissionChannel turns this into absorbed or TPC
                 scatinfo->lambda = 0.;
@@ -1219,10 +1232,16 @@ void DiffuseIonizedGasMix::performScattering(double lambda, const MaterialState*
 
         switch (channel)
         {
-            case ReemissionChannel::Hydrogen: newLambda = sampleHydrogenLymanContinuum(state->temperature()); break;
-            case ReemissionChannel::HeliumLyC: newLambda = sampleHeliumLymanContinuum(state->temperature()); break;
+            case ReemissionChannel::Hydrogen:
+                newLambda = sampleHydrogenLymanContinuum(state->custom(TEMPERATURE));
+                break;
+            case ReemissionChannel::HeliumLyC:
+                newLambda = sampleHeliumLymanContinuum(state->custom(TEMPERATURE));
+                break;
             case ReemissionChannel::HeliumNpEv: newLambda = Constants::c() / helium19p8EvFreq; break;
-            case ReemissionChannel::HeliumTPC: newLambda = sampleHeliumTwoPhotonContinuum(state->temperature()); break;
+            case ReemissionChannel::HeliumTPC:
+                newLambda = sampleHeliumTwoPhotonContinuum(state->custom(TEMPERATURE));
+                break;
             case ReemissionChannel::HeliumLyA:
                 // This should not happen as selectReemissionChannel turns this into absorbed or TPC
                 newLambda = 0.;
@@ -1305,7 +1324,7 @@ Array DiffuseIonizedGasMix::emissionSpectrum(const MaterialState* state, const A
     if (state->ionizationParameter() <= _minLogUEmit) return emission;
 
     // Cell properties in CGS
-    double T = state->temperature();
+    double T = state->custom(TEMPERATURE);
     if (T <= 0.) return emission;
     double yHe = state->heliumAbundance();
     double nHm3 = state->numberDensity() / (1.0 + yHe);
@@ -1348,7 +1367,7 @@ Array DiffuseIonizedGasMix::lineEmissionSpectrum(const MaterialState* state, con
     if (state->ionizationParameter() <= _minLogUEmit) return luminosities;
 
     // Cell properties in CGS
-    double T = state->temperature();
+    double T = state->custom(TEMPERATURE);
     if (T <= 0.) return luminosities;
     double yHe = state->heliumAbundance();
     double nHm3 = state->numberDensity() / (1.0 + yHe);
@@ -1430,7 +1449,7 @@ Array DiffuseIonizedGasMix::lineEmissionSpectrum(const MaterialState* state, con
 
 double DiffuseIonizedGasMix::indicativeTemperature(const MaterialState* state, const Array&) const
 {
-    return state->temperature();
+    return state->custom(TEMPERATURE);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1438,7 +1457,7 @@ double DiffuseIonizedGasMix::indicativeTemperature(const MaterialState* state, c
 void DiffuseIonizedGasMix::updateTemperatureFromStab(MaterialState* state) const
 {
     // Get current parameters
-    double Z = state->metallicity();
+    double Z = state->custom(METALLICITY);
     double n_total = state->numberDensity();
     double He_abundance = state->heliumAbundance();
     double n_H = convertTotalDensityToHydrogenDensity(n_total, He_abundance);
@@ -1452,7 +1471,7 @@ void DiffuseIonizedGasMix::updateTemperatureFromStab(MaterialState* state) const
     // set temperature to floor. emissionSpectrum() also gates on _minLogUEmit, keeping state consistent.
     if ((logR2 <= _logFloor && logR3 <= _logFloor && logR4 <= _logFloor && logR5 <= _logFloor) || logU <= _minLogUEmit)
     {
-        state->setTemperature(_minTEmit);
+        state->setCustom(TEMPERATURE, _minTEmit);
         return;
     }
 
@@ -1507,7 +1526,7 @@ void DiffuseIonizedGasMix::updateTemperatureFromStab(MaterialState* state) const
     }
 
     double newTemperature = std::pow(10.0, logT);
-    state->setTemperature(newTemperature);
+    state->setCustom(TEMPERATURE, newTemperature);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1679,7 +1698,7 @@ void DiffuseIonizedGasMix::calculateReemissionProbabilities(const MaterialState*
     // Following CMACIONIZE PhysicalDiffuseReemissionHandler::set_reemission_probabilities
     // Many of the following are in CGS, but ratios are used eventually
 
-    const double T = state->temperature();
+    const double T = state->custom(TEMPERATURE);
     const double T4 = T * 1e-4;  // Temperature in units of 10^4 K
 
     // Hydrogen reemission probability
@@ -1821,7 +1840,7 @@ int DiffuseIonizedGasMix::selectReemissionChannel(const MaterialState* state, do
                 {
                     const double h0 = state->hNeutralFraction();
                     const double he0 = state->heNeutralFraction();
-                    const double T = state->temperature();
+                    const double T = state->custom(TEMPERATURE);
 
                     // Calculate on-the-spot absorption probability
                     const double sqrtT_nH0 = std::sqrt(T) * h0;
@@ -2225,7 +2244,7 @@ void DiffuseIonizedGasMix::precomputeOpacityArrays(MaterialState* state, const d
                     // Handle Helium Lyman alpha on-the-spot absorption
                     const double h0 = state->hNeutralFraction();
                     const double he0 = state->heNeutralFraction();
-                    const double T = state->temperature();
+                    const double T = state->custom(TEMPERATURE);
                     const double sqrtT_nH0 = std::sqrt(T) * h0;
                     const double pHots = sqrtT_nH0 / (sqrtT_nH0 + heliumLyaOtsCoeff * he0);
                     heliumScatProb += data.probabilities[ReemissionChannel::HeliumLyA] * (1.0 - pHots);
@@ -2245,7 +2264,7 @@ void DiffuseIonizedGasMix::precomputeOpacityArrays(MaterialState* state, const d
                 double logR3 = state->logR3();
                 double logR4 = state->logR4();
                 double logR5 = state->logR5();
-                double Z = state->metallicity();
+                double Z = state->custom(METALLICITY);
 
                 TableSelection choice = selectTable(logU);
                 // Standard opacity reconstructed via bracket+linterp+separable on the dN/dC
@@ -2339,7 +2358,7 @@ void DiffuseIonizedGasMix::buildPerCellAbundances(const MaterialState* state, do
         // linscale[i] carries the per-element linear scaling on top of solar*Zfrac*g.
         // Order MUST match _solarAbundances: {C, N, O, Ne, Mg, Si, S, Fe}; only C and N
         // are user-tunable, the rest follow the solar pattern (factor 1).
-        const double Zfrac = state->metallicity() / _solarZ;
+        const double Zfrac = state->custom(METALLICITY) / _solarZ;
         const double dN = std::log10(solarScalingN());
         const double dC = std::log10(solarScalingC());
         const double scaledZfrac = Zfrac * gutkinCompensation(dN, dC);
@@ -2374,7 +2393,7 @@ void DiffuseIonizedGasMix::computeCellDeltas(const MaterialState* state, double&
         // cells; for arbitrary cells (MEGATRON), projects onto the (dN, dC) that would
         // reproduce the imported N and C abundances under the recipe family.
         constexpr double eps = 1e-30;
-        const double Zfrac = state->metallicity() / _solarZ;
+        const double Zfrac = state->custom(METALLICITY) / _solarZ;
         const double n_C_imported = state->custom(_indexFirstMetalAbund + 0);
         const double n_N_imported = state->custom(_indexFirstMetalAbund + 1);
         const double a = std::max(n_N_imported, eps) / std::max(_solarAbundances[1] * Zfrac, eps);

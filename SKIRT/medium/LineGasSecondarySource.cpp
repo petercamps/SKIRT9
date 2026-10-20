@@ -39,9 +39,16 @@ double LineGasSecondarySource::prepareLuminosities()
     _numLines = _centers.size();
     if (!_numLines) throw FATALERROR("Line emitting gas mix does not declare any lines");
 
-    // determine whether the component's medium state has a temperature variable
+    // determine whether the component's medium state has a temperature variable, i.e. a custom variable with
+    // the standard name for the temperature, and remember its custom index
     for (const StateVariable& variable : _mix->specificStateVariableInfo())
-        if (variable.identifier() == StateVariable::Identifier::Temperature) _hasTemperature = true;
+    {
+        if (variable.name() == "T")
+        {
+            _hasTemperature = true;
+            _temperatureIndex = variable.customIndex();
+        }
+    }
 
     // if so, also retrieve the particle masses corresponding to each line
     if (_hasTemperature) _masses = _mix->lineEmissionMasses();
@@ -225,7 +232,8 @@ void LineGasSecondarySource::launch(PhotonPacket* pp, size_t historyIndex, doubl
     }
 
     // if a temperature is available, generate a random thermal velocity
-    if (_hasTemperature) t_gascell.generateThermalVelocity(_random, _ms->temperature(m, _h), _masses[index]);
+    if (_hasTemperature)
+        t_gascell.generateThermalVelocity(_random, _ms->custom(m, _h, _temperatureIndex), _masses[index]);
 
     // generate a random position in this spatial cell
     Position bfr = _ms->grid()->randomPositionInCell(m);

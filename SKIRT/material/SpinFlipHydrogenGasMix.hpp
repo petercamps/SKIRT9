@@ -59,13 +59,13 @@
     that partitions the neutral hydrogen into atomic and molecular fractions (see below).
 
     Most often, this information will be read from an input file by associating the spin flip
-    material mix with a subclass of ImportedMedium. For that medium component, the ski file
-    attributes \em importMetallicity and \em importTemperature <b>must</b> be set to 'true', and
-    \em importVariableMixParams must be left at 'false'. The additional column required by the spin
-    flip material mix (neutral hydrogen surface mass density) is automatically imported and is
-    expected <b>after</b> all other columns. For example, if bulk velocities are also imported for
-    this medium component (i.e. \em importVelocity is 'true'), the column order would be \f[ ...,
-    n_\mathrm{HI+H2}, Z, T, v_\mathrm{x}, v_\mathrm{y}, v_\mathrm{z}, \Sigma_\mathrm{HI+H2} \f]
+    material mix with a subclass of ImportedMedium. The material mix imports the metallicity, the
+    temperature, and the neutral hydrogen surface mass density, in that order, <b>after</b> all
+    other columns. For example, if bulk velocities are also imported for this medium component
+    (i.e. \em importVelocity is 'true'), the column order would be \f[ ..., n_\mathrm{HI+H2},
+    v_\mathrm{x}, v_\mathrm{y}, v_\mathrm{z}, Z, T, \Sigma_\mathrm{HI+H2} \f] The metallicity and
+    the temperature are stored in the custom state variables with the standard names \c Z and \c
+    T.
 
     Depending on the specific ImportedMedium subclass being used, the neutral hydrogen density
     distribution in the first column can be specified as a mass or number density, or as a
@@ -241,10 +241,9 @@ public:
 
 public:
     /** This function returns the number and type of import parameters required by this particular
-        material mix as a list of SnapshotParameter objects. For this class, the function returns a
-        descriptor for the neutral hydrogen mass surface density import parameter. Importing
-        metallicity and temperature should be enabled through the corresponding standard
-        configuration flags. */
+        material mix as a list of SnapshotParameter objects. For this class, the function returns
+        descriptors for the metallicity, the temperature, and the neutral hydrogen mass surface
+        density, in that order. */
     vector<SnapshotParameter> parameterInfo() const override;
 
     /** This function returns a list of StateVariable objects describing the specific state
@@ -257,11 +256,10 @@ public:
 
     /** This function initializes the specific state variables requested by this material mix
         through the specificStateVariableInfo() function except for the number density. For this
-        class, the function initializes the temperature, metallicity and neutral hydrogen mass
-        surface density to the specified imported values, or if not available, to the
-        user-configured default values. The atomic hydrogen fraction is set to zero. */
-    void initializeSpecificState(MaterialState* state, double metallicity, double temperature,
-                                 const Array& params) const override;
+        class, the function initializes the metallicity, temperature, and neutral hydrogen mass
+        surface density to the imported values, or for a geometric medium, to the user-configured
+        default values. The atomic hydrogen fraction is set to zero. */
+    void initializeSpecificState(MaterialState* state, const Array& params) const override;
 
     //======== Medium state updates =======
 

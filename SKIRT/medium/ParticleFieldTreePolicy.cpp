@@ -29,7 +29,7 @@ void ParticleFieldTreePolicy::setupSelfAfter()
     _snapshot->importSize();
     _snapshot->importMass();
     _snapshot->setSmoothingKernel(smoothingKernel());
-    _snapshot->setMassDensityPolicy(1., 0., false);
+    _snapshot->setMassDensityPolicy(1.);
     _snapshot->readAndClose();
 
     if (!(_snapshot->mass() > 0.)) throw FATALERROR("The total mass of the smoothed particle field is not positive");

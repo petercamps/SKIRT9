@@ -6,9 +6,7 @@
 #ifndef MATERIALMIXFAMILY_HPP
 #define MATERIALMIXFAMILY_HPP
 
-#include "Array.hpp"
 #include "MaterialMixProvider.hpp"
-class MaterialMix;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -28,6 +26,14 @@ class MaterialMix;
     this function and the same specific state variables as the default mix returned by the mix()
     function without arguments.
 
+    The mix(const Array&) function declared in the MaterialMixProvider base class returns the
+    material mix corresponding to the given values of the imported quantities, or some default
+    material mix if one or more of the values are out of range. The number and type of the values
+    must match the information returned by the parameterInfo() function; if not the behavior is
+    undefined. The mix() function without arguments returns a default member of the family. In both
+    cases, the family retains ownership of the returned material mix, and guarantees that it will
+    not be destroyed until the family itself is destroyed.
+
     Because each material mix is represented by a distinct C++ object, a material mix family must
     by necessity consist of a discrete number of family members. As a result, each subclass must
     implement a mechanism to map specified parameter values from their continuous ranges to one of
@@ -39,23 +45,14 @@ class MaterialMix;
 class MaterialMixFamily : public MaterialMixProvider
 {
     ITEM_ABSTRACT(MaterialMixFamily, MaterialMixProvider, "a family of material mixes")
+        ATTRIBUTE_TYPE_ALLOWED_IF(MaterialMixFamily, "!NonIdentitySpatialCellLibrary")
+        ATTRIBUTE_TYPE_DISPLAYED_IF(MaterialMixFamily, "Level2")
     ITEM_END()
 
 public:
-    /** This function returns (a pointer to) the material mix corresponding to the given parameter
-        values, or some default material mix if one or more of the parameter values are out of
-        range. The material mix family retains ownership of the returned material mix, and
-        guarantees that it will not be destroyed until the family itself is destroyed.
-
-        The number and type of the custom parameters must match the information returned by the
-        parameterInfo() function; if not the behavior is undefined. If metallicity and/or
-        temperature are not being imported, this is indicated by a negative value. */
-    virtual const MaterialMix* mix(double metallicity, double temperature, const Array& parameters) = 0;
-
-    /** This function returns (a pointer to) a default material mix for this family. The material
-        mix family retains ownership of the returned material mix, and guarantees that it will not
-        be destroyed until the family itself is destroyed. */
-    virtual const MaterialMix* mix() = 0;
+    /** This function returns true because the imported quantities select a member of the family
+        for each position. */
+    bool hasVariableMix() const override { return true; }
 };
 
 ////////////////////////////////////////////////////////////////////

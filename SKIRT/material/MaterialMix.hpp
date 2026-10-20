@@ -114,7 +114,10 @@ class DisjointWavelengthGrid;
     spatial cell just after the common state variables and the number density have been
     initialized. If the material mix is configured as part of an imported medium component, extra
     data fields imported from the snapshot based on the information returned by the parameterInfo()
-    function are passed to this function.
+    function are passed to this function. A material mix that needs the temperature or the
+    metallicity of the material requests these quantities through the parameterInfo() function,
+    like any other quantity, and stores them in custom state variables with the standard names \c
+    T and \c Z (see the StateVariable class).
 
     <b>%Medium state update functions</b>
 
@@ -325,13 +328,21 @@ public:
         information and a human-readable descripton for the parameter. The default implementation
         in this base class returns an empty list.
 
-        <em>Important note</em>: for historical reasons, a metallicity and/or temperature import
-        column can be configured explicitly by the user. If so, these values are made available to
-        the material mix seperately from and in addition to the parameters requested here; see the
-        initializeSpecificState() function. Consequently, it is not allowed for a material mix to
-        request an additional metallicity and/or temperature parameter with the parameterInfo()
-        function. */
+        A material mix that needs the temperature or the metallicity of the material requests these
+        quantities through this function, using the SnapshotParameter::temperature() and
+        SnapshotParameter::metallicity() descriptors, at the position where it wants to receive
+        them. */
     vector<SnapshotParameter> parameterInfo() const override;
+
+    /** This function returns false because a material mix does not vary with position. */
+    bool hasVariableMix() const override;
+
+    /** This function returns a pointer to this material mix, regardless of the specified values of
+        the imported quantities. */
+    const MaterialMix* mix(const Array& parameters) override;
+
+    /** This function returns a pointer to this material mix. */
+    const MaterialMix* mix() override;
 
     /** This function returns a list of StateVariable objects describing the specific state
         variables used by the receiving material mix. This allows the MediumSystem class to
@@ -353,16 +364,14 @@ public:
         variables and the number density have been initialized to their proper values, and the
         specific state variables have been initialized to a default value of zero.
 
-        If the material mix is configured as part of an imported medium component, the imported
-        metallicity and temperature, if any, and extra parameter fields imported from the snapshot
-        as requested by the parameterInfo() function are passed to this function. If the material
-        mix is configured in a geometric medium component, or if (part of) the information has not
-        been imported, this is indicated for the metallicity and temperature by a negative value
-        and for the custom parameters by an empty array.
+        If the material mix is configured as part of an imported medium component, the quantities
+        imported from the snapshot as requested by the parameterInfo() function are passed to this
+        function, in the same order. If the material mix is configured in a geometric medium
+        component, the array is empty, and the material mix uses default values for these
+        quantities, usually provided by its own properties.
 
         The default implementation in this base class does nothing. */
-    virtual void initializeSpecificState(MaterialState* state, double metallicity, double temperature,
-                                         const Array& params) const;
+    virtual void initializeSpecificState(MaterialState* state, const Array& params) const;
 
     //======== Medium state updates =======
 

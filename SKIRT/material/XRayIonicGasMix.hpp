@@ -152,10 +152,9 @@ class PhotonPacket;
     simply the product of the number density and the abundances of the ions in use.
 
     If this material mix is associated with a subclass of ImportedMedium, the spatial density
-    distribution is read from an input file. In that case, the ski file attributes \em
-    importMetallicity, \em importTemperature, and \em importVariableMixParams must be left at
-    'false'. For example, if bulk velocities are also imported for this medium component (i.e. \em
-    importVelocity is 'true'), the column order would be \f[ ..., n, v_\mathrm{x}, v_\mathrm{y},
+    distribution is read from an input file. The material mix does not import any other
+    quantities. For example, if bulk velocities are also imported for this medium component (i.e.
+    \em importVelocity is 'true'), the column order would be \f[ ..., n, v_\mathrm{x}, v_\mathrm{y},
     v_\mathrm{z} \f] When a separate XRayIonicGasMix is required for each spatial cell, refer to
     the XRayIonicGasMixFamily class.
 
