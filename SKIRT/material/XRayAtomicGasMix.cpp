@@ -503,7 +503,7 @@ bool XRayAtomicGasMix::peeloffScattering(double& I, double& Q, double& U, double
                                          Direction bfky, const MaterialState* /*state*/, const PhotonPacket* pp) const
 {
     // draw a random scattering channel and atom velocity, unless a previous peel-off stored this already
-    auto scatinfo = const_cast<PhotonPacket*>(pp)->getScatteringInfo();
+    auto scatinfo = pp->getScatteringInfo();
     setScatteringInfoIfNeeded(scatinfo, lambda);
 
     // if we have dispersion, for electron scattering, adjust the incoming wavelength to the electron rest frame

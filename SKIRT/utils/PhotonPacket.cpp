@@ -158,7 +158,7 @@ double PhotonPacket::perceivedWavelength(Vec receiverVelocity, double expansionV
 
 ////////////////////////////////////////////////////////////////////
 
-PhotonPacket::ScatteringInfo* PhotonPacket::getScatteringInfo()
+PhotonPacket::ScatteringInfo* PhotonPacket::getScatteringInfo() const
 {
     for (auto& candidate : _scatteringInfo)
     {

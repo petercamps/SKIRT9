@@ -319,12 +319,18 @@ public:
         should update the relevant fields and set \em valid to true. If \em valid is already true,
         the previously stored field values can be retrieved.
 
+        The information records cache values drawn for the current scattering event, which belong to
+        that event regardless of which operation draws them first. They are therefore not part of
+        the constant state of the photon packet: this function can be called, and the returned
+        record written, through a constant photon packet, such as the one passed to a peel-off
+        function, which may not otherwise change the photon packet.
+
         Because the returned pointer refers to an element of an internal, growable container, it
         may be invalidated by a subsequent call to this function (for example, one made after
         changing the current medium component through setScatteringComponent()). Client code should
         therefore not retain the pointer across such a call; instead, call this function again to
         obtain a fresh, valid pointer whenever the information record is needed. */
-    ScatteringInfo* getScatteringInfo();
+    ScatteringInfo* getScatteringInfo() const;
 
     // ------- Data members -------
 
@@ -350,7 +356,7 @@ private:
 
     // scattering information
     int _h{0};  // the index of the medium component currently participating in a scattering operation
-    vector<ScatteringInfo> _scatteringInfo;  // list of scattering information records
+    mutable vector<ScatteringInfo> _scatteringInfo;  // list of scattering information records (a cache)
 };
 
 ////////////////////////////////////////////////////////////////////

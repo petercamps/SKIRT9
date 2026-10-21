@@ -349,7 +349,7 @@ void DiffuseIonizedGasMix::setupSelfBefore()
 
         auto* grid = new CustomWavelengthGrid();
         grid->setWavelengths(emLambdav);
-        const_cast<DiffuseIonizedGasMix*>(this)->addChild(grid);
+        addChild(grid);
         grid->setup();
         _emissionWavelengthGrid = grid;
     }
@@ -1062,7 +1062,7 @@ bool DiffuseIonizedGasMix::peeloffScattering(double& I, double& Q, double& U, do
     if (reemissionFraction() <= 0.0 || state->numberDensity() <= 0.) return false;
 
     // Draw random reemission channel unless already stored
-    auto scatinfo = const_cast<PhotonPacket*>(pp)->getScatteringInfo();
+    auto scatinfo = pp->getScatteringInfo();
     if (!scatinfo->valid)
     {
         int channel = selectReemissionChannel(state, lambda, pp);

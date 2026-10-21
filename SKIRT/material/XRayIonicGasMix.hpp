@@ -545,7 +545,7 @@ private:
         width, the function also draws a random wavelength from the line shape. For a resonant
         scattering event it determines whether a cascade occurs and if the phase function is
         isotropic or a dipole. */
-    void setScatteringInfoIfNeeded(PhotonPacket* pp, const MaterialState* state, const double lambda) const;
+    void setScatteringInfoIfNeeded(const PhotonPacket* pp, const MaterialState* state, const double lambda) const;
 
 public:
     /** This function calculates the contribution of the medium component associated with this

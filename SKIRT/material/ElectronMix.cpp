@@ -186,7 +186,7 @@ bool ElectronMix::peeloffScattering(double& I, double& Q, double& U, double& V, 
     if (_hasDispersion)
     {
         // draw a random electron velocity unless a previous peel-off stored this already
-        scatinfo = const_cast<PhotonPacket*>(pp)->getScatteringInfo();
+        scatinfo = pp->getScatteringInfo();
         generateElectronVelocityIfNeeded(scatinfo, _temperature(state), random());
 
         // adjust the wavelength

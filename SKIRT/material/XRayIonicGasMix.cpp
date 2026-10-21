@@ -790,7 +790,8 @@ double XRayIonicGasMix::opacityExt(double lambda, const MaterialState* state, co
 
 ////////////////////////////////////////////////////////////////////
 
-void XRayIonicGasMix::setScatteringInfoIfNeeded(PhotonPacket* pp, const MaterialState* state, const double lambda) const
+void XRayIonicGasMix::setScatteringInfoIfNeeded(const PhotonPacket* pp, const MaterialState* state,
+                                                const double lambda) const
 {
     auto scatinfo = pp->getScatteringInfo();
 
@@ -899,8 +900,8 @@ bool XRayIonicGasMix::peeloffScattering(double& I, double& Q, double& U, double&
                                         Direction bfky, const MaterialState* state, const PhotonPacket* pp) const
 {
     // draw a random scattering channel and atom velocity, unless a previous peel-off stored this already
-    setScatteringInfoIfNeeded(const_cast<PhotonPacket*>(pp), state, lambda);
-    auto scatinfo = const_cast<PhotonPacket*>(pp)->getScatteringInfo();
+    setScatteringInfoIfNeeded(pp, state, lambda);
+    auto scatinfo = pp->getScatteringInfo();
 
     // Compton scattering in electron rest frame; with support for polarization if enabled
     if (scatinfo->species < _numElec)
@@ -951,8 +952,8 @@ bool XRayIonicGasMix::peeloffScattering(double& I, double& Q, double& U, double&
 void XRayIonicGasMix::performScattering(double lambda, const MaterialState* state, PhotonPacket* pp) const
 {
     // draw a random fluorescence channel and atom velocity, unless a previous peel-off stored this already
-    setScatteringInfoIfNeeded(const_cast<PhotonPacket*>(pp), state, lambda);
-    auto scatinfo = const_cast<PhotonPacket*>(pp)->getScatteringInfo();
+    setScatteringInfoIfNeeded(pp, state, lambda);
+    auto scatinfo = pp->getScatteringInfo();
 
     // room for the outgoing direction
     Direction bfknew;

@@ -187,7 +187,7 @@ bool LyaNeutralHydrogenGasMix::peeloffScattering(double& I, double& Q, double& U
                                                  const PhotonPacket* pp) const
 {
     // draw a random atom velocity & phase function, unless a previous peel-off stored this already
-    auto scatinfo = const_cast<PhotonPacket*>(pp)->getScatteringInfo();
+    auto scatinfo = pp->getScatteringInfo();
     setScatteringInfoIfNeeded(scatinfo, lambda, state, pp->direction());
 
     // add the contribution to the Stokes vector components depending on scattering type
