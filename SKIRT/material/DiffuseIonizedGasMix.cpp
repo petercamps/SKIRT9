@@ -878,14 +878,14 @@ bool DiffuseIonizedGasMix::isSpecificStateConverged(int /*numCells*/, int numUpd
     fractions.set(convergedFraction);
     bool stabilityConverged = fractions.isStable(plateauLength, stabilityConvergenceThreshold());
 
-    // Global criterion: relative change in total ionized H between consecutive iterations.
-    // Neutral cells contribute zero to the aggregate, so this is sensitive only to ionized/front
+    // Global criterion: relative change in total ionized H between consecutive iterations, compared to the current
+    // value (infinite if the current value is zero and the previous one is not, NaN and thus not converged if a value
+    // is missing). Neutral cells contribute zero to the aggregate, so this is sensitive only to ionized/front
     // cells. Prevents fake-convergence when trivially-neutral bulk cells dominate the per-cell count.
     const auto& ionizedH = history.series(IonizedHydrogen);
     double currentTotalIonizedH = ionizedH.value(0);
     double previousTotalIonizedH = ionizedH.value(1);
-    double globalChange =
-        std::abs(currentTotalIonizedH - previousTotalIonizedH) / std::max(currentTotalIonizedH, minDivisionSafe);
+    double globalChange = ionizedH.relativeChange();
     bool globalConverged = globalChange <= maxChangeInGlobalIonizedH();
 
     // Overall convergence: (per-cell OR plateau) AND global ionization structure stable.

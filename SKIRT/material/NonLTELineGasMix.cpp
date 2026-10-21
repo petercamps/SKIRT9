@@ -859,20 +859,16 @@ bool NonLTELineGasMix::isSpecificStateConverged(int numCells, int /*numUpdated*/
         // calculate fraction of not converged cells
         double fractionNotConverged = static_cast<double>(numNotConverged) / static_cast<double>(numCells);
 
-        // calculate maximum relative difference between level populations of previous and current iteration,
-        // using the volume integrals of the level populations aggregated by the medium system
+        // calculate the maximum relative change between the level populations of the previous and current iteration,
+        // using the volume integrals of the level populations aggregated by the medium system; as in
+        // solveLevelPopulations(), the change is relative to the current value, so that a population that appeared
+        // from zero counts as a full (100%) change, one that stayed at zero as no change, and one that dropped to zero
+        // as an infinite change; a missing value yields NaN, which is kept so that it blocks convergence
         double changeInGlobalLevelPops = 0.;
         for (int p = 0; p != _model.numLevels(); ++p)
         {
-            const auto& population = history.series(FirstLevelPopulation + p);
-            double currentPop = population.value(0);
-            double previousPop = population.value(1);
-            // as in solveLevelPopulations(), avoid dividing by a previousPop that is exactly zero:
-            // treat a population that appeared from zero as a full (100%) change, and one that
-            // stayed at zero as no change, instead of letting a NaN silently fail the comparison below
-            double diff =
-                previousPop > 0. ? abs((currentPop - previousPop) / previousPop) : (currentPop > 0. ? 1. : 0.);
-            if (diff > changeInGlobalLevelPops) changeInGlobalLevelPops = diff;
+            double change = history.series(FirstLevelPopulation + p).relativeChange();
+            if (std::isnan(change) || change > changeInGlobalLevelPops) changeInGlobalLevelPops = change;
         }
 
         // log convergence info

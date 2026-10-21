@@ -218,12 +218,14 @@
     property specifies the maximum relative change between consecutive iterations in the global
     level populations, accumulated over the complete spatial domain, for the spatial domain to be
     considered converged. In other words, convergence has been reached if \f[ \epsilon =
-    \underset{i}{\mathrm{max}} \left| \frac{N_i^{(k)} - N_i^{(k-1)}} {N_i^{(k-1)}} \right| \le
+    \underset{i}{\mathrm{max}} \left| \frac{N_i^{(k)} - N_i^{(k-1)}} {N_i^{(k)}} \right| \le
     \epsilon_\mathrm{max}\f] where \f$N_i^{(k)}\f$ denotes the total population across the spatial
     domain for energy level \f$i\f$ at iteration \f$k\f$ and \f$\epsilon_\mathrm{max}\f$ is the
-    user-configured value of the \em maxChangeInGlobalLevelPopulations property.
+    user-configured value of the \em maxChangeInGlobalLevelPopulations property. As for the
+    criterion per cell, the change is relative to the current value. A population that remains zero
+    counts as no change, and one that drops to zero as an infinite change.
 
-    Both criteria must be satisfied simultaneously. Howver, the user can effectively disable a
+    Both criteria must be satisfied simultaneously. However, the user can effectively disable a
     criterion by specifying very liberal maximum values.
 
     <b>Level populations</b>
