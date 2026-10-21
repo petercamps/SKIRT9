@@ -114,11 +114,9 @@ void AbsorptionOnlyMaterialMixDecorator::endSpecificStateUpdate(const MediumStat
 ////////////////////////////////////////////////////////////////////
 
 bool AbsorptionOnlyMaterialMixDecorator::isSpecificStateConverged(int numCells, int numUpdated, int numNotConverged,
-                                                                  MaterialState* currentAggregate,
-                                                                  MaterialState* previousAggregate) const
+                                                                  const HistoryScope& history) const
 {
-    return materialMix()->isSpecificStateConverged(numCells, numUpdated, numNotConverged, currentAggregate,
-                                                   previousAggregate);
+    return materialMix()->isSpecificStateConverged(numCells, numUpdated, numNotConverged, history);
 }
 
 ////////////////////////////////////////////////////////////////////

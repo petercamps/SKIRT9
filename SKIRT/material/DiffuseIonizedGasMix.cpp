@@ -10,6 +10,7 @@
 #include "FatalError.hpp"
 #include "GasContinuumEmission.hpp"
 #include "GasLineEmission.hpp"
+#include "HistoryScope.hpp"
 #include "Log.hpp"
 #include "MaterialState.hpp"
 #include "PhotonPacket.hpp"
@@ -85,6 +86,12 @@ namespace
     constexpr double minNeutralFraction = 1.e-8;
     constexpr double maxNeutralFraction = 1.0;
 
+    // Ids of the iteration history series kept on behalf of the medium component: the fraction of converged cells,
+    // the aggregate of the ionized hydrogen density, and the aggregates of the n_HII-weighted ion fractions (with ids
+    // FirstIonFraction + i); and the number of iterations over which the plateau criterion requires a stable fraction
+    enum HistoryId { ConvergedFraction, IonizedHydrogen, FirstIonFraction };
+    constexpr int plateauLength = 3;
+
     // Diagnostic ion fraction table: maps sequential index to ionFracs[] index in PhotoIonizationSolver::CellResult.
     // ionFracsIndex = -1 means store n_e (electron density in cm^-3) instead.
     struct IonFracDiagEntry
@@ -104,8 +111,8 @@ namespace
     static constexpr int numIonFracDiags = sizeof(ionFracDiagTable) / sizeof(ionFracDiagTable[0]);
 
     // Aggregate ion fraction table: ions tracked as n_HII-weighted global sums.
-    // Stored as numbervolumedensity so the framework aggregates sum(x_ion * n_HII * V) across cells.
-    // The global mean is then sum(x_ion * n_HII * V) / sum(n_HII * V).
+    // Marked for aggregation, so that the medium system records sum(x_ion * n_HII * V) across cells in the
+    // iteration history. The global mean is then sum(x_ion * n_HII * V) / sum(n_HII * V).
     struct IonFracAggEntry
     {
         int ionFracsIndex;
@@ -546,10 +553,10 @@ void DiffuseIonizedGasMix::setupSelfBefore()
     _logR4 = _variables.add(StateVariable::custom("log ratio parameter R4", ""));
     _logR5 = _variables.add(StateVariable::custom("log ratio parameter R5", ""));
 
-    // Declared as "numbervolumedensity" so calculateAggregate() automatically computes
-    // sum(n_H_ionized * V_cell) across all cells. Neutral cells contribute zero, making
-    // the aggregate sensitive only to ionized/front cells (see MediumState.hpp aggregation docs).
-    _nHIonized = _variables.add(StateVariable::custom("ionized hydrogen number density", "numbervolumedensity"));
+    // Marked for aggregation, so that the medium system records sum(n_H_ionized * V_cell) across all cells in the
+    // iteration history. Neutral cells contribute zero, making the aggregate sensitive only to ionized/front cells.
+    _nHIonized = _variables.add(
+        StateVariable::custom("ionized hydrogen number density", "numbervolumedensity").aggregated(IonizedHydrogen));
 
     // Diagnostic ion fractions from the full PIO solver (always stored); the ion fractions, i.e. the entries
     // taken from the solver's ion fractions rather than its electron density, are named for the ion
@@ -562,7 +569,8 @@ void DiffuseIonizedGasMix::setupSelfBefore()
 
     // n_HII-weighted ion fraction aggregates for convergence logging
     for (int i = 0; i < numIonFracAggs; ++i)
-        _ionFracAgg.push_back(_variables.add(StateVariable::custom(ionFracAggTable[i].name, "numbervolumedensity")));
+        _ionFracAgg.push_back(_variables.add(
+            StateVariable::custom(ionFracAggTable[i].name, "numbervolumedensity").aggregated(FirstIonFraction + i)));
 
     // Per-cell metal abundance slots (only in PerCell mode). Order matches _solarAbundances
     // and parameterInfo() snapshot columns: C, N, O, Ne, Mg, Si, S, Fe (number ratios n_X/n_H).
@@ -722,7 +730,7 @@ void DiffuseIonizedGasMix::initializeSpecificState(MaterialState* state, const A
         _heNeutralFraction(state) = minNeutralFraction;  // Essentially zero
 
         // Initialize ionized H density reflecting the fully-ionized initial condition,
-        // so the first previousAggregate correctly represents the starting state.
+        // so that the aggregate recorded after setup correctly represents the starting state.
         double n_H_init = convertTotalDensityToHydrogenDensity(state->numberDensity(), yHe);
         _nHIonized(state) = n_H_init * (1.0 - minNeutralFraction);
 
@@ -850,8 +858,7 @@ UpdateStatus DiffuseIonizedGasMix::updateSpecificState(MaterialState* state, con
 ////////////////////////////////////////////////////////////////////
 
 bool DiffuseIonizedGasMix::isSpecificStateConverged(int /*numCells*/, int numUpdated, int numNotConverged,
-                                                    MaterialState* currentAggregate,
-                                                    MaterialState* previousAggregate) const
+                                                    const HistoryScope& history) const
 {
     // Calculate fraction of converged cells (0-1)
     // Use numUpdated instead of numCells to only count cells that contain material; when this
@@ -864,37 +871,19 @@ bool DiffuseIonizedGasMix::isSpecificStateConverged(int /*numCells*/, int numUpd
     // Check standard convergence criterion
     bool standardConverged = fractionNotConverged <= maxFractionNotConvergedCells();
 
-    // Check stability-based convergence: converged fraction unchanged for 3 consecutive iterations
-    bool stabilityConverged = false;
-    _convergedFractionHistory.push_back(convergedFraction);
-
-    // Keep only the last N iterations
-    if (_convergedFractionHistory.size() > _convergenceHistorySize)
-    {
-        _convergedFractionHistory.erase(_convergedFractionHistory.begin());
-    }
-
-    // Check that there is enough history and that the fraction is stable.
-    if (_convergedFractionHistory.size() >= _convergenceHistorySize)
-    {
-        bool isStable = true;
-        for (size_t i = 1; i < _convergedFractionHistory.size(); ++i)
-        {
-            double change = std::abs(_convergedFractionHistory[i] - _convergedFractionHistory[i - 1]);
-            if (change > stabilityConvergenceThreshold())
-            {
-                isStable = false;
-                break;
-            }
-        }
-        stabilityConverged = isStable;
-    }
+    // Check stability-based convergence: converged fraction unchanged for 3 consecutive iterations on the
+    // current grid; the series is cleared at the start of each iteration loop and after each grid change
+    auto& fractions = history.scalarSeries(ConvergedFraction, plateauLength, IterationHistory::Lifetime::Grid,
+                                           "fraction of converged cells");
+    fractions.set(convergedFraction);
+    bool stabilityConverged = fractions.isStable(plateauLength, stabilityConvergenceThreshold());
 
     // Global criterion: relative change in total ionized H between consecutive iterations.
     // Neutral cells contribute zero to the aggregate, so this is sensitive only to ionized/front
     // cells. Prevents fake-convergence when trivially-neutral bulk cells dominate the per-cell count.
-    double currentTotalIonizedH = _nHIonized(currentAggregate);
-    double previousTotalIonizedH = _nHIonized(previousAggregate);
+    const auto& ionizedH = history.series(IonizedHydrogen);
+    double currentTotalIonizedH = ionizedH.value(0);
+    double previousTotalIonizedH = ionizedH.value(1);
     double globalChange =
         std::abs(currentTotalIonizedH - previousTotalIonizedH) / std::max(currentTotalIonizedH, minDivisionSafe);
     bool globalConverged = globalChange <= maxChangeInGlobalIonizedH();
@@ -932,15 +921,17 @@ bool DiffuseIonizedGasMix::isSpecificStateConverged(int /*numCells*/, int numUpd
     }
 
     // Compact single-line summary: header + 3 criteria flags.
-    // Plateau history is appended when at least 2 samples are available.
+    // Plateau history (oldest first) is appended when at least 2 samples are available.
+    int numSamples = 0;
+    while (numSamples < plateauLength && fractions.has(numSamples)) numSamples++;
     string plateauHistory;
-    if (_convergedFractionHistory.size() >= 2)
+    if (numSamples >= 2)
     {
         plateauHistory = " ";
-        for (size_t i = 0; i < _convergedFractionHistory.size(); ++i)
+        for (int lag = numSamples - 1; lag >= 0; --lag)
         {
-            plateauHistory += StringUtils::toString(_convergedFractionHistory[i] * 100., 'f', 1) + "%";
-            if (i < _convergedFractionHistory.size() - 1) plateauHistory += "->";
+            plateauHistory += StringUtils::toString(fractions.value(lag) * 100., 'f', 1) + "%";
+            if (lag > 0) plateauHistory += "->";
         }
     }
     log->info("DiffuseIonizedGasMix convergence: " + string(converged ? "CONVERGED" : "NOT CONVERGED") + " | per-cell "
@@ -958,12 +949,13 @@ bool DiffuseIonizedGasMix::isSpecificStateConverged(int /*numCells*/, int numUpd
         string ionStr = "  Ion fractions (n_HII-weighted):";
         for (int i = 0; i < numIonFracAggs; ++i)
         {
-            double currentVal = _ionFracAgg[i](currentAggregate);
+            const auto& ionFraction = history.series(FirstIonFraction + i);
+            double currentVal = ionFraction.value(0);
             double meanIonFrac = currentVal / currentTotalIonizedH;
             ionStr += " " + string(ionFracAggTable[i].name).substr(16)  // strip "nHII_weighted_" prefix
                       + "=" + StringUtils::toString(meanIonFrac, 'e', 3);
             // Also log iteration-to-iteration change
-            double previousVal = _ionFracAgg[i](previousAggregate);
+            double previousVal = ionFraction.value(1);
             if (previousVal > 0.)
             {
                 double prevMean = previousVal / std::max(previousTotalIonizedH, minDivisionSafe);
@@ -972,12 +964,6 @@ bool DiffuseIonizedGasMix::isSpecificStateConverged(int /*numCells*/, int numUpd
             }
         }
         log->info(ionStr);
-    }
-
-    // Reset history if converged (for next round of iterations)
-    if (converged)
-    {
-        _convergedFractionHistory.clear();
     }
 
     return converged;

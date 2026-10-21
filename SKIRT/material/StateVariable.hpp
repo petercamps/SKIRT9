@@ -46,6 +46,13 @@
     index. All elements of the array share the description, quantity, format, name, and kind of
     the variable.
 
+    Finally, a custom variable can be marked for aggregation into a series of the IterationHistory
+    with an id chosen by the material mix. When it initializes the medium state, the medium system
+    declares an aggregate series for the variable, and it records the volume integral of the
+    variable over all cells in that series after setup and after each update of the medium state.
+    For an array variable, the medium system declares a series for each element, with the id of
+    the variable plus the index of the element.
+
     This class includes explicit support for the known state variables. Use one of the factory
     functions to construct a StateVariable instance. */
 class StateVariable
@@ -115,6 +122,16 @@ public:
         variable is not of type Custom, or if the number of elements is negative. */
     StateVariable array(int count) const;
 
+    /** This function returns a copy of this custom variable marked for aggregation into the series
+        of the IterationHistory with the specified id (for an array variable, into the series with
+        the specified id plus the index of each element). When it initializes the medium state, the
+        medium system declares an aggregate series with the key (medium component, id) for the
+        variable. The material mix chooses the id, which must be unique among the ids of all its
+        series, and retrieves the series through HistoryScope::series(). The aggregate, a volume
+        integral, is meaningful for a density; this is not enforced. The function throws a fatal
+        error if this variable is not of type Custom. */
+    StateVariable aggregated(int seriesId) const;
+
     // ================== Querying ==================
 
 public:
@@ -160,13 +177,22 @@ public:
         description of the variable if it does not represent an array. */
     string elementDescription(int k) const;
 
+    /** This function returns true if the state variable has been marked for aggregation, and false
+        otherwise. */
+    bool isAggregated() const { return _isAggregated; }
+
+    /** This function returns the id of the aggregate series of the state variable (for an array
+        variable, of its first element) if it has been marked for aggregation, or zero otherwise. */
+    int aggregateSeriesId() const { return _aggregateSeriesId; }
+
     /** This function returns true if all fields of this state variable descriptor are equal to
         those of the other descriptor, and false otherwise. */
     bool operator==(const StateVariable& other) const
     {
         return _identifier == other._identifier && _customIndex == other._customIndex
                && _description == other._description && _quantity == other._quantity && _format == other._format
-               && _name == other._name && _kind == other._kind && _isArray == other._isArray && _count == other._count;
+               && _name == other._name && _kind == other._kind && _isArray == other._isArray && _count == other._count
+               && _isAggregated == other._isAggregated && _aggregateSeriesId == other._aggregateSeriesId;
     }
 
     /** This function returns true if some field of this state variable descriptor differs from the
@@ -188,6 +214,8 @@ private:
     QuantityKind _kind{QuantityKind::Intensive};
     bool _isArray{false};
     int _count{1};
+    bool _isAggregated{false};
+    int _aggregateSeriesId{0};
 };
 
 ////////////////////////////////////////////////////////////////////

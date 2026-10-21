@@ -675,10 +675,12 @@ private:
 public:
     /** This function returns true if the state of the medium component corresponding to this
         material mix can be considered to be converged based on the given spatial cell statistics
-        and aggregate material states, and false otherwise. For more information on the convergence
-        criteria, see the corresponding section in the class header. */
-    bool isSpecificStateConverged(int numCells, int numUpdated, int numNotConverged, MaterialState* currentAggregate,
-                                  MaterialState* previousAggregate) const override;
+        and the volume integrals of the level populations in the current and previous iterations,
+        which the medium system records in the iteration history, and false otherwise. For more
+        information on the convergence criteria, see the corresponding section in the class
+        header. */
+    bool isSpecificStateConverged(int numCells, int numUpdated, int numNotConverged,
+                                  const HistoryScope& history) const override;
 
     //======== Low-level material properties =======
 

@@ -10,11 +10,10 @@
 
 //////////////////////////////////////////////////////////////////////
 
-void MediumState::initConfiguration(int numCells, int numMedia, int numAggregateCells)
+void MediumState::initConfiguration(int numCells, int numMedia)
 {
     _numCells = numCells;
     _numMedia = numMedia;
-    _numAggregateCells = numAggregateCells;
 
     _off_dens.resize(_numMedia);
     _off_cust.resize(_numMedia);
@@ -55,18 +54,10 @@ void MediumState::initSpecificStateVariables(const StateVariableList& variables)
         switch (variable.identifier())
         {
             case StateVariable::Identifier::NumberDensity:
-                if (_numAggregateCells) _densityOffsets.push_back(_nextOffset);
                 _off_dens[_nextComponent] = _nextOffset++;
                 _off_cust[_nextComponent] = _nextOffset;
                 break;
-            case StateVariable::Identifier::Custom:
-                for (int k = 0; k != variable.count(); ++k)
-                {
-                    if (_numAggregateCells && variable.quantity() == "numbervolumedensity")
-                        _densityOffsets.push_back(_nextOffset);
-                    _nextOffset++;
-                }
-                break;
+            case StateVariable::Identifier::Custom: _nextOffset += variable.count(); break;
             case StateVariable::Identifier::Volume:
             case StateVariable::Identifier::BulkVelocity:
             case StateVariable::Identifier::MagneticField:
@@ -83,7 +74,7 @@ size_t MediumState::initAllocate()
     if (_nextComponent != _numMedia) throw FATALERROR("Failed to request state variables for all medium components");
     _numVars = _nextOffset;
 
-    size_t numAlloc = static_cast<size_t>(_numVars) * static_cast<size_t>(_numCells + _numAggregateCells);
+    size_t numAlloc = static_cast<size_t>(_numVars) * static_cast<size_t>(_numCells);
     _data.resize(numAlloc);
     return numAlloc;
 }
@@ -155,40 +146,16 @@ std::pair<int, int> MediumState::synchronize(const vector<UpdateStatus>& cellFla
 
 //////////////////////////////////////////////////////////////////////
 
-void MediumState::calculateAggregate()
+vector<double> MediumState::volumeIntegrals(const vector<std::pair<int, int>>& variables) const
 {
-    // if aggregation is requested
-    if (_numAggregateCells)
+    vector<double> result(variables.size(), 0.);
+    for (int m = 0; m != _numCells; ++m)
     {
-        // clear the variables in the current aggregate state
-        for (size_t i = 0; i != _numVars; ++i) _data[_numVars * _numCells + i] = 0.;
-
-        // calculate the current aggregate state
-        for (int m = 0; m != _numCells; ++m)
-        {
-            // cell volume
-            double volume = _data[_numVars * m + _off_volu];
-            _data[_numVars * _numCells + _off_volu] += volume;
-
-            // variables of type number volume density
-            for (int i : _densityOffsets) _data[_numVars * _numCells + i] += _data[_numVars * m + i] * volume;
-        }
+        double volume = _data[_numVars * m + _off_volu];
+        for (size_t k = 0; k != variables.size(); ++k)
+            result[k] += _data[_numVars * m + _off_cust[variables[k].first] + variables[k].second] * volume;
     }
-}
-
-//////////////////////////////////////////////////////////////////////
-
-void MediumState::pushAggregate()
-{
-    // if aggregation is requested
-    if (_numAggregateCells)
-    {
-        // shift the previous aggregate states to make room
-        for (int m = _numCells + _numAggregateCells - 1; m != _numCells; --m)
-        {
-            for (size_t i = 0; i != _numVars; ++i) _data[_numVars * m + i] = _data[_numVars * (m - 1) + i];
-        }
-    }
+    return result;
 }
 
 //////////////////////////////////////////////////////////////////////

@@ -118,6 +118,7 @@
 #include "HEALPixSkyInstrument.hpp"
 #include "HammerAitoffProjection.hpp"
 #include "HirashitaLogNormalGrainSizeDistribution.hpp"
+#include "HistoryProbe.hpp"
 #include "HofmeisterPericlaseGrainComposition.hpp"
 #include "HollowRadialVectorField.hpp"
 #include "HubbleRadialVectorField.hpp"
@@ -771,6 +772,7 @@ SimulationItemRegistry::SimulationItemRegistry(const string& version, const stri
     //   .. convergence
     ItemRegistry::add<ConvergenceInfoProbe>();
     ItemRegistry::add<ConvergenceCutsProbe>();
+    ItemRegistry::add<HistoryProbe>();
     //   .. source
     ItemRegistry::add<LuminosityProbe>();
     ItemRegistry::add<LaunchedPacketsProbe>();

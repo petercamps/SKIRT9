@@ -141,15 +141,12 @@ public:
         invoked (once) \em after updateSpecificState() has been called for all spatial cells. The
         \em numCells, \em numUpdated and \em numNotConverged arguments specify respectively the
         number of spatial cells in the simulation, the number of cells updated during this update
-        cycle, and the number of updated cells that have not yet converged. The \em
-        currentAggregate and \em previousAggregate arguments provide the current and previous
-        aggregate material states for this material mix (for more information, see the section on
-        aggregation in the MediumState class header). Based on this information and any relevant
-        user configuration options, the function returns true if the medium state is considered to
-        be converged and false if not. */
+        cycle, and the number of updated cells that have not yet converged. The \em history
+        argument gives access to the series of the iteration history kept on behalf of the medium
+        component; the decorator passes it on unchanged. The function returns true if the medium
+        state of the decorated material mix is considered to be converged and false if not. */
     virtual bool isSpecificStateConverged(int numCells, int numUpdated, int numNotConverged,
-                                          MaterialState* currentAggregate,
-                                          MaterialState* previousAggregate) const override;
+                                          const HistoryScope& history) const override;
 
     //======== Low-level material properties =======
 

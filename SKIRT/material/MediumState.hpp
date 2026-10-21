@@ -75,40 +75,19 @@ class StateVariableList;
     <b>Aggregation</b>
 
     When a simulation employs an iterative process to calculate a self-consistent medium state, it
-    needs a criterion to determine whether the state has sufficiently converged. Such criterion is
-    often based on aggregate information calculated over all cells in the spatial grid for the
-    current iteration and for one or more previous iterations. This class can calculate and store
-    such aggregate information in the form of "fake" cells that are added at the end of the array
-    of regular cells. The number of stored aggregated states, including current and previous ones,
-    must be specified as the last argument of the initConfiguration() function. If this number is
-    zero, no aggregation is performed.
-
-    Information from the aggregate states can be retrieved using the same functions as those for
-    regular cells. Assuming a number of regular spatial cells \f$M\f$, the current (i.e. most
-    recent) aggregate state has cell index \f$m=M\f$, the previous aggregate state has cell index
-    \f$m=M+1\f$, the one before that has cell index \f$m=M+2\f$, and so forth.
-
-    The calculateAggregate() function should be called at the end of construction, i.e. after
-    initCommunicate(), and at the end of each dynamic medium state update cycle, i.e. after
-    synchronize(). It recalculates the current aggregate state by accumulating information over all
-    spatial cells. The pushAggregate() function should be called at the end of each step in the
-    iterative process. It shifts the existing aggregate states to the next higher cell index,
-    dropping the least recent aggregate state and making room for a new one.
-
-    The current implementation performs the following aggregation. The cell volume is summed over
-    all cells, providing the total volume of the spatial domain: \f$V_\mathrm{tot} = \sum V_m\f$.
-    All variables with quantity type "numbervolumedensity" are summed after multiplication with the
-    cell volume, providing a total number: \f$N_\mathrm{tot} = \sum n_m V_m\f$. Any other variables
-    are not aggregated; i.e. the aggregated values are zero. The aggregated values can be retrieved
-    through the volume(), numberDensity() and custom() functions using the fake cell index
-    corresponding to the desired current or previous state.
+    needs a criterion to determine whether the state has sufficiently converged. Such a criterion
+    is often based on aggregate information calculated over all cells in the spatial grid, such as
+    the volume integral of a density. The volumeIntegrals() function calculates the volume
+    integrals of a set of custom variables in a single pass over the cells. The medium system
+    records these values in the aggregate series of the IterationHistory, which keeps them for the
+    current and previous iterations.
 
     <b>Storage</b>
 
     To simplify the storage mechanism, state variables of type \c Vec are split into their three
     components, so that all state variables can considered to be of type \c double. Memory is
     allocated only for state variables that are actually needed. Given the number of spatial cells
-    \f$M\f$ (possibly increased by the requested number of aggregate cells), the number of medium
+    \f$M\f$, the number of medium
     components \f$H\f$, the number of common state variables \f$C\f$, and the number of specific
     state variables \f$S_h\f$ for each medium component \f$h\f$, the number of state variables per
     spatial cell is \f$K = C+\sum_h S_h\f$ and the grand total number of state variables is \f$N =
@@ -138,10 +117,8 @@ class MediumState
     //============= Construction =============
 
 public:
-    /** This function initializes the number of spatial cells and number of medium components. If
-        the specified number of aggregate cells is nonzero, the configuration is also prepared to
-        store that number of aggregate states, as described in the class header. */
-    void initConfiguration(int numCells, int numMedia, int numAggregateCells);
+    /** This function initializes the number of spatial cells and number of medium components. */
+    void initConfiguration(int numCells, int numMedia);
 
     /** This function initializes the set of required common state variables. */
     void initCommonStateVariables(const vector<StateVariable>& variables);
@@ -162,7 +139,7 @@ public:
         assumes that the uninitialized variables have a zero value). */
     void initCommunicate();
 
-    //============= Synchronization and Aggregation =============
+    //============= Synchronization =============
 
 public:
     /** This function synchronizes the state variables between processes after each process has
@@ -179,16 +156,6 @@ public:
         more processes updated the state of the same cell, the result of the synchronization is
         undefined. */
     std::pair<int, int> synchronize(const vector<UpdateStatus>& cellFlags);
-
-    /** If aggregation has been requested when initializing the configuration, this function
-        calculates the current aggregate state. For more information, see the description of
-        aggregation in the class header. */
-    void calculateAggregate();
-
-    /** If aggregation has been requested when initializing the configuration, this function shifts
-        the previously stored aggregate states to make room for a new current aggregate state. For
-        more information, see the description of aggregation in the class header. */
-    void pushAggregate();
 
     //============= Setting =============
 
@@ -215,8 +182,13 @@ public:
     //============= Querying =============
 
 public:
-    /** This function returns the number of spatial cells, not including any aggregate cells. */
+    /** This function returns the number of spatial cells. */
     int numCells() const { return _numCells; }
+
+    /** This function returns the volume integral over all spatial cells of each of the specified
+        custom variables, identified by medium component index and custom variable index,
+        calculated in a single pass over the cells. */
+    vector<double> volumeIntegrals(const vector<std::pair<int, int>>& variables) const;
 
     /** This function returns the volume \f$V\f$ of the spatial cell with index \f$m\f$. */
     double volume(int m) const { return _data[_numVars * m + _off_volu]; }
@@ -279,7 +251,6 @@ private:
     // overall configuration
     int _numCells{0};
     int _numMedia{0};
-    int _numAggregateCells{0};
     size_t _numVars{0};
 
     // offsets used for mapping common and specific variables (for each medium component) to indices in the data array
@@ -288,9 +259,6 @@ private:
     int _off_mfld{0};
     vector<int> _off_dens;
     vector<int> _off_cust;
-
-    // offsets used to aggregate all standard and custom specific variables of quantity type "numbervolumedensity"
-    vector<int> _densityOffsets;
 
     // indices indicating the next item to be initialized; used only during initialization
     int _nextOffset{0};

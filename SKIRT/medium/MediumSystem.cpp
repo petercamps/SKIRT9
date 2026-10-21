@@ -8,6 +8,8 @@
 #include "DensityInCellInterface.hpp"
 #include "DisjointWavelengthGrid.hpp"
 #include "FatalError.hpp"
+#include "HistoryScope.hpp"
+#include "IterationHistory.hpp"
 #include "LockFree.hpp"
 #include "Log.hpp"
 #include "MaterialMix.hpp"
@@ -181,6 +183,19 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
+namespace
+{
+    // returns the physical quantity of the volume integral of a state variable with the specified quantity, as a
+    // quantity name known to the Units class, or the empty string for a dimensionless or unknown quantity
+    string integratedQuantity(const string& quantity)
+    {
+        if (quantity == "massvolumedensity") return "mass";
+        return string();  // the volume integral of a number density is a pure number
+    }
+}
+
+////////////////////////////////////////////////////////////////////
+
 void MediumSystem::setupSelfBefore()
 {
     SimulationItem::setupSelfBefore();
@@ -214,6 +229,7 @@ void MediumSystem::setupSelfAfter()
     auto log = find<Log>();
     auto parfac = find<ParallelFactory>();
     _config = find<Configuration>();
+    _history = find<IterationHistory>();
 
     _numCells = _grid->numCells();
     if (_numCells < 1) throw FATALERROR("The spatial grid must have at least one cell");
@@ -223,7 +239,7 @@ void MediumSystem::setupSelfAfter()
     // ----- allocate memory for the medium state -----
 
     // basic configuration
-    _state.initConfiguration(_numCells, _numMedia, _config->hasDynamicState() ? 2 : 0);
+    _state.initConfiguration(_numCells, _numMedia);
 
     // common state variables
     vector<StateVariable> variables;
@@ -232,8 +248,24 @@ void MediumSystem::setupSelfAfter()
     if (_config->hasMagneticField()) variables.emplace_back(StateVariable::magneticField());
     _state.initCommonStateVariables(variables);
 
-    // specific state variables
-    for (auto medium : _media) _state.initSpecificStateVariables(medium->mix()->specificStateVariableInfo());
+    // specific state variables; for each variable that the material mix marked for aggregation, declare an aggregate
+    // series in the iteration history on behalf of the mix, keyed on the medium component and the id chosen by the mix
+    // (for an array variable, a series for each element, with consecutive ids)
+    for (auto medium : _media)
+    {
+        const auto& variables = medium->mix()->specificStateVariableInfo();
+        _state.initSpecificStateVariables(variables);
+        for (const StateVariable& variable : variables)
+        {
+            if (variable.isAggregated())
+            {
+                for (int k = 0; k != variable.count(); ++k)
+                    _history->aggregateSeries(medium, variable.aggregateSeriesId() + k,
+                                              AggregationRule{medium, variable.customIndex() + k}, 2,
+                                              variable.elementDescription(k), integratedQuantity(variable.quantity()));
+            }
+        }
+    }
 
     // finalize
     allocatedBytes += _state.initAllocate() * sizeof(double);
@@ -432,8 +464,8 @@ void MediumSystem::setupSelfAfter()
     // communicate the calculated states across multiple processes, if needed
     _state.initCommunicate();
 
-    // calculate the initial aggregate state, if needed
-    _state.calculateAggregate();
+    // record the aggregates of the initial state
+    recordAggregates();
 
     log->info("Done determining medium properties");
 }
@@ -1534,6 +1566,28 @@ Array MediumSystem::lineEmissionSpectrum(int m, int h) const
 
 ////////////////////////////////////////////////////////////////////
 
+void MediumSystem::recordAggregates()
+{
+    // collect the aggregate series and the (medium component index, custom index) pair for each of them
+    auto aggregates = _history->aggregates();
+    if (aggregates.empty()) return;
+    vector<std::pair<int, int>> variables;
+    variables.reserve(aggregates.size());
+    for (auto series : aggregates)
+    {
+        auto rule = series->aggregationRule();
+        auto position = std::find(_media.begin(), _media.end(), rule->medium);
+        if (position == _media.end()) throw FATALERROR("An aggregate series refers to an unknown medium component");
+        variables.emplace_back(static_cast<int>(position - _media.begin()), rule->customIndex);
+    }
+
+    // calculate the volume integrals in a single pass over the cells, and record them
+    auto integrals = _state.volumeIntegrals(variables);
+    for (size_t k = 0; k != aggregates.size(); ++k) aggregates[k]->set(integrals[k]);
+}
+
+////////////////////////////////////////////////////////////////////
+
 bool MediumSystem::updateDynamicStateRecipes()
 {
     auto log = find<Log>();
@@ -1582,14 +1636,11 @@ bool MediumSystem::updateDynamicStateRecipes()
     log->info("  Not converged: " + std::to_string(numNotConverged) + " out of " + std::to_string(_numCells) + " ("
               + StringUtils::toString(100. * numNotConverged / _numCells, 'f', 2) + " %)");
 
-    // calculate the new current aggregate state
-    _state.calculateAggregate();
+    // record the aggregates of the updated state; a recipe that needs aggregate information declares its own
+    // aggregate series in the iteration history during setup, and retrieves it in endUpdate()
+    recordAggregates();
 
     // tell all recipes to end the update cycle and collect convergence info
-    // !! we should pass aggregate medium state information to the recipes
-    // !! .. which requires calling endUpdate() for each medium component
-    // !! .. which implies an inconvenient redesign of the DynamicRecipe classes
-    // !! .. and since the info is currently not used, we postpone this until a later time
     bool converged = true;
     for (auto recipe : recipes) converged &= recipe->endUpdate(_numCells, numUpdated, numNotConverged);
     return converged;
@@ -1676,25 +1727,17 @@ bool MediumSystem::updateDynamicStateMedia(bool primary)
     // end the update (stage 4) on each process for the components that update their state in stages
     for (int h : stagedHv) mix(0, h)->endSpecificStateUpdate(_state, h);
 
-    // calculate the new current aggregate state
-    _state.calculateAggregate();
+    // record the aggregates of the updated state
+    recordAggregates();
 
-    // collect convergence info from the material mixes
+    // collect convergence info from the material mixes, passing each a history scope bound to its medium component
     bool converged = true;
     for (int h : hv)
     {
-        MaterialState current(_state, _numCells, h);
-        MaterialState previous(_state, _numCells + 1, h);
-        converged &= mix(0, h)->isSpecificStateConverged(_numCells, numUpdated, numNotConverged, &current, &previous);
+        HistoryScope scope(_history, _media[h]);
+        converged &= mix(0, h)->isSpecificStateConverged(_numCells, numUpdated, numNotConverged, scope);
     }
     return converged;
-}
-
-////////////////////////////////////////////////////////////////////
-
-void MediumSystem::beginDynamicMediumStateIteration()
-{
-    _state.pushAggregate();
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -153,6 +153,13 @@ void TextOutFile::writeLine(const string& line)
 
 ////////////////////////////////////////////////////////////////////
 
+void TextOutFile::flush()
+{
+    if (_out.is_open()) _out.flush();
+}
+
+////////////////////////////////////////////////////////////////////
+
 void TextOutFile::writeRow(vector<double> values)
 {
     writeRowPrivate(values.size(), values.data());

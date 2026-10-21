@@ -112,6 +112,17 @@ StateVariable StateVariable::array(int count) const
 
 //////////////////////////////////////////////////////////////////////
 
+StateVariable StateVariable::aggregated(int seriesId) const
+{
+    if (_identifier != Identifier::Custom) throw FATALERROR("Only a custom state variable can be aggregated");
+    StateVariable result = *this;
+    result._isAggregated = true;
+    result._aggregateSeriesId = seriesId;
+    return result;
+}
+
+//////////////////////////////////////////////////////////////////////
+
 string StateVariable::elementDescription(int k) const
 {
     return _isArray ? _description + " " + std::to_string(k) : _description;

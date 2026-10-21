@@ -22,6 +22,7 @@
 #include "SpatialGrid.hpp"
 #include "Table.hpp"
 class Configuration;
+class IterationHistory;
 class MaterialState;
 class PhotonPacket;
 class Random;
@@ -809,6 +810,14 @@ public:
     //=============== Dynamic medium state ===================
 
 private:
+    /** This function records the value of every aggregate series in the iteration history, i.e.
+        the volume integral over all cells of the custom state variable specified by the
+        aggregation rule of the series, whoever declared the series. It is called at the end of
+        setup, recording the initial state, and after each update of the medium state, after the
+        state has been synchronized between processes, so that the values are identical on all
+        processes. */
+    void recordAggregates();
+
     /** This function invokes the dynamic medium state recipes configured for this simulation to
         update the medium state. The function returns true if all recipes have converged, and false
         otherwise. It assumes that the radiation field has been calculated and that at least one
@@ -827,14 +836,11 @@ private:
         the state between processes, and calls stage 2 on each process. It then calls the per-cell
         update (stage 3) for all components in parallel, as for any material mix with a dynamic
         medium state, synchronizes the state, and calls stage 4 on each process. Finally, it
-        calculates the aggregate state and asks each component whether its state has converged. */
+        records the aggregates in the iteration history and asks each component whether its state
+        has converged, passing it a history scope bound to the component. */
     bool updateDynamicStateMedia(bool primary);
 
 public:
-    /** This function shifts the current aggregate medium state to the previous aggregate medium
-        state. It should be called at the start of each iteration step. */
-    void beginDynamicMediumStateIteration();
-
     /** This function updates the primary dynamic medium state (PDMS) for all spatial cells and
         medium components based on the currently established radiation field. It invokes any
         dynamic medium state recipes (instances of a DynamicStateRecipe subclass) configured for
@@ -866,6 +872,7 @@ public:
 
 private:
     Configuration* _config{nullptr};
+    IterationHistory* _history{nullptr};
 
     // relevant for any simulation mode that includes a medium
     int _numCells{0};  // index m

@@ -10,6 +10,7 @@
 #include "ConfigurationSetup.hpp"
 #include "Cosmology.hpp"
 #include "InstrumentSystem.hpp"
+#include "IterationHistory.hpp"
 #include "MediumSystem.hpp"
 #include "ProbeSystem.hpp"
 #include "Simulation.hpp"
@@ -425,6 +426,16 @@ private:
         */
     void runMergedEmissionIterations();
 
+    /** This function determines and logs the total dust-absorbed primary and secondary luminosity
+        for the specified (one-based) iteration of a secondary or merged iteration loop, records the
+        absorbed secondary luminosity in a series of the iteration history with loop lifetime, and
+        returns true if secondary emission can be considered to be converged, and false otherwise.
+        This is the case if the absorbed primary or secondary luminosity is zero, if the absorbed
+        secondary luminosity is less than the specified fraction of the absorbed primary
+        luminosity, or if the absorbed secondary luminosity has changed by less than the specified
+        fraction compared to the previous iteration of the loop. */
+    bool isDustEmissionConverged(int iter, double fractionOfPrimary, double fractionOfPrevious);
+
     /** In a multi-processing environment, this function logs a message and waits for all processes
         to finish the work (i.e. it places a barrier). The string argument is included in the log
         message to indicate the scope of work that is being finished. If there is only a single
@@ -713,6 +724,7 @@ private:
 private:
     // non-discoverable simulation items
     Configuration* _config{new ConfigurationSetup(this)};
+    IterationHistory* _history{new IterationHistory(this)};
     SecondarySourceSystem* _secondarySourceSystem{nullptr};  // constructed only when there is secondary emission
 
     // data members used by the XXXprogress() functions in this class

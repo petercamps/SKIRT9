@@ -179,54 +179,8 @@ void MonteCarloSimulation::runSecondaryEmission()
 
 namespace
 {
-    // this helper class checks secondary emission convergence based on the dust-absorbed luminosity
-    class DustAbsorptionConvergence
-    {
-        double _prevLabsseco{0.};  // remembers the absorbed luminosity in the previous iteration
-
-    public:
-        // this function determines and logs the total absorbed luminosity and related percentages
-        // it returns true if secondary emission can be considered to be converged, false otherwise
-        bool logConvergenceInfo(Log* log, Units* units, MediumSystem* mediumSystem, int iter, double fractionOfPrimary,
-                                double fractionOfPrevious)
-        {
-            // determine and log the total absorbed luminosity
-            auto [Labsprim, Labsseco] = mediumSystem->totalDustAbsorbedLuminosity();
-            log->info("The total dust-absorbed primary luminosity is "
-                      + StringUtils::toString(units->obolluminosity(Labsprim), 'g') + " " + units->ubolluminosity());
-            log->info("The total dust-absorbed secondary luminosity in iteration " + std::to_string(iter) + " is "
-                      + StringUtils::toString(units->obolluminosity(Labsseco), 'g') + " " + units->ubolluminosity());
-
-            // log the current performance and corresponding convergence criteria
-            if (Labsprim > 0. && Labsseco > 0.)
-            {
-                if (iter == 1)
-                {
-                    log->info("--> absorbed secondary luminosity is "
-                              + StringUtils::toString(Labsseco / Labsprim * 100., 'f', 2)
-                              + "% of absorbed primary luminosity (convergence criterion is "
-                              + StringUtils::toString(fractionOfPrimary * 100., 'f', 2) + "%)");
-                }
-                else
-                {
-                    log->info("--> absorbed secondary luminosity changed by "
-                              + StringUtils::toString(abs((Labsseco - _prevLabsseco) / Labsseco) * 100., 'f', 2)
-                              + "% compared to previous iteration (convergence criterion is "
-                              + StringUtils::toString(fractionOfPrevious * 100., 'f', 2) + "%)");
-                }
-            }
-
-            // secondary emission has reached convergence if one or more of the following conditions holds:
-            // - the absorbed primary luminosity is zero
-            // - the absorbed secondary luminosity is zero
-            // - the absorbed secondary luminosity is less than a given fraction of the absorbed primary luminosity
-            // - the absorbed secondary luminosity has changed by less than a given fraction compared to previous iter
-            bool converged = Labsprim <= 0. || Labsseco <= 0. || Labsseco / Labsprim < fractionOfPrimary
-                             || abs((Labsseco - _prevLabsseco) / Labsseco) < fractionOfPrevious;
-            _prevLabsseco = Labsseco;
-            return converged;
-        }
-    };
+    // the ids of the iteration history series kept by the simulation on its own behalf
+    enum HistoryId { DustAbsorbedLuminosity, NumPrimaryPackets, NumSecondaryPackets, LoopConverged };
 
     // this function logs the convergence status and returns true if the loop should exit, false if it should continue
     // specifically, the loop exits
@@ -265,6 +219,51 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
+bool MonteCarloSimulation::isDustEmissionConverged(int iter, double fractionOfPrimary, double fractionOfPrevious)
+{
+    // determine and log the total absorbed luminosity
+    auto [Labsprim, Labsseco] = mediumSystem()->totalDustAbsorbedLuminosity();
+    log()->info("The total dust-absorbed primary luminosity is "
+                + StringUtils::toString(units()->obolluminosity(Labsprim), 'g') + " " + units()->ubolluminosity());
+    log()->info("The total dust-absorbed secondary luminosity in iteration " + std::to_string(iter) + " is "
+                + StringUtils::toString(units()->obolluminosity(Labsseco), 'g') + " " + units()->ubolluminosity());
+
+    // record the absorbed secondary luminosity in the iteration history; the series is cleared at the start of each
+    // loop, so that in the first iteration of a loop there is no previous value
+    auto& series = _history->scalarSeries(this, DustAbsorbedLuminosity, 2, IterationHistory::Lifetime::Loop,
+                                          "dust-absorbed secondary luminosity", "bolluminosity");
+    series.set(Labsseco);
+
+    // log the current performance and corresponding convergence criteria
+    if (Labsprim > 0. && Labsseco > 0.)
+    {
+        if (!series.has(1))
+        {
+            log()->info("--> absorbed secondary luminosity is "
+                        + StringUtils::toString(Labsseco / Labsprim * 100., 'f', 2)
+                        + "% of absorbed primary luminosity (convergence criterion is "
+                        + StringUtils::toString(fractionOfPrimary * 100., 'f', 2) + "%)");
+        }
+        else
+        {
+            log()->info("--> absorbed secondary luminosity changed by "
+                        + StringUtils::toString(series.relativeChange() * 100., 'f', 2)
+                        + "% compared to previous iteration (convergence criterion is "
+                        + StringUtils::toString(fractionOfPrevious * 100., 'f', 2) + "%)");
+        }
+    }
+
+    // secondary emission has reached convergence if one or more of the following conditions holds:
+    // - the absorbed primary luminosity is zero
+    // - the absorbed secondary luminosity is zero
+    // - the absorbed secondary luminosity is less than a given fraction of the absorbed primary luminosity
+    // - the absorbed secondary luminosity has changed by less than a given fraction compared to previous iter
+    return Labsprim <= 0. || Labsseco <= 0. || Labsseco / Labsprim < fractionOfPrimary
+           || (series.has(1) && series.relativeChange() < fractionOfPrevious);
+}
+
+////////////////////////////////////////////////////////////////////
+
 void MonteCarloSimulation::runPrimaryEmissionIterations()
 {
     // when this function is called
@@ -285,13 +284,19 @@ void MonteCarloSimulation::runPrimaryEmissionIterations()
     size_t prevNpp = 0;
 
     // loop over the dynamic state iterations
+    _history->beginLoop(IterationHistory::Loop::Primary);
     int iter = 0;
     while (true)
     {
         ++iter;
+        _history->beginIteration();
 
-        // compute ramped packet count
+        // compute ramped packet count, and record it in the iteration history
         size_t Npp = min(maxNpp, minNpp * std::pow(ramp, iter - 1));
+        _history
+            ->scalarSeries(this, NumPrimaryPackets, 1, IterationHistory::Lifetime::Loop,
+                           "number of primary photon packets")
+            .set(Npp);
 
         // prepare the source system for the appropriate number of packets
         if (Npp != prevNpp)
@@ -305,8 +310,6 @@ void MonteCarloSimulation::runPrimaryEmissionIterations()
         {
             string segment = "primary emission iteration " + std::to_string(iter);
             TimeLogger logger(log(), segment);
-
-            mediumSystem()->beginDynamicMediumStateIteration();
 
             // clear the radiation field
             mediumSystem()->clearRadiationField(true);
@@ -324,7 +327,9 @@ void MonteCarloSimulation::runPrimaryEmissionIterations()
             converged = mediumSystem()->updatePrimaryDynamicMediumState();
         }
 
-        // notify the probe system
+        // record the convergence status in the iteration history and notify the probe system
+        _history->scalarSeries(this, LoopConverged, 1, IterationHistory::Lifetime::Loop, "loop converged")
+            .set(converged ? 1. : 0.);
         probeSystem()->probePrimary(iter);
 
         // verify and log loop convergence
@@ -351,21 +356,22 @@ void MonteCarloSimulation::runSecondaryEmissionIterations()
     double fractionOfPrimary = _config->maxFractionOfPrimary();
     double fractionOfPrevious = _config->maxFractionOfPrevious();
 
-    // helper object to verify convergence of secondary emission
-    DustAbsorptionConvergence dustConvergence;
-
     // loop over the secondary emission iterations
+    _history->beginLoop(IterationHistory::Loop::Secondary);
     int iter = 0;
     while (true)
     {
         ++iter;
+        _history->beginIteration();
+        _history
+            ->scalarSeries(this, NumSecondaryPackets, 1, IterationHistory::Lifetime::Loop,
+                           "number of secondary photon packets")
+            .set(Npp);
 
         bool converged = true;
         {
             string segment = "secondary emission iteration " + std::to_string(iter);
             TimeLogger logger(log(), segment);
-
-            mediumSystem()->beginDynamicMediumStateIteration();
 
             // clear the secondary radiation field
             mediumSystem()->clearRadiationField(false);
@@ -392,11 +398,12 @@ void MonteCarloSimulation::runSecondaryEmissionIterations()
 
             // log dust emission convergence info
             if (mediumSystem()->hasDust())
-                converged &= dustConvergence.logConvergenceInfo(log(), units(), mediumSystem(), iter, fractionOfPrimary,
-                                                                fractionOfPrevious);
+                converged &= isDustEmissionConverged(iter, fractionOfPrimary, fractionOfPrevious);
         }
 
-        // notify the probe system
+        // record the convergence status in the iteration history and notify the probe system
+        _history->scalarSeries(this, LoopConverged, 1, IterationHistory::Lifetime::Loop, "loop converged")
+            .set(converged ? 1. : 0.);
         probeSystem()->probeSecondary(iter);
 
         // verify and log loop convergence
@@ -427,14 +434,21 @@ void MonteCarloSimulation::runMergedEmissionIterations()
     // prepare the primary source system for the appropriate number of packets
     sourceSystem()->prepareForLaunch(Npp1);
 
-    // helper object to verify convergence of secondary emission
-    DustAbsorptionConvergence dustConvergence;
-
     // loop over the merged iterations
+    _history->beginLoop(IterationHistory::Loop::Merged);
     int iter = 0;
     while (true)
     {
         ++iter;
+        _history->beginIteration();
+        _history
+            ->scalarSeries(this, NumPrimaryPackets, 1, IterationHistory::Lifetime::Loop,
+                           "number of primary photon packets")
+            .set(Npp1);
+        _history
+            ->scalarSeries(this, NumSecondaryPackets, 1, IterationHistory::Lifetime::Loop,
+                           "number of secondary photon packets")
+            .set(Npp2);
 
         bool converged = true;
         {
@@ -442,8 +456,6 @@ void MonteCarloSimulation::runMergedEmissionIterations()
             string segment1 = "merged primary emission iteration " + std::to_string(iter);
             string segment2 = "merged secondary emission iteration " + std::to_string(iter);
             TimeLogger logger(log(), segment);
-
-            mediumSystem()->beginDynamicMediumStateIteration();
 
             // clear the radiation field
             mediumSystem()->clearRadiationField(true);
@@ -485,11 +497,12 @@ void MonteCarloSimulation::runMergedEmissionIterations()
 
             // log dust emission convergence info
             if (mediumSystem()->hasDust())
-                converged &= dustConvergence.logConvergenceInfo(log(), units(), mediumSystem(), iter, fractionOfPrimary,
-                                                                fractionOfPrevious);
+                converged &= isDustEmissionConverged(iter, fractionOfPrimary, fractionOfPrevious);
         }
 
-        // notify the probe system
+        // record the convergence status in the iteration history and notify the probe system
+        _history->scalarSeries(this, LoopConverged, 1, IterationHistory::Lifetime::Loop, "loop converged")
+            .set(converged ? 1. : 0.);
         probeSystem()->probeSecondary(iter);
 
         // verify and log loop convergence

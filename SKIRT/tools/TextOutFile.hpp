@@ -94,6 +94,11 @@ public:
         effect. */
     void writeLine(const string& line);
 
+    /** This function writes any buffered output to the regular file, so that the contents written
+        so far can be inspected while the simulation progresses. It has no effect for a bundle, or
+        if the calling process is not the root. */
+    void flush();
+
     /** This function (virtually) adds a new column to the text file, characterized by a certain
         description and formatting. The format is 'd' for integer values, 'e' for scientific
         notation, 'f' for floating point notation and 'g' for the most concise 'e' or 'f'. For the

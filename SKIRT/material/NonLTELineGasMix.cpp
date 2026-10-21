@@ -9,11 +9,21 @@
 #include "Constants.hpp"
 #include "DisjointWavelengthGrid.hpp"
 #include "FatalError.hpp"
+#include "HistoryScope.hpp"
 #include "Log.hpp"
 #include "MaterialState.hpp"
 #include "NR.hpp"
 #include "StringUtils.hpp"
 #include "Units.hpp"
+
+////////////////////////////////////////////////////////////////////
+
+namespace
+{
+    // the ids of the iteration history series kept on behalf of the medium component: the aggregate of the
+    // population of level p has id FirstLevelPopulation + p
+    constexpr int FirstLevelPopulation = 0;
+}
 
 ////////////////////////////////////////////////////////////////////
 
@@ -501,8 +511,9 @@ void NonLTELineGasMix::setupSelfBefore()
     for (const auto& partner : _model.colPartner)
         _colPartnerDensities.push_back(
             _variables.add(StateVariable::custom(partner.name + " number density", "numbervolumedensity")));
-    _levelPopulations = _variables.addArray(
-        StateVariable::custom("population of level", "numbervolumedensity").array(_model.numLevels()));
+    _levelPopulations = _variables.addArray(StateVariable::custom("population of level", "numbervolumedensity")
+                                                .array(_model.numLevels())
+                                                .aggregated(FirstLevelPopulation));
     if (storeMeanIntensities())
         _meanIntensities = _variables.addArray(
             StateVariable::custom("mean intensity at line", "wavelengthmeanintensity").array(_model.numLines()));
@@ -837,7 +848,7 @@ double NonLTELineGasMix::solveLevelPopulations(MaterialState* state, const Array
 ////////////////////////////////////////////////////////////////////
 
 bool NonLTELineGasMix::isSpecificStateConverged(int numCells, int /*numUpdated*/, int numNotConverged,
-                                                MaterialState* currentAggregate, MaterialState* previousAggregate) const
+                                                const HistoryScope& history) const
 {
     if (updateDynamicStatesFlag() == false)
     {
@@ -848,14 +859,14 @@ bool NonLTELineGasMix::isSpecificStateConverged(int numCells, int /*numUpdated*/
         // calculate fraction of not converged cells
         double fractionNotConverged = static_cast<double>(numNotConverged) / static_cast<double>(numCells);
 
-        // calculate maximum relative difference between level populations of previous and current iteration
+        // calculate maximum relative difference between level populations of previous and current iteration,
+        // using the volume integrals of the level populations aggregated by the medium system
         double changeInGlobalLevelPops = 0.;
-        auto currentPops = _levelPopulations(currentAggregate);
-        auto previousPops = _levelPopulations(previousAggregate);
         for (int p = 0; p != _model.numLevels(); ++p)
         {
-            double currentPop = currentPops[p];
-            double previousPop = previousPops[p];
+            const auto& population = history.series(FirstLevelPopulation + p);
+            double currentPop = population.value(0);
+            double previousPop = population.value(1);
             // as in solveLevelPopulations(), avoid dividing by a previousPop that is exactly zero:
             // treat a population that appeared from zero as a full (100%) change, and one that
             // stayed at zero as no change, instead of letting a NaN silently fail the comparison below

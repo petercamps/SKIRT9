@@ -552,9 +552,14 @@ public:
     /** Updates ionization fractions, ionization parameter and 4-bin parameters based on the radiation field. */
     UpdateStatus updateSpecificState(MaterialState* state, const Array& Jv) const override;
 
-    /** Determines if the medium state has converged based on ionization fractions and parameters. */
-    bool isSpecificStateConverged(int numCells, int numUpdated, int numNotConverged, MaterialState* currentAggregate,
-                                  MaterialState* previousAggregate) const override;
+    /** Determines if the medium state has converged, based on the fraction of converged cells, the
+        plateau of that fraction over the last three iterations on the current grid, and the change
+        in the volume integral of the ionized hydrogen density compared to the previous iteration.
+        The fraction of converged cells is kept in a series of the iteration history with grid
+        lifetime; the volume integrals of the ionized hydrogen density and of the n_HII-weighted
+        ion fractions are aggregates recorded by the medium system. */
+    bool isSpecificStateConverged(int numCells, int numUpdated, int numNotConverged,
+                                  const HistoryScope& history) const override;
 
     //======== Low-level material properties =======
 
@@ -793,10 +798,6 @@ private:
     vector<vector<int>> _groupLines;
     vector<int> _lineTransitions;
     vector<int> _lineGroup;  // group index per active line, -1 = per-line path
-
-    // Convergence stability tracking
-    mutable vector<double> _convergedFractionHistory;
-    mutable size_t _convergenceHistorySize = 3;
 };
 
 //////////////////////////////////////////////////////////////////////

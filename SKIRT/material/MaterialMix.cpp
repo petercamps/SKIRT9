@@ -198,8 +198,7 @@ void MaterialMix::endSpecificStateUpdate(const MediumState& /*state*/, int /*h*/
 ////////////////////////////////////////////////////////////////////
 
 bool MaterialMix::isSpecificStateConverged(int /*numCells*/, int /*numUpdated*/, int /*numNotConverged*/,
-                                           MaterialState* /*currentAggregate*/,
-                                           MaterialState* /*previousAggregate*/) const
+                                           const HistoryScope& /*history*/) const
 {
     return true;
 }

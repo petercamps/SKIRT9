@@ -36,8 +36,9 @@ class Probe : public SimulationItem
 
 protected:
     /** This enumeration indicates when to perform probing: after setup, after the complete
-        simulation run, or after primary/secondary emission iterations. */
-    enum class When { Setup, Run, Primary, Secondary };
+        simulation run, after primary or secondary emission iterations, or after each iteration of
+        any iteration loop (primary, secondary, or merged). */
+    enum class When { Setup, Run, Primary, Secondary, Iterations };
 
     /** This function returns an enumeration indicating when probing should be performed for this
         probe. The default implementation in this base class returns \c Setup. A subclass needs to
@@ -78,22 +79,24 @@ public:
 
     /** This function is called at the end of the run phase, i.e. after all photon packets have
         been emitted and detected. If when() returns \c Run, this function calls probe(); otherwise
-        it does nothing. */
-    void probeRun();
+        it does nothing. A subclass may override this function to perform additional work at the end
+        of the run, such as completing output files written during the iterations; it should then
+        call the implementation in this base class as well. */
+    virtual void probeRun();
 
     /** This function is called at the end of each iteration over primary emission, i.e. after all
         photon packets have been processed and the medium state and the radiation field have been
         updated if needed. The function argument specifies the one-based iteration index. If when()
-        returns \c Primary, this function saves the iteration index and calls probe(); otherwise it
-        does nothing. */
+        returns \c Primary or \c Iterations, this function saves the iteration index and calls
+        probe(); otherwise it does nothing. */
     void probePrimary(int iter);
 
     /** This function is called at the end of each iteration over secondary emission, i.e. after
         all photon packets have been processed and the medium state and the radiation field have
         been updated if needed. In some execution flows, the iteration may include both a primary
         and secondary emission segment. The function argument specifies the one-based iteration
-        index. If when() returns \c Secondary, this function saves the iteration index and calls
-        probe(); otherwise it does nothing. */
+        index. If when() returns \c Secondary or \c Iterations, this function saves the iteration
+        index and calls probe(); otherwise it does nothing. */
     void probeSecondary(int iter);
 
     //=================== Data members ===================

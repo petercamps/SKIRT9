@@ -49,7 +49,7 @@ void Probe::probeRun()
 
 void Probe::probePrimary(int iter)
 {
-    if (when() == When::Primary)
+    if (when() == When::Primary || when() == When::Iterations)
     {
         _iter = iter;
         probe();
@@ -61,7 +61,7 @@ void Probe::probePrimary(int iter)
 
 void Probe::probeSecondary(int iter)
 {
-    if (when() == When::Secondary)
+    if (when() == When::Secondary || when() == When::Iterations)
     {
         _iter = iter;
         probe();
