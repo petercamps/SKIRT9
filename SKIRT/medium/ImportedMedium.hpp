@@ -96,6 +96,10 @@ public:
         if it is configured with a material mix, so that the same object is always returned. */
     bool hasVariableMix() const override;
 
+    /** This function returns true if the medium is configured with a material mix, or with a
+        material mix family whose members all have the same mass per entity, and false otherwise. */
+    bool hasUniformMass() const override;
+
     /** This function returns the capabilities of the configured material mix or material mix
         family. */
     MaterialMixProvider::Capabilities capabilities() const override;

@@ -83,6 +83,13 @@ bool ImportedMedium::hasVariableMix() const
     return _materialMix->hasVariableMix();
 }
 
+////////////////////////////////////////////////////////////////////
+
+bool ImportedMedium::hasUniformMass() const
+{
+    return _materialMix->hasUniformMass();
+}
+
 //////////////////////////////////////////////////////////////////////
 
 bool ImportedMedium::hasVelocity() const
@@ -146,8 +153,9 @@ void ImportedMedium::parameters(Position bfr, Array& params) const
 
 double ImportedMedium::numberDensity(Position bfr) const
 {
+    // with a uniform mass per entity, the default mix suffices, so that no family member is looked up
     double result = _snapshot->density(bfr);
-    if (!_snapshot->holdsNumber()) result /= mix(bfr)->mass();
+    if (!_snapshot->holdsNumber()) result /= (hasUniformMass() ? mix() : mix(bfr))->mass();
     return result;
 }
 
@@ -164,8 +172,9 @@ double ImportedMedium::number() const
 
 double ImportedMedium::massDensity(Position bfr) const
 {
+    // with a uniform mass per entity, the default mix suffices, so that no family member is looked up
     double result = _snapshot->density(bfr);
-    if (_snapshot->holdsNumber()) result *= mix(bfr)->mass();
+    if (_snapshot->holdsNumber()) result *= (hasUniformMass() ? mix() : mix(bfr))->mass();
     return result;
 }
 

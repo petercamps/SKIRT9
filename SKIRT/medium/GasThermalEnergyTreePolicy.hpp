@@ -20,28 +20,38 @@ class Medium;
     medium component \f$h\f$. The constant factor cancels in this fraction and is not actually
     calculated.
 
+    The number density \f$n_h\f$ counts the entities of the material mix of each medium component,
+    which differ between mixes: for example hydrogen atoms, neutral hydrogen atoms, or the
+    molecules of a trace species. Neither these differences nor the number of free particles per
+    entity (such as the electrons and helium atoms in ionized gas) are taken into account. The
+    policy is therefore intended for a single gas medium component, or for gas medium components
+    whose entities are comparable.
+
     The tree is constructed before the medium state, including the gas temperature, has been
     initialized. The policy therefore uses the temperature imported by the medium components, i.e.
     the temperature column of imported media whose material mix or material mix family requests the
     temperature as an imported quantity (see the Medium::parameterInfo() and Medium::parameters()
-    functions). Gas medium components that do not import a temperature are ignored,
-    and setup logs a warning listing them. If none of the gas medium components imports a
-    temperature, setup reports a fatal error.
+    functions). Gas medium components that do not import a temperature, including all geometric
+    media, are ignored, and setup logs a warning listing them. If none of the gas medium components
+    imports a temperature, setup reports a fatal error.
 
-    The thermal energy of a medium component in a node is estimated as the number of entities in
-    the node multiplied by the average temperature in the node. The number of entities is
-    calculated exactly if the medium component offers the MassInBoxInterface, and is otherwise
-    estimated from the number density sampled at the random positions shared by the policies
-    evaluating the node (see the TreeNodeEvaluation class). The average temperature is the average
-    of the temperature sampled at the same positions, weighted by the sampled number density. If
-    none of the samples hits any material while the node does contain material (which can happen
-    for a small particle in a large node), the average temperature of the medium component is used
-    instead. This average temperature is estimated during setup as the average over a large number
-    of positions drawn from the spatial distribution of the component, and the total thermal energy
-    of the component as its total number of entities multiplied by its average temperature.
-    Without the MassInBoxInterface, the estimate for a node reduces to \f$E \propto (V/N) \sum_i
-    n({\bf{r}}_i)\, T({\bf{r}}_i)\f$, with \f$N\f$ samples at positions \f${\bf{r}}_i\f$ in a node
-    with volume \f$V\f$. */
+    The thermal energy of a medium component in a node is estimated as the number of entities in the
+    node multiplied by the average temperature in the node. The number of entities is calculated
+    exactly if the medium component offers the MassInBoxInterface, and is otherwise estimated from
+    the number density sampled at the random positions shared by the policies evaluating the node
+    (see the TreeNodeEvaluation class). A particle medium with a material mix family whose members
+    may have a different mass per entity (see Medium::hasUniformMass()) does not offer this
+    interface, so that the accuracy of the estimate then depends on the number of density samples
+    configured for the medium system. The average temperature is the average of the
+    temperature sampled at the same positions, weighted by the sampled number density. If none of
+    the samples hits any material while the node does contain material (which can happen for a small
+    particle in a large node), the average temperature of the medium component is used instead. This
+    average temperature is estimated during setup as the average over a large number of positions
+    drawn from the spatial distribution of the component, and the total thermal energy of the
+    component as its total number of entities multiplied by its average temperature. Without the
+    MassInBoxInterface, the estimate for a node reduces to \f$E \propto (V/N) \sum_i n({\bf{r}}_i)\,
+    T({\bf{r}}_i)\f$, with \f$N\f$ samples at positions \f${\bf{r}}_i\f$ in a node with volume
+    \f$V\f$. */
 class GasThermalEnergyTreePolicy : public TreePolicy
 {
     ITEM_CONCRETE(GasThermalEnergyTreePolicy, TreePolicy,

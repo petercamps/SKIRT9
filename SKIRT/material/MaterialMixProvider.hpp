@@ -123,6 +123,13 @@ public:
         single material mix. */
     virtual bool hasVariableMix() const = 0;
 
+    /** This function returns true if all material mixes returned by the mix() functions have the
+        same mass per entity, so that a mass and a number of entities can be converted into each
+        other with the mass of the default material mix, and false otherwise. A material mix
+        returns true. A material mix family returns true only if it guarantees this for all its
+        members; the medium system verifies the guarantee for the members it uses. */
+    virtual bool hasUniformMass() const = 0;
+
     /** This function returns (a pointer to) the material mix for the specified values of the
         imported quantities, in the order returned by the parameterInfo() function. A material mix
         returns itself, and a material mix family returns one of its members. The receiving item

@@ -90,8 +90,10 @@ public:
 protected:
     /** This function is used by the interface() function to ensure that the receiving item can
         actually offer the specified interface. If the requested interface is the
-        MassInBoxInterface, the implementation in this class returns true if the medium has a
-        spatially uniform material mix, and false if it has a variable material mix. For other
+        MassInBoxInterface, the implementation in this class returns true if the smoothing kernel
+        supports it and all material mixes of the medium have the same mass per entity (see the
+        hasUniformMass() function), because the mass in a box and the number of entities in a box
+        are converted into each other with the mass of the default material mix. For other
         requested interfaces, the function invokes its counterpart in the base class. */
     bool offersInterface(const std::type_info& interfaceTypeInfo) const override;
 

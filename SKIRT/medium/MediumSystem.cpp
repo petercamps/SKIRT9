@@ -308,12 +308,15 @@ void MediumSystem::setupSelfAfter()
 
         // verify that each distinct material mix of a medium component with a variable mix has the capabilities
         // of the medium component and the specific state variables of its representative mix, which determine
-        // the configuration and the layout of the medium state
+        // the configuration and the layout of the medium state, and, if the medium component declares a uniform
+        // mass per entity, the mass of its representative mix, which converts between masses and numbers
         for (int h = 0; h != _numMedia; ++h)
         {
             if (!_media[h]->hasVariableMix()) continue;
             auto capabilities = _media[h]->capabilities();
             const auto& variables = _media[h]->mix()->specificStateVariableInfo();
+            bool uniformMass = _media[h]->hasUniformMass();
+            double mass = _media[h]->mix()->mass();
             std::unordered_set<const MaterialMix*> verified;
             for (int m = 0; m != _numCells; ++m)
             {
@@ -325,6 +328,10 @@ void MediumSystem::setupSelfAfter()
                 if (mix->specificStateVariableInfo() != variables)
                     throw FATALERROR("A material mix of medium component " + std::to_string(h)
                                      + " has other specific state variables than the representative mix");
+                if (uniformMass && mix->mass() != mass)
+                    throw FATALERROR("A material mix of medium component " + std::to_string(h)
+                                     + " has another mass per entity than the representative mix, although its"
+                                     + " material mix family declares a uniform mass");
             }
         }
     }

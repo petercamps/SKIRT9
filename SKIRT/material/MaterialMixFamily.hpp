@@ -53,6 +53,11 @@ public:
     /** This function returns true because the imported quantities select a member of the family
         for each position. */
     bool hasVariableMix() const override { return true; }
+
+    /** This function returns false, because the members of a family may have a different mass per
+        entity. A subclass that guarantees the same mass per entity for all its members overrides
+        this function to return true. */
+    bool hasUniformMass() const override { return false; }
 };
 
 ////////////////////////////////////////////////////////////////////

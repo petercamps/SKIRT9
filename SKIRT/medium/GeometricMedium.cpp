@@ -55,6 +55,13 @@ bool GeometricMedium::hasVariableMix() const
 
 ////////////////////////////////////////////////////////////////////
 
+bool GeometricMedium::hasUniformMass() const
+{
+    return true;
+}
+
+////////////////////////////////////////////////////////////////////
+
 bool GeometricMedium::hasVelocity() const
 {
     if (velocityDistribution() && velocityMagnitude())

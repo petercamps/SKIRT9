@@ -88,6 +88,12 @@ public:
         always returned. */
     virtual bool hasVariableMix() const = 0;
 
+    /** This function returns true if all MaterialMix objects that may be returned by the mix(bfr)
+        function have the same mass per entity as the one returned by the mix() function, so that a
+        mass and a number of entities can be converted into each other with the latter, and false
+        otherwise. It returns true if the hasVariableMix() function returns false. */
+    virtual bool hasUniformMass() const = 0;
+
     /** This function returns the capabilities of the material mixes that may be returned by the
         mix(bfr) function for this medium, which are the same for all positions. It may be called
         before setup of the receiving medium has completed, and it does not need a material mix

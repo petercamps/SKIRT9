@@ -82,6 +82,10 @@ public:
         user-specified ions. */
     vector<SnapshotParameter> parameterInfo() const override;
 
+    /** This function returns true, because every XRayIonicGasMix has the proton mass as its mass
+        per entity, regardless of its temperature and abundances. */
+    bool hasUniformMass() const override { return true; }
+
     /** This function returns (a pointer to) the XRayIonicGasMix corresponding to the given parameter
         values. The material mix family retains ownership of the returned material mix, and
         guarantees that it will not be destroyed until the family itself is destroyed.

@@ -85,6 +85,9 @@ protected:
         throughout its spatial domain. */
     bool hasVariableMix() const override;
 
+    /** This function always returns true because a geometric medium has a single material mix. */
+    bool hasUniformMass() const override;
+
     /** This function returns the capabilities of the material mix of the medium. */
     MaterialMixProvider::Capabilities capabilities() const override;
 

@@ -366,6 +366,9 @@ public:
     /** This function returns false because a material mix does not vary with position. */
     bool hasVariableMix() const override;
 
+    /** This function returns true because a single material mix has a single mass per entity. */
+    bool hasUniformMass() const override;
+
     /** This function returns a pointer to this material mix, regardless of the specified values of
         the imported quantities. */
     const MaterialMix* mix(const Array& parameters) override;

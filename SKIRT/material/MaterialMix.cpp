@@ -148,6 +148,13 @@ bool MaterialMix::hasVariableMix() const
 
 ////////////////////////////////////////////////////////////////////
 
+bool MaterialMix::hasUniformMass() const
+{
+    return true;
+}
+
+////////////////////////////////////////////////////////////////////
+
 const MaterialMix* MaterialMix::mix(const Array& /*parameters*/)
 {
     return this;
