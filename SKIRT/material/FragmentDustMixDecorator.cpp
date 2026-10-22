@@ -55,7 +55,7 @@ void FragmentDustMixDecorator::setupSelfAfter()
     for (int f = 0; f != _numFrags; ++f)
     {
         string description = "weight for dust mix fragment " + std::to_string(f) + " -- " + populationGrainType(f);
-        _variables.add(StateVariable::custom(description, string()));
+        _variables.add(StateVariable::custom(description, string()).named("w_" + std::to_string(f)));
     }
     if (hasDynamicDensities())
     {
@@ -63,7 +63,7 @@ void FragmentDustMixDecorator::setupSelfAfter()
         {
             string description =
                 "dynamic density fraction for dust mix fragment " + std::to_string(f) + " -- " + populationGrainType(f);
-            _variables.add(StateVariable::custom(description, string()));
+            _variables.add(StateVariable::custom(description, string()).named("fdyn_" + std::to_string(f)));
         }
     }
 }

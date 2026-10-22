@@ -23,6 +23,21 @@ namespace
     // the ids of the iteration history series kept on behalf of the medium component: the aggregate of the
     // population of level p has id FirstLevelPopulation + p
     constexpr int FirstLevelPopulation = 0;
+
+    // returns the name of the specified collision partner for use in the short name of its number density: H+ becomes
+    // HII and e- becomes e, and any other character that is not allowed in a short name becomes an underscore
+    string partnerShortName(const string& partner)
+    {
+        if (partner == "H+") return "HII";
+        if (partner == "e-") return "e";
+        string result = partner;
+        for (char& c : result)
+        {
+            bool allowed = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
+            if (!allowed) c = '_';
+        }
+        return result;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -507,16 +522,21 @@ void NonLTELineGasMix::setupSelfBefore()
     // collisional partner, the population of each energy level, and if requested, the line-profile-averaged
     // mean intensity at each transition line
     _temperature = _variables.add(StateVariable::temperature());
-    _kineticTemperature = _variables.add(StateVariable::custom("kinetic gas temperature", "temperature"));
+    _kineticTemperature =
+        _variables.add(StateVariable::custom("kinetic gas temperature", "temperature").named("T_kin"));
     for (const auto& partner : _model.colPartner)
         _colPartnerDensities.push_back(
-            _variables.add(StateVariable::custom(partner.name + " number density", "numbervolumedensity")));
+            _variables.add(StateVariable::custom(partner.name + " number density", "numbervolumedensity")
+                               .named("n_" + partnerShortName(partner.name))));
     _levelPopulations = _variables.addArray(StateVariable::custom("population of level", "numbervolumedensity")
+                                                .named("pop")
                                                 .array(_model.numLevels())
                                                 .aggregated(FirstLevelPopulation));
     if (storeMeanIntensities())
-        _meanIntensities = _variables.addArray(
-            StateVariable::custom("mean intensity at line", "wavelengthmeanintensity").array(_model.numLines()));
+        _meanIntensities =
+            _variables.addArray(StateVariable::custom("mean intensity at line", "wavelengthmeanintensity")
+                                    .named("J_line")
+                                    .array(_model.numLines()));
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -251,7 +251,8 @@ public:
         mix. For this class, the function returns a list containing descriptors for the properties
         defined in the input model (neutral hydrogen number density, metallicity, temperature, and
         neutral hydrogen mass surface density) and for a variable to hold the atomic hydrogen
-        fraction derived from the radiation field when the dynamic medium state is updated. */
+        fraction derived from the radiation field when the dynamic medium state is updated. The
+        custom variables have the short names \c Z, \c T, \c Sigma_HI, and \c f_atom. */
     const StateVariableList& specificStateVariableInfo() const override;
 
     /** This function initializes the specific state variables requested by this material mix

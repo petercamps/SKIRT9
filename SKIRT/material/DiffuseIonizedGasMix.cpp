@@ -93,20 +93,20 @@ namespace
     constexpr int plateauLength = 3;
 
     // Diagnostic ion fraction table: maps sequential index to ionFracs[] index in PhotoIonizationSolver::CellResult.
-    // ionFracsIndex = -1 means store n_e (electron density in cm^-3) instead.
+    // ionFracsIndex = -1 means store the electron number density (in SI units) instead.
     struct IonFracDiagEntry
     {
         int ionFracsIndex;
         const char* name;
     };
     static constexpr IonFracDiagEntry ionFracDiagTable[] = {
-        {1, "x_HII"},         // H+ fraction
-        {13, "x_NII"},        // N+ fraction
-        {20, "x_OI"},         // O0 fraction
-        {21, "x_OII"},        // O+ fraction
-        {22, "x_OIII"},       // O2+ fraction
-        {63, "x_SII"},        // S+ fraction
-        {-1, "n_e (cm^-3)"},  // electron density
+        {1, "x_HII"},    // H+ fraction
+        {13, "x_NII"},   // N+ fraction
+        {20, "x_OI"},    // O0 fraction
+        {21, "x_OII"},   // O+ fraction
+        {22, "x_OIII"},  // O2+ fraction
+        {63, "x_SII"},   // S+ fraction
+        {-1, "n_e"},     // electron number density
     };
     static constexpr int numIonFracDiags = sizeof(ionFracDiagTable) / sizeof(ionFracDiagTable[0]);
 
@@ -116,12 +116,13 @@ namespace
     struct IonFracAggEntry
     {
         int ionFracsIndex;
-        const char* name;
+        const char* name;       // the description of the state variable
+        const char* shortName;  // the short name of the state variable
     };
     static constexpr IonFracAggEntry ionFracAggTable[] = {
-        {13, "nHII_weighted_x_NII"},
-        {22, "nHII_weighted_x_OIII"},
-        {63, "nHII_weighted_x_SII"},
+        {13, "nHII_weighted_x_NII", "nHII_x_NII"},
+        {22, "nHII_weighted_x_OIII", "nHII_x_OIII"},
+        {63, "nHII_weighted_x_SII", "nHII_x_SII"},
     };
     static constexpr int numIonFracAggs = sizeof(ionFracAggTable) / sizeof(ionFracAggTable[0]);
 
@@ -540,53 +541,60 @@ void DiffuseIonizedGasMix::setupSelfBefore()
         log->info("Hydrogen density ceiling: " + StringUtils::toString(maxHydrogenDensity(), 'e', 3) + " cm^-3");
     }
 
-    // Assemble the specific state variables; the variables used to select a refinement criterion or condition
-    // get a short name, and the metallicity and temperature get the standard names
+    // Assemble the specific state variables; each variable gets a short name, and the metallicity and temperature get
+    // the standard names
     _metallicity = _variables.add(StateVariable::metallicity());
     _temperature = _variables.add(StateVariable::temperature());
-    _heliumAbundance = _variables.add(StateVariable::custom("helium abundance", ""));
+    _heliumAbundance = _variables.add(StateVariable::custom("helium abundance", "").named("y_He"));
     _hNeutralFraction = _variables.add(StateVariable::custom("hydrogen neutral fraction", "").named("x_HI"));
-    _heNeutralFraction = _variables.add(StateVariable::custom("helium neutral fraction", ""));
+    _heNeutralFraction = _variables.add(StateVariable::custom("helium neutral fraction", "").named("x_HeI"));
     _ionizationParameter = _variables.add(StateVariable::custom("ionization parameter (logU)", "").named("logU"));
-    _logR2 = _variables.add(StateVariable::custom("log ratio parameter R2", ""));
-    _logR3 = _variables.add(StateVariable::custom("log ratio parameter R3", ""));
-    _logR4 = _variables.add(StateVariable::custom("log ratio parameter R4", ""));
-    _logR5 = _variables.add(StateVariable::custom("log ratio parameter R5", ""));
+    _logR2 = _variables.add(StateVariable::custom("log ratio parameter R2", "").named("logR2"));
+    _logR3 = _variables.add(StateVariable::custom("log ratio parameter R3", "").named("logR3"));
+    _logR4 = _variables.add(StateVariable::custom("log ratio parameter R4", "").named("logR4"));
+    _logR5 = _variables.add(StateVariable::custom("log ratio parameter R5", "").named("logR5"));
 
     // Marked for aggregation, so that the medium system records sum(n_H_ionized * V_cell) across all cells in the
     // iteration history. Neutral cells contribute zero, making the aggregate sensitive only to ionized/front cells.
-    _nHIonized = _variables.add(
-        StateVariable::custom("ionized hydrogen number density", "numbervolumedensity").aggregated(IonizedHydrogen));
+    _nHIonized = _variables.add(StateVariable::custom("ionized hydrogen number density", "numbervolumedensity")
+                                    .named("n_HII")
+                                    .aggregated(IonizedHydrogen));
 
-    // Diagnostic ion fractions from the full PIO solver (always stored); the ion fractions, i.e. the entries
-    // taken from the solver's ion fractions rather than its electron density, are named for the ion
+    // Diagnostic ion fractions from the full PIO solver (always stored), described and named for the ion, and the
+    // electron number density from the same solver, converted to SI units
     for (int i = 0; i < numIonFracDiags; ++i)
     {
-        auto variable = StateVariable::custom(ionFracDiagTable[i].name, "");
-        if (ionFracDiagTable[i].ionFracsIndex >= 0) variable = variable.named(ionFracDiagTable[i].name);
-        _ionFracDiag.push_back(_variables.add(variable));
+        const auto& entry = ionFracDiagTable[i];
+        auto variable = entry.ionFracsIndex >= 0
+                            ? StateVariable::custom(entry.name, "")
+                            : StateVariable::custom("electron number density", "numbervolumedensity");
+        _ionFracDiag.push_back(_variables.add(variable.named(entry.name)));
     }
 
     // n_HII-weighted ion fraction aggregates for convergence logging
     for (int i = 0; i < numIonFracAggs; ++i)
-        _ionFracAgg.push_back(_variables.add(
-            StateVariable::custom(ionFracAggTable[i].name, "numbervolumedensity").aggregated(FirstIonFraction + i)));
+        _ionFracAgg.push_back(_variables.add(StateVariable::custom(ionFracAggTable[i].name, "numbervolumedensity")
+                                                 .named(ionFracAggTable[i].shortName)
+                                                 .aggregated(FirstIonFraction + i)));
 
     // Per-cell metal abundance slots (only in PerCell mode). Order matches _solarAbundances
     // and parameterInfo() snapshot columns: C, N, O, Ne, Mg, Si, S, Fe (number ratios n_X/n_H).
     if (abundanceMode() == AbundanceMode::PerCell)
     {
-        static constexpr const char* names[8] = {"n_C/n_H",  "n_N/n_H",  "n_O/n_H", "n_Ne/n_H",
-                                                 "n_Mg/n_H", "n_Si/n_H", "n_S/n_H", "n_Fe/n_H"};
-        for (int i = 0; i < 8; ++i) _metalAbundances.push_back(_variables.add(StateVariable::custom(names[i], "")));
+        static constexpr const char* descriptions[8] = {"n_C/n_H",  "n_N/n_H",  "n_O/n_H", "n_Ne/n_H",
+                                                        "n_Mg/n_H", "n_Si/n_H", "n_S/n_H", "n_Fe/n_H"};
+        static constexpr const char* names[8] = {"y_C", "y_N", "y_O", "y_Ne", "y_Mg", "y_Si", "y_S", "y_Fe"};
+        for (int i = 0; i < 8; ++i)
+            _metalAbundances.push_back(_variables.add(StateVariable::custom(descriptions[i], "").named(names[i])));
     }
 
     // Opacity tables
-    _opacityExt = _variables.addArray(StateVariable::custom("extinction opacity at wavelength", "")
+    _opacityExt = _variables.addArray(StateVariable::custom("extinction opacity at wavelength", "opacity")
                                           .named("kappa_ext")
                                           .array(_numIonizingOpacityPoints));
     _reemissionFractions =
         _variables.addArray(StateVariable::custom("effective reemission fraction at reemission wavelength", "")
+                                .named("f_reem")
                                 .array(_numReemissionOpacityPoints));
 }
 
@@ -815,7 +823,7 @@ UpdateStatus DiffuseIonizedGasMix::updateSpecificState(MaterialState* state, con
                 if (ionFracDiagTable[i].ionFracsIndex >= 0)
                     _ionFracDiag[i](state) = result.ionFracs[ionFracDiagTable[i].ionFracsIndex];
                 else
-                    _ionFracDiag[i](state) = result.ne;
+                    _ionFracDiag[i](state) = result.ne * cm3PerM3;  // cm^-3 -> m^-3
             }
 
             // Store n_HII-weighted ion fraction aggregates: x_ion * n_HII [m^-3]

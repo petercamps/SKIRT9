@@ -31,9 +31,9 @@ void SpinFlipHydrogenGasMix::setupSelfBefore()
     // assemble the specific state variables
     _metallicity = _variables.add(StateVariable::metallicity());
     _temperature = _variables.add(StateVariable::temperature());
-    _neutralSurfaceDensity =
-        _variables.add(StateVariable::custom("neutral hydrogen mass surface density", "masssurfacedensity"));
-    _atomicFraction = _variables.add(StateVariable::custom("atomic hydrogen fraction", ""));
+    _neutralSurfaceDensity = _variables.add(
+        StateVariable::custom("neutral hydrogen mass surface density", "masssurfacedensity").named("Sigma_HI"));
+    _atomicFraction = _variables.add(StateVariable::custom("atomic hydrogen fraction", "").named("f_atom"));
 
     auto config = find<Configuration>();
     if (config->hasSecondaryEmission())

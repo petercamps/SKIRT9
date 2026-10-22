@@ -51,7 +51,8 @@
     - <b>Ionization balance</b> is solved every iteration by the inline PhotoIonizationSolver
       at the STAB-derived temperature, yielding ion fractions for all tracked species (H, He,
       C, N, O, Ne, Mg, Si, S, Fe) and the electron density. Key ion fractions (x_HII, x_NII,
-      x_OI, x_OII, x_OIII, x_SII) and n_e are stored as custom state variables for diagnostics.
+      x_OI, x_OII, x_OIII, x_SII) and the electron number density (n_e, in SI units like all
+      other densities) are stored as custom state variables for diagnostics.
     - <b>Emission</b> is computed from the converged radiation field, temperature, and ion
       fractions: GasLineEmission (this class) computes the line luminosities, while
       GasContinuumEmission computes the nebular continuum (free-bound, free-free, two-photon). By
@@ -536,12 +537,17 @@ public:
         metal n_X/n_H ratios (C, N, O, Ne, Mg, Si, S, Fe) followed by n_He/n_H. */
     vector<SnapshotParameter> parameterInfo() const override;
 
-    /** Returns the list of state variables used by this material mix, assembled during setup. The
-        variables used to select a refinement criterion or condition have short names: \c Z and
-        \c T (the standard names), \c x_HI (hydrogen neutral fraction), \c logU (ionization
-        parameter), and \c x_HII, \c x_NII, \c x_OI, \c x_OII, \c x_OIII, and \c x_SII (ion
-        fractions). The opacity tables are array variables; the extinction opacity is named \c
-        kappa_ext. */
+    /** Returns the list of state variables used by this material mix, assembled during setup.
+        Each variable has a short name: \c Z and \c T (the standard names), \c y_He (helium
+        abundance), \c x_HI and \c x_HeI (hydrogen and helium neutral fractions), \c logU
+        (ionization parameter), \c logR2 to \c logR5 (log ratio parameters), \c n_HII (ionized
+        hydrogen number density), \c x_HII, \c x_NII, \c x_OI, \c x_OII, \c x_OIII, and \c x_SII
+        (ion fractions), \c n_e (electron number density), \c nHII_x_NII, \c nHII_x_OIII, and \c
+        nHII_x_SII (ion fractions weighted by the ionized hydrogen density), and, with per-cell
+        abundances, \c y_C, \c y_N, \c y_O, \c y_Ne, \c y_Mg, \c y_Si, \c y_S, and \c y_Fe
+        (metal abundances relative to hydrogen by number). The opacity tables are array
+        variables: \c kappa_ext (extinction opacity) and \c f_reem (effective reemission
+        fraction). */
     const StateVariableList& specificStateVariableInfo() const override;
 
     /** Initializes specific state variables from imported or default values. */

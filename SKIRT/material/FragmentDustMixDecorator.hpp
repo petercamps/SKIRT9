@@ -117,9 +117,11 @@ public:
         includes a custom state variable for each fragment corresponding to the weight factor for
         that fragment, at custom index \f$f\f$ for fragment \f$f\f$, and, if dynamic densities are
         enabled, a custom state variable for each fragment corresponding to its dynamic density
-        fraction, at custom index \f$N+f\f$, where \f$N\f$ is the number of fragments. Recipes that
-        adjust these variables, such as the DustDestructionRecipe, rely on this layout. For more
-        information, see the parameterInfo() and initializeSpecificState() functions. */
+        fraction, at custom index \f$N+f\f$, where \f$N\f$ is the number of fragments. The weight
+        factor of fragment \f$f\f$ has the short name \c w_f, and its dynamic density fraction \c
+        fdyn_f, for example \c w_0 and \c fdyn_0. Recipes that adjust these variables, such as the
+        DustDestructionRecipe, rely on this layout. For more information, see the parameterInfo()
+        and initializeSpecificState() functions. */
     const StateVariableList& specificStateVariableInfo() const override;
 
     /** This function initializes the specific state variables requested by this fragmented dust

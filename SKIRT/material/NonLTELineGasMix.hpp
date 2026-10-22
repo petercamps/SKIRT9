@@ -646,7 +646,11 @@ public:
         mix. For this class, the list contains descriptors for the properties defined in the input
         model and for a number of variables to hold the level populations derived from the
         radiation field and related information. The level populations and, if requested, the
-        mean intensities at the transition lines are array variables. */
+        mean intensities at the transition lines are array variables. The custom variables have
+        short names: \c T (effective temperature, the standard name), \c T_kin (kinetic
+        temperature), \c n_H2, \c n_H, \c n_HII, \c n_He, or \c n_e (number density of each
+        collision partner of the species, i.e. H2, H, H+, He, or e-), \c pop (level
+        populations), and \c J_line (mean intensities). */
     const StateVariableList& specificStateVariableInfo() const override;
 
     /** This function initializes the specific state variables requested by this material mix
