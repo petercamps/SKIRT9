@@ -59,7 +59,7 @@ namespace
 {
     // The strings beginning a message, indexed by level (Info, Warning, Success, Error)
     // NOTE: this depends on the order in the Level enum --> rather dirty
-    const char* _messageBegin[] = {"   ", " ! ", " - ", " * "};
+    constexpr const char* _messageBegin[] = {"   ", " ! ", " - ", " * "};
 }
 
 void FileLog::output(const string& message, Log::Level level)

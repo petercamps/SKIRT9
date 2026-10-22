@@ -1015,9 +1015,10 @@ void GasLineEmission::initializeRecombinationTables()
 {
     if (_recombRegistry.ready) return;
 
-    static const char* cubeFiles[3] = {"HI_CaseB_all_lines.stab", "HeI_CaseB_all_lines.stab",
-                                       "HeII_CaseB_all_lines.stab"};
-    static const char* mapFiles[3] = {"HI_line_index_map.txt", "HeI_line_index_map.txt", "HeII_line_index_map.txt"};
+    static constexpr const char* cubeFiles[3] = {"HI_CaseB_all_lines.stab", "HeI_CaseB_all_lines.stab",
+                                                 "HeII_CaseB_all_lines.stab"};
+    static constexpr const char* mapFiles[3] = {"HI_line_index_map.txt", "HeI_line_index_map.txt",
+                                                "HeII_line_index_map.txt"};
 
     // open each species' aggregated emissivity cube and read its transition index map
     for (int c = 0; c != 3; ++c)

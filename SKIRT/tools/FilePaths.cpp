@@ -32,11 +32,11 @@ namespace
     std::unordered_map<string, int> _installedPackVersions;
 
     // relative paths to check for presence of built-in resources
-    const char* _intpaths[] = {"../../../git/SKIRT/resources", "../../../../git/SKIRT/resources"};
+    constexpr const char* _intpaths[] = {"../../../git/SKIRT/resources", "../../../../git/SKIRT/resources"};
     const int _Nintpaths = sizeof(_intpaths) / sizeof(const char*);
 
     // relative paths to check for presence of external resources
-    const char* _extpaths[] = {"../../../resources", "../../../../resources"};
+    constexpr const char* _extpaths[] = {"../../../resources", "../../../../resources"};
     const int _Nextpaths = sizeof(_extpaths) / sizeof(const char*);
 
     // recursively searches the given directory and its subdirectories for any files,

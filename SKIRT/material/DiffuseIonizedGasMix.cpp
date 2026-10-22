@@ -472,9 +472,9 @@ void DiffuseIonizedGasMix::setupSelfBefore()
             _gasLineEmission.initializeRecombinationTables();
             find<Log>()->info("Recombination line emission uses the Case B emissivity tables");
 
-            static const char* romans[] = {"I", "II", "III", "IV",   "V",   "VI", "VII", "VIII", "IX",
-                                           "X", "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII"};
-            static const char* metals[] = {"C", "N", "O", "Ne", "Mg", "Si", "S", "Fe"};
+            static constexpr const char* romans[] = {"I", "II", "III", "IV",   "V",   "VI", "VII", "VIII", "IX",
+                                                     "X", "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII"};
+            static constexpr const char* metals[] = {"C", "N", "O", "Ne", "Mg", "Si", "S", "Fe"};
             vector<GasLineEmission::SpeciesSpec> species;
             for (int e = 0; e != 8; ++e)
             {
@@ -576,8 +576,8 @@ void DiffuseIonizedGasMix::setupSelfBefore()
     // and parameterInfo() snapshot columns: C, N, O, Ne, Mg, Si, S, Fe (number ratios n_X/n_H).
     if (abundanceMode() == AbundanceMode::PerCell)
     {
-        static const char* names[8] = {"n_C/n_H",  "n_N/n_H",  "n_O/n_H", "n_Ne/n_H",
-                                       "n_Mg/n_H", "n_Si/n_H", "n_S/n_H", "n_Fe/n_H"};
+        static constexpr const char* names[8] = {"n_C/n_H",  "n_N/n_H",  "n_O/n_H", "n_Ne/n_H",
+                                                 "n_Mg/n_H", "n_Si/n_H", "n_S/n_H", "n_Fe/n_H"};
         for (int i = 0; i < 8; ++i) _metalAbundances.push_back(_variables.add(StateVariable::custom(names[i], "")));
     }
 
@@ -1819,7 +1819,7 @@ void DiffuseIonizedGasMix::calculate5BinRatioParameters(const Array& Jv, double&
     calculateBinAverages(Jv, binAverages);
 
     // Calculate energy content in each bin for validation
-    double binWidths[5] = {
+    const double binWidths[5] = {
         energyBin2Ryd - energyBin1Ryd,  // Bin 1: 1.00 - 1.80 Ryd
         energyBin3Ryd - energyBin2Ryd,  // Bin 2: 1.80 - 2.58 Ryd
         energyBin4Ryd - energyBin3Ryd,  // Bin 3: 2.58 - 3.52 Ryd

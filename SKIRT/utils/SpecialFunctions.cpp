@@ -301,7 +301,7 @@ double SpecialFunctions::DebyeD(int n, double x)
 
         // the number of terms needed in the k-sum for x=0,1,2,3...
         // reflects the n=1 case, because higher n need less terms.
-        static int kLim[] = {0, 0, 0, 13, 10, 8, 7, 6, 5, 5, 4, 4, 4, 3};
+        static constexpr int kLim[] = {0, 0, 0, 13, 10, 8, 7, 6, 5, 5, 4, 4, 4, 3};
         const int kLimSize = sizeof(kLim) / sizeof(kLim[0]);
         const int kmax = (static_cast<int>(x) < kLimSize) ? kLim[static_cast<int>(x)] : 3;
         // Abramowitz Stegun 27.1.2

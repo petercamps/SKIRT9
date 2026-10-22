@@ -58,8 +58,8 @@ namespace
 
     // The strings beginning and ending a message, indexed by level (Info, Warning, Success, Error, Prompt=Error+1)
     // NOTE: this depends on the order in the Level enum --> rather dirty
-    const char* _messageBegin[] = {"   ", " ! ", " - ", " * ", " ? "};
-    const char* _messageEnd[] = {"\n", "\n", "\n", "\n", ": "};
+    constexpr const char* _messageBegin[] = {"   ", " ! ", " - ", " * ", " ? "};
+    constexpr const char* _messageEnd[] = {"\n", "\n", "\n", "\n", ": "};
 
 #ifdef _WIN64
     // The console output code page saved in initialize() and restored in finalize()
@@ -67,11 +67,12 @@ namespace
 
     // Windows character attributes for coloring, indexed by level (Info, Warning, Success, Error, Prompt=Error+1)
     // NOTE: this depends on the order in the Level enum --> rather dirty
-    const WORD MY_WHITE = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
-    const WORD MY_CYAN = FOREGROUND_GREEN | FOREGROUND_BLUE;
-    const WORD MY_MAGENTA = FOREGROUND_RED | FOREGROUND_BLUE;
-    WORD _colorBegin[] = {MY_WHITE, MY_MAGENTA, FOREGROUND_GREEN, FOREGROUND_RED | FOREGROUND_INTENSITY, MY_CYAN};
-    WORD _colorEnd[] = {MY_WHITE, MY_WHITE, MY_WHITE, MY_WHITE, MY_WHITE};
+    constexpr WORD MY_WHITE = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+    constexpr WORD MY_CYAN = FOREGROUND_GREEN | FOREGROUND_BLUE;
+    constexpr WORD MY_MAGENTA = FOREGROUND_RED | FOREGROUND_BLUE;
+    constexpr WORD _colorBegin[] = {MY_WHITE, MY_MAGENTA, FOREGROUND_GREEN, FOREGROUND_RED | FOREGROUND_INTENSITY,
+                                    MY_CYAN};
+    constexpr WORD _colorEnd[] = {MY_WHITE, MY_WHITE, MY_WHITE, MY_WHITE, MY_WHITE};
 
     // The current directory retrieved at program startup (Windows only) and converted to UTF-8 string
     // (because getting the current directory or using relative paths is not thread-safe under Windows)
@@ -82,8 +83,8 @@ namespace
 
     // ANSI escape sequences for coloring, indexed by level (Info, Warning, Success, Error, Prompt=Error+1)
     // NOTE: this depends on the order in the Level enum --> rather dirty
-    const char* _colorBegin[] = {"", "\033[35m", "\033[32m", "\033[31m", "\033[34m"};
-    const char* _colorEnd[] = {"", "\033[0m", "\033[0m", "\033[0m", "\033[0m"};
+    constexpr const char* _colorBegin[] = {"", "\033[35m", "\033[32m", "\033[31m", "\033[34m"};
+    constexpr const char* _colorEnd[] = {"", "\033[0m", "\033[0m", "\033[0m", "\033[0m"};
 #endif
 
     // Arbitrary maximum path length; functions may fail or even crash if paths exceed this length
