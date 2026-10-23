@@ -131,7 +131,13 @@ namespace SpecialFunctions
     /** This function returns the logarithmic mean of two values as described for the two-argument
         lnmean() function in this class, given also the natural logarithm of these two values. In
         cases where these logarithms are available at the call site anyway, this function is more
-        efficient than its two-argument equivalent. */
+        efficient than its two-argument equivalent.
+
+        Unlike the two-argument function, this function does not return zero if only the smaller
+        value is zero while its logarithm is finite. This happens when the smaller value has
+        underflowed, for example as the extinction factor \f$e^{-\tau}\f$ for an optical depth
+        \f$\tau\f$ above about 745. The function then returns \f$x_2/(\ln x_2 - \ln x_1)\f$,
+        which is the logarithmic mean with the smaller value neglected. */
     double lnmean(double x1, double x2, double lnx1, double lnx2);
 }
 

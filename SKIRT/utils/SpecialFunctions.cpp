@@ -490,7 +490,8 @@ double SpecialFunctions::lnmean(double x1, double x2, double lnx1, double lnx2)
         std::swap(x1, x2);
         std::swap(lnx1, lnx2);
     }
-    if (x1 <= 0) return 0.;
+    if (x2 <= 0) return 0.;
+    if (x1 <= 0) return lnx2 > lnx1 ? x2 / (lnx2 - lnx1) : 0.;  // x1 has underflowed, but its logarithm is available
 
     double x = x2 / x1 - 1.;
     if (x < 1e-3)
