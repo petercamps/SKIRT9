@@ -88,7 +88,8 @@ public:
         set to zero. The current path is invalidated, and all information about the previous life
         cycle is lost. The initial cell index of the path is reset to -1 (unknown); if the launch
         position has been generated in a known spatial cell, the caller should set it after the
-        launch through the setInitialCellIndex() function. */
+        launch through the setInitialCellIndex() function. Similarly, the emission cell is reset to
+        -1 (unknown); see the setEmissionCell() function. */
     void launch(size_t historyIndex, double lambda, double L, Position bfr, Direction bfk,
                 VelocityInterface* bvi = nullptr, AngularDistributionInterface* adi = nullptr,
                 PolarizationProfileInterface* ppi = nullptr);
@@ -109,8 +110,19 @@ public:
         scattering interaction that emulates secondary emission. Specifically, it resets the
         scattering counter and establishes that the photon packet has been emitted by the specified
         medium, overwriting the packet's previous origin. This function should be called just after
-        launching the packet outgoing from the scattering interaction. */
+        launching the packet outgoing from the scattering interaction. Because the packet is now
+        considered to be emitted by the medium at the location of the interaction, its emission
+        cell is reset to -1 (unknown); see the setEmissionCell() function. */
     void setEmulatedSecondaryOrigin(int mediumCompIndex);
+
+    /** This function registers the index of the spatial cell from which the photon packet has been
+        emitted. This information is used by the self-heating rebalance of the secondary radiation
+        field to attribute the energy carried by a dust-emitted photon packet to its emission cell.
+        The function should be called just after launch, and only by a secondary source that emits
+        the photon packet from a specific spatial cell; for all other photon packets, the emission
+        cell remains at the value -1 set by the launch() function. The value survives scattering
+        events. */
+    void setEmissionCell(int m) { _emissionCell = m; }
 
     /** This function initializes a peel off photon packet being sent to an instrument for an
         emission event. The arguments specify the base photon packet from which the peel off
@@ -212,6 +224,11 @@ public:
 
     /** This function returns the number of scattering events the photon packet has experienced. */
     int numScatt() const { return _nscatt; }
+
+    /** This function returns the index of the spatial cell from which the photon packet has been
+        emitted, as registered through the setEmissionCell() function, or -1 if no emission cell
+        was registered since the photon packet was launched. */
+    int emissionCell() const { return _emissionCell; }
 
     // ------- Calculating Doppler shifts -------
 
@@ -350,6 +367,7 @@ private:
     int _compIndex{0};        // sign * (index of the originating source or medium component + 1)
                               //  0: uninitialized   >0: primary   <0: secondary
     size_t _historyIndex{0};  // index of the photon packet's history in the current emission segment
+    int _emissionCell{-1};    // index of the spatial cell from which the packet was emitted, or -1 if unknown
 
     // information on life cycle
     int _nscatt{0};  // number of experienced scattering events

@@ -379,14 +379,22 @@ private:
         each segment can be configured as a multiplication factor on the default number of primary
         photon packets. The minimum and maximum number of iterations can also be specified as
         configuration options. Within these limits, the actual number of iterations performed is
-        determined by user-configured convergence criteria. For dust media, convergence is reached
-        when (a) the absorbed secondary luminosity is less than a given fraction of the absorbed
-        primary luminosity, \em OR (b) the absorbed secondary luminosity has changed by less than a
-        given fraction compared to the previous iteration.
+        determined by user-configured convergence criteria. For dust emission, these criteria are
+        described for the DustEmissionOptions class; see also the isDustEmissionConverged()
+        function.
 
         Any secondary dynamic state update algorithms in the simulation are performed at the end of
         each segment. Convergence is determined by the specific mechanism includes in each of these
         algorithms.
+
+        If the medium system rebalances the secondary radiation field (see the
+        MediumSystem::hasRebalancer() function), this function partitions the spatial cells into
+        rebalance regions before launching the photon packets of each segment, and it rebalances
+        the secondary radiation field at the end of each segment, after the dynamic state updates
+        and the convergence test, which therefore use the measured radiation field. In the first
+        segment, there is no secondary radiation field yet from which the regions can be formed, so
+        that nothing is rebalanced. The rebalance is also performed at the end of the last segment,
+        so that the final secondary emission starts from the rebalanced field.
 
         The photon packets emitted by this function do not perform peel-off to the instruments
         because the radiation field has not yet converged. After this function returns, a final
@@ -416,6 +424,13 @@ private:
         end of each secondary emission segment. Convergence is determined by the specific mechanism
         includes in each of these algorithms.
 
+        The convergence of dust emission and the rebalance of the secondary radiation field are
+        handled as described for the runSecondaryEmissionIterations() function, except that the
+        rebalance regions are determined after the primary segment of each iteration, so that they
+        reflect the current primary radiation field. The primary dynamic state is updated with the
+        measured radiation field before the rebalance, so that its iteration does not depend on the
+        rebalance.
+
         Each iteration recalculates the primary radiation field, while the secondary radiation
         field established by the previous iteration remains available until the secondary segment
         of the current iteration replaces it. The secondary dynamic state updates and the secondary
@@ -434,15 +449,18 @@ private:
         */
     void runMergedEmissionIterations();
 
-    /** This function determines and logs the total dust-absorbed primary and secondary luminosity
-        for the specified (one-based) iteration of a secondary or merged iteration loop, records the
-        absorbed secondary luminosity in a series of the iteration history with loop lifetime, and
-        returns true if secondary emission can be considered to be converged, and false otherwise.
-        This is the case if the absorbed primary or secondary luminosity is zero, if the absorbed
-        secondary luminosity is less than the specified fraction of the absorbed primary
-        luminosity, or if the absorbed secondary luminosity has changed by less than the specified
-        fraction compared to the previous iteration of the loop. */
-    bool isDustEmissionConverged(int iter, double fractionOfPrimary, double fractionOfPrevious);
+    /** This function evaluates the convergence of dust emission at the end of an iteration of a
+        secondary or merged iteration loop. The argument specifies the dust luminosity emitted in
+        the iteration, i.e. the total dust-absorbed primary and stable secondary luminosity at the
+        time the secondary photon packets were launched. The function obtains the total
+        dust-absorbed primary and secondary luminosity of the iteration, and calculates the
+        luminosity deficit (only if dust emission is the only form of secondary emission), the
+        self-absorbed fraction, and the secondary change as described for the DustEmissionOptions
+        class. It records these quantities in series of the iteration history with loop lifetime,
+        logs them, and returns true if dust emission can be considered to be converged according to
+        the criteria described for the DustEmissionOptions class, and false otherwise. The function
+        also returns true if the absorbed primary or secondary luminosity is zero. */
+    bool isDustEmissionConverged(double Lemitted);
 
     /** If the simulation accumulates the dust-absorbed luminosity per cell (see the
         MediumSystem::hasExactDustAbsorption() function), this function logs the fraction of the

@@ -18,6 +18,7 @@
 #include "ResonanceOptions.hpp"
 #include "SamplingOptions.hpp"
 #include "SecondaryEmissionOptions.hpp"
+#include "SelfHeatingRebalancer.hpp"
 #include "SimulationItem.hpp"
 #include "SpatialGrid.hpp"
 #include "Table.hpp"
@@ -175,7 +176,8 @@ protected:
         including the cell volume and the number density for each medium as defined by the input
         model. If needed for the simulation's configuration, it also allocates one or two radiation
         field data tables that have a bin for each spatial cell in the simulation and for each bin
-        in the wavelength grid returned by the Configuration::radiationFieldWLG() function. */
+        in the wavelength grid returned by the Configuration::radiationFieldWLG() function, and
+        it creates the self-heating rebalancer if needed (see the beginRebalance() function). */
     void setupSelfAfter() override;
 
     //=============== Overall medium configuration ===================
@@ -692,6 +694,12 @@ public:
         wavelengths outside the grid is also accumulated separately (see the
         dustAbsorbedFractionOutsideGrid() function).
 
+        Finally, while the self-heating rebalance is active (see the beginRebalance() function),
+        the function adds the contributions of the path of a secondary photon packet with a known
+        emission cell to the tallies of the rebalancer: the launched luminosity (for the first path
+        of the photon packet), the dust-absorbed luminosity of each cell crossed by the path, and
+        the luminosity leaving the spatial domain at the end of the path.
+
         The additions happen in a thread-safe way, so that this function can be called from
         multiple parallel threads, even for paths crossing the same cells. */
     void storeRadiationField(bool primary, const PhotonPacket* pp);
@@ -729,6 +737,31 @@ public:
         dust emission spectrum, which is calculated from the binned radiation field, misses the
         heating by the absorbed radiation outside the grid. */
     double dustAbsorbedFractionOutsideGrid(bool primary) const;
+
+    /** This function returns true if the medium system rebalances the secondary radiation field
+        after each secondary emission iteration (see the beginRebalance() function), and false
+        otherwise. This is the case if the Configuration::rebalanceSecondaryEmission() function
+        returns true and the simulation has at least one dust medium component. */
+    bool hasRebalancer() const { return _rebalancer != nullptr; }
+
+    /** This function partitions the spatial cells into regions for the self-heating rebalance of
+        the secondary radiation field, based on the current dust-absorbed primary and stable
+        secondary luminosities and the dust mass of each cell, and it clears and activates the
+        rebalance tallies (see the SelfHeatingRebalancer class). It must be called only if
+        hasRebalancer() returns true, before the photon packets of each secondary emission segment
+        in a secondary or merged iteration loop are launched. If there is no stable secondary
+        radiation field yet, as in the first iteration of the loop, the regions cannot be formed,
+        and nothing is rebalanced in this iteration. */
+    void beginRebalance();
+
+    /** This function deactivates the rebalance tallies, solves the rebalance system, and rescales
+        the stable secondary radiation field and the stable dust-absorbed secondary luminosity of
+        each spatial cell by the factor of its region (see the SelfHeatingRebalancer class). The
+        rebalancer logs a summary and records the rebalance series in the iteration history. This
+        function must be called only after a corresponding call to beginRebalance(), after the
+        photon packets have been launched and the communicateRadiationField() function has been
+        called for the secondary radiation field. */
+    void endRebalance();
 
 private:
     /** This function returns the sum of the values in both the primary and the stable secondary
@@ -978,6 +1011,9 @@ private:
 
     // a helper class calculating the dust absorption opacity along a path (defined in the source file)
     class DustAbsorptionOpacity;
+
+    // relevant for any simulation mode that rebalances the secondary radiation field
+    std::unique_ptr<SelfHeatingRebalancer> _rebalancer;
 
     // relevant for any simulation mode that includes dust emission
     int _numDustEmissionWavelengths{0};

@@ -272,7 +272,12 @@ void ConfigurationSetup::setupSelfBefore()
         if (_hasSecondaryIterations)
         {
             _maxFractionOfPrimary = ms->dustEmissionOptions()->maxFractionOfPrimary();
-            _maxFractionOfPrevious = ms->dustEmissionOptions()->maxFractionOfPrevious();
+            _maxLuminosityDeficit = ms->dustEmissionOptions()->maxLuminosityDeficit();
+            _maxSecondaryChange = ms->dustEmissionOptions()->maxSecondaryChange();
+            _numConvergenceIterations = ms->dustEmissionOptions()->numConvergenceIterations();
+            _rebalanceSecondaryEmission = !_hasGasEmission && ms->dustEmissionOptions()->rebalanceSecondaryEmission();
+            _numAbsorptionRatioBins = ms->dustEmissionOptions()->numAbsorptionRatioBins();
+            _numHeatingRateBins = ms->dustEmissionOptions()->numHeatingRateBins();
         }
         _dustEmissionSourceWeight = ms->dustEmissionOptions()->sourceWeight();
         _dustEmissionWavelengthBias = ms->dustEmissionOptions()->wavelengthBias();
@@ -441,6 +446,13 @@ void ConfigurationSetup::setupSelfAfter()
         else
             log->info("  Iterating over secondary emission");
     }
+
+    if (_rebalanceSecondaryEmission)
+        log->info("  Rebalancing the dust self-heating over at most "
+                  + std::to_string(_numAbsorptionRatioBins * _numHeatingRateBins) + " regions");
+    else if (_hasSecondaryIterations && _hasDustEmission && _hasGasEmission)
+        log->info(
+            "  Omitting the dust self-heating rebalance and luminosity deficit criterion because of gas emission");
 
     if (_hasPrimaryDynamicState && _hasSecondaryDynamicState)
         log->info("  With primary and secondary dynamic medium state");

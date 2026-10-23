@@ -188,7 +188,12 @@ namespace
 {
     // the ids of the iteration history series kept by the simulation on its own behalf
     enum HistoryId {
-        DustAbsorbedLuminosity,
+        DustAbsorbedPrimary,
+        DustAbsorbedSecondary,
+        DustEmitted,
+        LuminosityDeficit,
+        SelfAbsorbedFraction,
+        SecondaryChange,
         NumPrimaryPackets,
         NumSecondaryPackets,
         LoopConverged,
@@ -199,6 +204,12 @@ namespace
     // the fraction of the dust-absorbed luminosity outside the radiation field wavelength grid above which a warning
     // is issued
     constexpr double maxFractionOutsideGrid = 0.01;
+
+    // returns the sum of the primary and secondary luminosities in the specified pair
+    double totalLuminosity(std::pair<double, double> luminosities)
+    {
+        return luminosities.first + luminosities.second;
+    }
 
     // this function logs the convergence status and returns true if the loop should exit, false if it should continue
     // specifically, the loop exits
@@ -237,47 +248,94 @@ namespace
 
 ////////////////////////////////////////////////////////////////////
 
-bool MonteCarloSimulation::isDustEmissionConverged(int iter, double fractionOfPrimary, double fractionOfPrevious)
+bool MonteCarloSimulation::isDustEmissionConverged(double Lemitted)
 {
-    // determine and log the total absorbed luminosity
-    auto [Labsprim, Labsseco] = mediumSystem()->totalDustAbsorbedLuminosity();
-    log()->info("The total dust-absorbed primary luminosity is "
-                + StringUtils::toString(units()->obolluminosity(Labsprim), 'g') + " " + units()->ubolluminosity());
-    log()->info("The total dust-absorbed secondary luminosity in iteration " + std::to_string(iter) + " is "
-                + StringUtils::toString(units()->obolluminosity(Labsseco), 'g') + " " + units()->ubolluminosity());
+    int w = _config->numConvergenceIterations();
+    bool dustOnly = _config->hasDustOnlySecondaryEmission();
+    auto [Lp, Ls] = mediumSystem()->totalDustAbsorbedLuminosity();
 
-    // record the absorbed secondary luminosity in the iteration history; the series is cleared at the start of each
-    // loop, so that in the first iteration of a loop there is no previous value
-    auto& series = _history->scalarSeries(this, DustAbsorbedLuminosity, 2, IterationHistory::Lifetime::Loop,
-                                          "dust-absorbed secondary luminosity", "bolluminosity");
-    series.set(Labsseco);
+    // record the convergence quantities in the iteration history; the series are cleared at the start of each loop
+    auto lifetime = IterationHistory::Lifetime::Loop;
+    auto& primary = _history->scalarSeries(this, DustAbsorbedPrimary, 1, lifetime, "dust-absorbed primary luminosity",
+                                           "bolluminosity");
+    auto& secondary = _history->scalarSeries(this, DustAbsorbedSecondary, w + 1, lifetime,
+                                             "dust-absorbed secondary luminosity", "bolluminosity");
+    auto& emitted = _history->scalarSeries(this, DustEmitted, 1, lifetime, "dust-emitted luminosity", "bolluminosity");
+    auto& deficit = _history->scalarSeries(this, LuminosityDeficit, w, lifetime, "luminosity deficit");
+    auto& fraction = _history->scalarSeries(this, SelfAbsorbedFraction, 1, lifetime, "self-absorbed fraction");
+    auto& change = _history->scalarSeries(this, SecondaryChange, 1, lifetime, "secondary change");
+    primary.set(Lp);
+    secondary.set(Ls);
+    emitted.set(Lemitted);
+    if (dustOnly && Lp > 0.) deficit.set((Ls - Lemitted + Lp) / Lp);
+    if (Lemitted > 0.) fraction.set(Ls / Lemitted);
 
-    // log the current performance and corresponding convergence criteria
-    if (Labsprim > 0. && Labsseco > 0.)
+    // the secondary change is the mean relative change per iteration of the absorbed secondary luminosity over the
+    // last w iterations, excluding the first iteration of the loop, which lacks dust self-heating; it is available
+    // once at least w+1 iterations, and at least 3 iterations, have been performed
+    int n = _history->iteration();
+    int lag = min(w, n - 2);  // the number of iterations back to the reference iteration, which is not the first one
+    if (Ls > 0. && n > w && lag > 0) change.set(abs(Ls - secondary.value(lag)) / (lag * Ls));
+
+    // helper functions for formatting luminosities, percentages, and numbers of iterations
+    auto luminosity = [this](double L) {
+        return StringUtils::toString(units()->obolluminosity(L), 'e', 3) + " " + units()->ubolluminosity();
+    };
+    auto percentage = [](double x) { return StringUtils::toString(x * 100., 'f', 2) + "%"; };
+    auto iterations = [](int n) { return std::to_string(n) + (n == 1 ? " iteration" : " iterations"); };
+
+    // log the luminosities
+    string message = "  Dust-absorbed luminosity: primary " + luminosity(Lp) + ", secondary " + luminosity(Ls);
+    if (Lp > 0.)
+        message += Ls >= Lp ? " (" + StringUtils::toString(Ls / Lp, 'f', 2) + " x primary)"
+                            : " (" + percentage(Ls / Lp) + " of primary)";
+    log()->info(message);
+    if (fraction.has())
     {
-        if (!series.has(1))
-        {
-            log()->info("--> absorbed secondary luminosity is "
-                        + StringUtils::toString(Labsseco / Labsprim * 100., 'f', 2)
-                        + "% of absorbed primary luminosity (convergence criterion is "
-                        + StringUtils::toString(fractionOfPrimary * 100., 'f', 2) + "%)");
-        }
-        else
-        {
-            log()->info("--> absorbed secondary luminosity changed by "
-                        + StringUtils::toString(series.relativeChange() * 100., 'f', 2)
-                        + "% compared to previous iteration (convergence criterion is "
-                        + StringUtils::toString(fractionOfPrevious * 100., 'f', 2) + "%)");
-        }
+        message = "  Dust-emitted luminosity: " + luminosity(Lemitted) + ", self-absorbed fraction "
+                  + percentage(fraction.value());
+        if (deficit.has()) message += ", luminosity deficit " + percentage(deficit.value());
+        log()->info(message);
     }
 
-    // secondary emission has reached convergence if one or more of the following conditions holds:
-    // - the absorbed primary luminosity is zero
-    // - the absorbed secondary luminosity is zero
-    // - the absorbed secondary luminosity is less than a given fraction of the absorbed primary luminosity
-    // - the absorbed secondary luminosity has changed by less than a given fraction compared to previous iter
-    return Labsprim <= 0. || Labsseco <= 0. || Labsseco / Labsprim < fractionOfPrimary
-           || (series.has(1) && series.relativeChange() < fractionOfPrevious);
+    // dust emission has converged if the absorbed primary or secondary luminosity is zero,
+    if (Lp <= 0. || Ls <= 0.) return true;
+
+    // or if the absorbed secondary luminosity is less than a given fraction of the absorbed primary luminosity,
+    double maxFractionOfPrimary = _config->maxFractionOfPrimary();
+    if (Ls / Lp < maxFractionOfPrimary)
+    {
+        log()->info("  --> absorbed secondary luminosity is " + percentage(Ls / Lp)
+                    + " of absorbed primary luminosity (criterion " + percentage(maxFractionOfPrimary) + ")");
+        return true;
+    }
+
+    // or, once the secondary change is available, if the mean luminosity deficit over the last w iterations
+    // (if applicable) and the secondary change are sufficiently small
+    if (!change.has())
+    {
+        int numMore = max(w + 1, 3) - n;
+        log()->info("  --> the convergence criteria apply after " + std::to_string(numMore) + " more "
+                    + (numMore == 1 ? "iteration" : "iterations"));
+        return false;
+    }
+    bool converged = true;
+    if (dustOnly)
+    {
+        // a missing value (which is unlikely) results in NaN, which fails the criterion
+        double meanDeficit = 0.;
+        for (int lag = 0; lag != w; ++lag) meanDeficit += deficit.value(lag);
+        meanDeficit /= w;
+        double maxDeficit = _config->maxLuminosityDeficit();
+        log()->info("  --> mean luminosity deficit over " + iterations(w) + ": " + percentage(meanDeficit)
+                    + " (criterion " + percentage(maxDeficit) + ")");
+        converged &= abs(meanDeficit) <= maxDeficit;
+    }
+    double maxChange = _config->maxSecondaryChange();
+    log()->info("  --> mean change of secondary luminosity over " + iterations(lag) + ": " + percentage(change.value())
+                + " (criterion " + percentage(maxChange) + ")");
+    converged &= change.value() <= maxChange;
+    return converged;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -401,8 +459,10 @@ void MonteCarloSimulation::runSecondaryEmissionIterations()
     size_t Npp = _config->numSecondaryIterationPackets();
     int minIters = _config->minSecondaryIterations();
     int maxIters = _config->maxSecondaryIterations();
-    double fractionOfPrimary = _config->maxFractionOfPrimary();
-    double fractionOfPrevious = _config->maxFractionOfPrevious();
+
+    // determine whether the simulation has dust emission, in which case the medium system accumulates the
+    // dust-absorbed luminosity per cell
+    bool hasDustEmission = mediumSystem()->hasExactDustAbsorption();
 
     // loop over the secondary emission iterations
     _history->beginLoop(IterationHistory::Loop::Secondary);
@@ -432,6 +492,12 @@ void MonteCarloSimulation::runSecondaryEmissionIterations()
                 return;
             }
 
+            // record the dust luminosity about to be emitted, and partition the cells for the rebalance if needed
+            // (in the first iteration, there is no secondary radiation field yet, so that nothing is rebalanced)
+            double Lemitted = hasDustEmission ? totalLuminosity(mediumSystem()->totalDustAbsorbedLuminosity()) : 0.;
+            bool rebalance = mediumSystem()->hasRebalancer();
+            if (rebalance) mediumSystem()->beginRebalance();
+
             // launch photon packets
             initProgress(segment, Npp);
             parallel->call(Npp, [this](size_t i, size_t n) { performLifeCycle(i, n, false, false, true); });
@@ -445,9 +511,9 @@ void MonteCarloSimulation::runSecondaryEmissionIterations()
             // update secondary dynamic medium state and log convergence info
             converged &= mediumSystem()->updateSecondaryDynamicMediumState();
 
-            // log dust emission convergence info
-            if (mediumSystem()->hasDust())
-                converged &= isDustEmissionConverged(iter, fractionOfPrimary, fractionOfPrevious);
+            // log dust emission convergence info, and rebalance the secondary radiation field if needed
+            if (hasDustEmission) converged &= isDustEmissionConverged(Lemitted);
+            if (rebalance) mediumSystem()->endRebalance();
         }
 
         // record the convergence status in the iteration history and notify the probe system
@@ -477,8 +543,10 @@ void MonteCarloSimulation::runMergedEmissionIterations()
     size_t Npp2 = _config->numSecondaryIterationPackets();
     int minIters = _config->minSecondaryIterations();
     int maxIters = _config->maxSecondaryIterations();
-    double fractionOfPrimary = _config->maxFractionOfPrimary();
-    double fractionOfPrevious = _config->maxFractionOfPrevious();
+
+    // determine whether the simulation has dust emission, in which case the medium system accumulates the
+    // dust-absorbed luminosity per cell
+    bool hasDustEmission = mediumSystem()->hasExactDustAbsorption();
 
     // prepare the primary source system for the appropriate number of packets
     sourceSystem()->prepareForLaunch(Npp1);
@@ -533,6 +601,12 @@ void MonteCarloSimulation::runMergedEmissionIterations()
                 return;
             }
 
+            // record the dust luminosity about to be emitted, and partition the cells for the rebalance if needed
+            // (in the first iteration, there is no secondary radiation field yet, so that nothing is rebalanced)
+            double Lemitted = hasDustEmission ? totalLuminosity(mediumSystem()->totalDustAbsorbedLuminosity()) : 0.;
+            bool rebalance = mediumSystem()->hasRebalancer();
+            if (rebalance) mediumSystem()->beginRebalance();
+
             // launch photon packets
             initProgress(segment2, Npp2);
             parallel->call(Npp2, [this](size_t i, size_t n) { performLifeCycle(i, n, false, false, true); });
@@ -546,9 +620,9 @@ void MonteCarloSimulation::runMergedEmissionIterations()
             // update the primary dynamic medium state and log convergence info
             converged &= mediumSystem()->updatePrimaryDynamicMediumState();
 
-            // log dust emission convergence info
-            if (mediumSystem()->hasDust())
-                converged &= isDustEmissionConverged(iter, fractionOfPrimary, fractionOfPrevious);
+            // log dust emission convergence info, and rebalance the secondary radiation field if needed
+            if (hasDustEmission) converged &= isDustEmissionConverged(Lemitted);
+            if (rebalance) mediumSystem()->endRebalance();
         }
 
         // record the convergence status in the iteration history and notify the probe system

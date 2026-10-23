@@ -38,7 +38,7 @@ template<class T> class ThreadLocalMember
 {
 public:
     /** This function returns a pointer to the thread-local copy of the data member. */
-    T* local() { return &repository.map[this]; }
+    T* local() { return &repository().map[this]; }
 
     /** This function returns a list of pointers to the copies of the data member for all threads
         that ever referred to it and that are not yet destructed. The list is in arbitrary order.
@@ -71,7 +71,16 @@ private:
         }
         std::unordered_map<ThreadLocalMember<T>*, T> map;
     };
-    static thread_local Repository repository;
+
+    // returns the repository for the local thread, constructing it on first use in each thread; the repository is a
+    // function-local rather than a static data member, because link-time optimization may discard the separate
+    // initialization function of a thread-local static data member of a class template while code inlined in another
+    // translation unit still refers to it
+    static Repository& repository()
+    {
+        thread_local Repository t_repository;
+        return t_repository;
+    }
 
     // set containing a pointer to all repositories, across the threads
     using RepositoryRegistry = std::unordered_set<Repository*>;
@@ -79,7 +88,6 @@ private:
     static std::mutex mutex;
 };
 
-template<class T> thread_local typename ThreadLocalMember<T>::Repository ThreadLocalMember<T>::repository;
 template<class T> typename ThreadLocalMember<T>::RepositoryRegistry ThreadLocalMember<T>::allRepositories;
 template<class T> std::mutex ThreadLocalMember<T>::mutex;
 

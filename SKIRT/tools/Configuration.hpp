@@ -324,15 +324,41 @@ public:
         emission. */
     double numSecondaryIterationPackets() const { return _numSecondaryIterationPackets; }
 
-    /** Returns the dust self-absorption iteration convergence criterion described as follows:
-        convergence is reached when the total absorbed dust luminosity is less than this fraction
-        of the total absorbed primary luminosity. */
+    /** Returns the dust self-heating iteration convergence criterion described as follows:
+        convergence is reached when the total absorbed secondary luminosity is less than this
+        fraction of the total absorbed primary luminosity. */
     double maxFractionOfPrimary() const { return _maxFractionOfPrimary; }
 
-    /** Returns the dust self-absorption iteration convergence criterion described as follows:
-        convergence is reached when the total absorbed dust luminosity has changed by less than
-        this fraction compared to the previous iteration. */
-    double maxFractionOfPrevious() const { return _maxFractionOfPrevious; }
+    /** Returns the dust self-heating iteration convergence criterion described as follows:
+        convergence requires the absolute value of the mean luminosity deficit over the last
+        numConvergenceIterations() iterations to be at most this value. The luminosity deficit is
+        the relative amount by which the escaping dust luminosity falls short of the absorbed
+        primary luminosity. */
+    double maxLuminosityDeficit() const { return _maxLuminosityDeficit; }
+
+    /** Returns the dust self-heating iteration convergence criterion described as follows:
+        convergence requires the mean relative change per iteration of the absorbed secondary
+        luminosity over the last numConvergenceIterations() iterations, excluding the first
+        iteration of the loop, to be at most this value. */
+    double maxSecondaryChange() const { return _maxSecondaryChange; }
+
+    /** Returns the number of iterations over which the dust self-heating convergence criteria are
+        evaluated. */
+    int numConvergenceIterations() const { return _numConvergenceIterations; }
+
+    /** Returns true if the secondary radiation field must be rebalanced over regions of spatial
+        cells after each secondary emission iteration, and false otherwise. This is the case if the
+        simulation iterates over secondary emission, thermal dust emission is the only form of
+        secondary emission, and the user did not disable the rebalance. */
+    bool rebalanceSecondaryEmission() const { return _rebalanceSecondaryEmission; }
+
+    /** Returns the number of rebalance bins on the axis of the ratio of the absorbed secondary to
+        the absorbed primary luminosity. */
+    int numAbsorptionRatioBins() const { return _numAbsorptionRatioBins; }
+
+    /** Returns the number of rebalance bins on the axis of the absorbed luminosity per unit dust
+        mass. */
+    int numHeatingRateBins() const { return _numHeatingRateBins; }
 
     // ----> dynamic medium state
 
@@ -480,6 +506,10 @@ public:
     /** Returns true if gas emission must be calculated, and false otherwise. */
     bool hasGasEmission() const { return _hasGasEmission; }
 
+    /** Returns true if thermal dust emission must be calculated and is the only form of secondary
+        emission, i.e. there is no gas emission, and false otherwise. */
+    bool hasDustOnlySecondaryEmission() const { return _hasDustEmission && !_hasGasEmission; }
+
     //======================== Data Members ========================
 
 protected:
@@ -543,7 +573,12 @@ protected:
     double _numSecondaryPackets{0.};
     double _numSecondaryIterationPackets{0.};
     double _maxFractionOfPrimary{0.01};
-    double _maxFractionOfPrevious{0.03};
+    double _maxLuminosityDeficit{0.01};
+    double _maxSecondaryChange{0.005};
+    int _numConvergenceIterations{3};
+    bool _rebalanceSecondaryEmission{false};
+    int _numAbsorptionRatioBins{10};
+    int _numHeatingRateBins{10};
 
     // dynamic medium state
     bool _hasDynamicStateRecipes{false};

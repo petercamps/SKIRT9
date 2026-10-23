@@ -27,6 +27,7 @@ void PhotonPacket::launch(size_t historyIndex, double lambda, double L, Position
     _ppi = ppi;
     _compIndex = 0;
     _historyIndex = historyIndex;
+    _emissionCell = -1;
     _nscatt = 0;
     setPosition(bfr);
     setDirection(bfk);
@@ -57,6 +58,7 @@ void PhotonPacket::setSecondaryOrigin(int mediumCompIndex)
 void PhotonPacket::setEmulatedSecondaryOrigin(int mediumCompIndex)
 {
     _nscatt = 0;
+    _emissionCell = -1;
     setSecondaryOrigin(mediumCompIndex);
 }
 

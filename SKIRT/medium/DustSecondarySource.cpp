@@ -577,6 +577,9 @@ void DustSecondarySource::launch(PhotonPacket* pp, size_t historyIndex, double L
 
     // remember the spatial cell containing the launch position, so that the path need not search for it
     pp->setInitialCellIndex(m);
+
+    // remember the emission cell for the self-heating rebalance, if any
+    pp->setEmissionCell(m);
 }
 
 ////////////////////////////////////////////////////////////////////

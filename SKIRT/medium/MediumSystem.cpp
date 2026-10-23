@@ -302,6 +302,14 @@ void MediumSystem::setupSelfAfter()
         }
     }
 
+    // ----- create the self-heating rebalancer -----
+
+    if (_config->rebalanceSecondaryEmission() && _labs2.size())
+    {
+        _rebalancer = std::make_unique<SelfHeatingRebalancer>(
+            _config->numAbsorptionRatioBins(), _config->numHeatingRateBins(), _history, dustEmissionOptions(), log);
+    }
+
     // ----- cache info on the dust emission wavelength grid -----
 
     if (_config->hasDustEmission())
@@ -1448,6 +1456,13 @@ void MediumSystem::storeRadiationField(bool primary, const PhotonPacket* pp)
     Array& labs = primary ? _labs1 : _labs2c;
     double LabsOutside = 0.;  // the part of the absorbed luminosity along the path outside the wavelength grid
 
+    // the rebalance tallies for this path, which are active only for dust emission during a rebalanced iteration
+    // (in which case the dust absorption opacity is always active as well); the launched luminosity is added for the
+    // first path of the photon packet only
+    SelfHeatingRebalancer::Tally tally;
+    if (_rebalancer && !primary) tally = _rebalancer->tally(pp->emissionCell());
+    if (tally && pp->numScatt() == 0) tally.launch(pp->luminosity());
+
     // use a faster version in case there are no kinematics
     if (_config->hasConstantPerceivedWavelength())
     {
@@ -1474,11 +1489,13 @@ void MediumSystem::storeRadiationField(bool primary, const PhotonPacket* pp)
                     double Labs = dust.opacity(m) * Lds;
                     LockFree::add(labs[m], Labs);
                     if (ell < 0) LabsOutside += Labs;
+                    if (tally) tally.absorb(m, Labs);
                 }
             }
             lnExtBeg = lnExtEnd;
             extBeg = extEnd;
         }
+        if (tally) tally.escape(luminosity * extBeg);
     }
     else
     {
@@ -1506,12 +1523,14 @@ void MediumSystem::storeRadiationField(bool primary, const PhotonPacket* pp)
                         double Labs = dust.opacity(m) * Lds;
                         LockFree::add(labs[m], Labs);
                         if (ell < 0) LabsOutside += Labs;
+                        if (tally) tally.absorb(m, Labs);
                     }
                 }
             }
             lnExtBeg = lnExtEnd;
             extBeg = extEnd;
         }
+        if (tally) tally.escape(pp->luminosity() * extBeg);
     }
 
     // add the part absorbed outside the grid once per path, so that threads do not contend for it in the loop
@@ -1574,6 +1593,41 @@ std::pair<double, double> MediumSystem::totalDustAbsorbedLuminosity() const
 double MediumSystem::dustAbsorbedFractionOutsideGrid(bool primary) const
 {
     return primary ? _fractionOutside1 : _fractionOutside2;
+}
+
+////////////////////////////////////////////////////////////////////
+
+void MediumSystem::beginRebalance()
+{
+    // calculate the dust mass in each cell
+    Array dustMassv(_numCells);
+    for (int m = 0; m != _numCells; ++m)
+    {
+        double rho = 0.;
+        for (int h : _dust_hv) rho += massDensity(m, h);
+        dustMassv[m] = rho * volume(m);
+    }
+
+    _rebalancer->begin(_labs1, _labs2, dustMassv);
+}
+
+////////////////////////////////////////////////////////////////////
+
+void MediumSystem::endRebalance()
+{
+    _rebalancer->end(_labs1, _labs2);
+
+    // rescale the stable secondary radiation field and absorbed luminosity; the factors are identical on all processes
+    int numBins = _wavelengthGrid->numBins();
+    for (int m = 0; m != _numCells; ++m)
+    {
+        double f = _rebalancer->factor(m);
+        if (f != 1.)
+        {
+            _labs2[m] *= f;
+            for (int ell = 0; ell != numBins; ++ell) _rf2(m, ell) *= f;
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////
