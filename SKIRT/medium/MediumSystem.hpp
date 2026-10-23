@@ -628,16 +628,21 @@ public:
     //=============== Radiation field ===================
 
 public:
-    /** This function initializes all values of the primary and/or secondary radiation field info
-        tables to zero, together with the corresponding dust-absorbed luminosities (see the
+    /** This function initializes all values of the primary or temporary secondary radiation field
+        info table to zero, together with the corresponding dust-absorbed luminosities (see the
         storeRadiationField() function). In simulation modes that record the radiation field, the
         function should be called before starting a simulation segment (i.e. before a set of
-        photon packets is launched). If the \em primary flag is true, the function clears both the
-        primary table and the stable secondary table (if present). The stable secondary table is
-        cleared as well so that we can use its contents even if no secondary of photon packet
-        segment has been launched yet. If the flag is false, the function clears just the
-        temporary secondary table, so that the stable secondary table remains available for
-        calculating secondary emission spectra. */
+        photon packets is launched). If the \em primary flag is true, the function clears the
+        primary table; otherwise it clears the temporary secondary table.
+
+        The stable secondary table is never cleared. It is zero after allocation, so that its
+        contents can be used even if no secondary photon packets have been launched yet, and it is
+        replaced only when the temporary secondary table is copied into it (see the
+        communicateRadiationField() function). As a result, the secondary radiation field remains
+        available for calculating secondary emission spectra while a new temporary secondary table
+        is accumulated, and also while the primary radiation field is recalculated, as happens at
+        the start of each merged primary and secondary emission iteration and after the last one.
+        */
     void clearRadiationField(bool primary);
 
     /** This function stores the contribution of the specified photon packet along its current path

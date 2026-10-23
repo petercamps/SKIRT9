@@ -416,6 +416,14 @@ private:
         end of each secondary emission segment. Convergence is determined by the specific mechanism
         includes in each of these algorithms.
 
+        Each iteration recalculates the primary radiation field, while the secondary radiation
+        field established by the previous iteration remains available until the secondary segment
+        of the current iteration replaces it. The secondary dynamic state updates and the secondary
+        emission spectra in each iteration are therefore based on the radiation field from both
+        primary and secondary sources, so that, for example, dust self-heating is taken into
+        account. The same holds for the final primary and secondary emission segments that follow
+        the iterations.
+
         The photon packets emitted by this function do not perform peel-off to the instruments
         because the radiation field has not yet converged. After this function returns, a final
         segment of secondary emission with peel-off must be performed by calling the

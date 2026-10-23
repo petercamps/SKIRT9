@@ -1375,9 +1375,7 @@ void MediumSystem::clearRadiationField(bool primary)
     if (primary)
     {
         _rf1.setToZero();
-        if (_rf2.size()) _rf2.setToZero();
         _labs1 = 0.;
-        _labs2 = 0.;
         _labsOutside1 = 0.;
     }
     else

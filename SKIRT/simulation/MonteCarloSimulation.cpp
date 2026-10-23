@@ -108,7 +108,7 @@ void MonteCarloSimulation::runPrimaryEmission()
     string segment = "primary emission";
     TimeLogger logger(log(), segment);
 
-    // clear the radiation field
+    // clear the primary radiation field; the secondary radiation field of merged iterations, if any, remains in place
     if (_config->hasRadiationField()) mediumSystem()->clearRadiationField(true);
 
     // shoot photons from primary sources, if needed
@@ -506,7 +506,7 @@ void MonteCarloSimulation::runMergedEmissionIterations()
             string segment2 = "merged secondary emission iteration " + std::to_string(iter);
             TimeLogger logger(log(), segment);
 
-            // clear the radiation field
+            // clear the primary radiation field; the secondary radiation field of the previous iteration remains in place
             mediumSystem()->clearRadiationField(true);
 
             // launch photon packets
