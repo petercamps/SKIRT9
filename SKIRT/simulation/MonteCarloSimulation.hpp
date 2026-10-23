@@ -436,6 +436,18 @@ private:
         fraction compared to the previous iteration of the loop. */
     bool isDustEmissionConverged(int iter, double fractionOfPrimary, double fractionOfPrevious);
 
+    /** If the simulation accumulates the dust-absorbed luminosity per cell (see the
+        MediumSystem::hasExactDustAbsorption() function), this function logs the fraction of the
+        dust-absorbed luminosity of the most recent primary or secondary emission segment that was
+        absorbed at wavelengths outside the radiation field wavelength grid. If the fraction
+        exceeds 1%, the message is issued as a warning that advises extending the grid, because the
+        shape of the dust emission spectrum, which is calculated from the binned radiation field,
+        then misses part of the heating. If the \em record flag is true, the function is called
+        from an iteration loop. It then also records the fraction in a series of the iteration
+        history, and it issues the warning only if the fraction did not exceed the threshold in the
+        previous iteration of the loop, so that the warning is not repeated in every iteration. */
+    void reportDustAbsorptionOutsideGrid(bool primary, bool record);
+
     /** In a multi-processing environment, this function logs a message and waits for all processes
         to finish the work (i.e. it places a barrier). The string argument is included in the log
         message to indicate the scope of work that is being finished. If there is only a single
@@ -522,41 +534,6 @@ private:
         argument provides scratch space for the detection information of the instruments in a
         group, with at least as many elements as there are instruments. */
     void peelOffEmission(const PhotonPacket* pp, PhotonPacket* ppp, vector<Instrument::Detection>& detections);
-
-    /** This function stores the contribution of the specified photon packet to the radiation field
-        in the cells crossed by the packet's path. The function assumes that both the geometric and
-        optical depth information for the photon packet's path have been set; if this is not the
-        case, the behavior is undefined.
-
-        The radiation field is discretized on the spatial grid of the simulation (held by the
-        MediumSystem object) and on a wavelength grid provided specifically for this purpose (see
-        the Configuration::radiationFieldWLG() function for more information). Locating the
-        appropriate spatial bin is trivial because each segment in the photon packet's path stores
-        the index of the cell being crossed. The wavelength bin is derived from the photon packet's
-        perceived wavelength in the cell under consideration, taking into account the velocity of
-        the medium in that cell.
-
-        For each segment \f$n\f$ in the photon packet's path, this function first determines the
-        corresponding spatial/wavelength bin as described above. To the contents of that bin, the
-        function adds the product of the mean luminosity carried by the photon packet along the
-        segment and the distance covered by the segment, or \f[ (L\Delta s)_n = L_{\text{mean},n}
-        \,(\Delta s)_n = L\,\text{lnmean} \left(\text{e}^{-\tau_{n-1}}, \text{e}^{-\tau_n}\right)
-        \,(\Delta s)_n \f] where \f$L\f$ is the luminosity carried by the photon packet,
-        \f$\text{lnmean}()\f$ is the logarithmic mean, \f$\tau_{n-1}\f$ and \f$\tau_n\f$ represent
-        the cumulative optical depth at the start and end of the segment, and \f$(\Delta s)_n\f$ is
-        the distance covered by the segment. Using the logarithmic mean assumes an exponential
-        behavior of the exinction with distance within the segment.
-
-        Once this information has been accumulated for all photon packets launched during a segment
-        of the simulation, the mean intensity of the radiation field in each spatial/wavelength bin
-        can be calculated using \f[ (J_\lambda)_{\ell,m} = \frac{ (L\Delta s)_{\ell,m}
-        }{4\pi\,V_m\,(\Delta \lambda)_\ell} \f] where \f$\ell\f$ is the index of the wavelength
-        bin, \f$(\Delta \lambda)_\ell\f$ is the wavelength bin width, \f$m\f$ is the spatial cell
-        index, \f$V_m\f$ is the volume of the cell, and \f$(L\Delta s)_{\ell,m}\f$ has been
-        accumulated over all photon packets contributing to the bin. The resulting mean intensity
-        \f$J_\lambda\f$ is expressed as an amount of energy per unit of time, per unit of area, per
-        unit of wavelength, and per unit of solid angle. */
-    void storeRadiationField(bool primary, const PhotonPacket* pp);
 
     /** This function determines the next scattering location of a photon packet in a photon life
         cycle with forced scattering and simulates its propagation to that position. The function

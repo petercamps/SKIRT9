@@ -22,6 +22,7 @@
 #include "ProcessManager.hpp"
 #include "Random.hpp"
 #include "ShortArray.hpp"
+#include "SpecialFunctions.hpp"
 #include "StateVariableList.hpp"
 #include "StringUtils.hpp"
 #include <unordered_set>
@@ -283,6 +284,21 @@ void MediumSystem::setupSelfAfter()
             _rf2.resize(_numCells, _wavelengthGrid->numBins());
             _rf2c.resize(_numCells, _wavelengthGrid->numBins());
             allocatedBytes += 2 * _rf2.size() * sizeof(double);
+        }
+
+        // allocate memory for the dust-absorbed luminosity per cell, following the corresponding tables;
+        // use the list of dust components rather than hasDust(), because the material mixes are obtained below
+        if (_config->hasDustEmission() && !_dust_hv.empty())
+        {
+            _labs1.resize(_numCells);
+            allocatedBytes += _labs1.size() * sizeof(double);
+
+            if (_config->hasSecondaryRadiationField())
+            {
+                _labs2.resize(_numCells);
+                _labs2c.resize(_numCells);
+                allocatedBytes += 2 * _labs2.size() * sizeof(double);
+            }
         }
     }
 
@@ -1360,21 +1376,164 @@ void MediumSystem::clearRadiationField(bool primary)
     {
         _rf1.setToZero();
         if (_rf2.size()) _rf2.setToZero();
+        _labs1 = 0.;
+        _labs2 = 0.;
+        _labsOutside1 = 0.;
     }
     else
     {
         _rf2c.setToZero();
+        _labs2c = 0.;
+        _labsOutside2c = 0.;
     }
 }
 
 ////////////////////////////////////////////////////////////////////
 
-void MediumSystem::storeRadiationField(bool primary, int m, int ell, double Lds)
+// This helper class calculates the absorption opacity of the dust media in a given cell, at the specified
+// wavelength, for the specified photon packet traveling along its current path. If the dust absorption cross
+// sections are spatially constant, the constructor obtains these cross sections for each dust medium component,
+// so that the work that does not depend on the cell is performed once per path rather than once per segment.
+// Otherwise, the opacity is obtained from the material mix of each dust component in the cell, which handles
+// material mix families, extra specific state variables, and polarization-dependent absorption.
+class MediumSystem::DustAbsorptionOpacity
 {
-    if (primary)
-        LockFree::add(_rf1(m, ell), Lds);
+public:
+    DustAbsorptionOpacity(const MediumSystem* ms, double lambda, const PhotonPacket* pp)
+        : _ms{ms}, _lambda{lambda}, _pp{pp}
+    {
+        if (_ms->hasExactDustAbsorption() && _ms->_config->hasConstantDustAbsorptionSections())
+        {
+            int numDust = _ms->_dust_hv.size();
+            _sectionv.resize(numDust);
+            for (int i = 0; i != numDust; ++i) _sectionv[i] = _ms->mix(0, _ms->_dust_hv[i])->sectionAbs(_lambda);
+            _constant = true;
+        }
+    }
+
+    // returns false if the simulation has no dust emission, so that no opacity is needed
+    bool active() const { return _ms->hasExactDustAbsorption(); }
+
+    // returns the absorption opacity of the dust media in cell m
+    double opacity(int m) const
+    {
+        double result = 0.;
+        int numDust = _ms->_dust_hv.size();
+        if (_constant)
+        {
+            for (int i = 0; i != numDust; ++i) result += _sectionv[i] * _ms->_state.numberDensity(m, _ms->_dust_hv[i]);
+        }
+        else
+        {
+            for (int h : _ms->_dust_hv)
+            {
+                MaterialState mst(_ms->_state, m, h);
+                result += _ms->mix(m, h)->opacityAbs(_lambda, &mst, _pp);
+            }
+        }
+        return result;
+    }
+
+private:
+    const MediumSystem* _ms;
+    double _lambda;
+    const PhotonPacket* _pp;
+    bool _constant{false};
+    ShortArray _sectionv;  // the absorption cross section of each dust component, if constant
+};
+
+////////////////////////////////////////////////////////////////////
+
+void MediumSystem::storeRadiationField(bool primary, const PhotonPacket* pp)
+{
+    // the targets for the radiation field and the dust-absorbed luminosity
+    Table<2>& rf = primary ? _rf1 : _rf2c;
+    Array& labs = primary ? _labs1 : _labs2c;
+    double LabsOutside = 0.;  // the part of the absorbed luminosity along the path outside the wavelength grid
+
+    // use a faster version in case there are no kinematics
+    if (_config->hasConstantPerceivedWavelength())
+    {
+        int ell = _wavelengthGrid->bin(pp->wavelength());
+        DustAbsorptionOpacity dust(this, pp->wavelength(), pp);
+        if (ell < 0 && !dust.active()) return;
+
+        double luminosity = pp->luminosity();
+        double lnExtBeg = 0.;  // extinction factor and its logarithm at begin of current segment
+        double extBeg = 1.;
+        for (const auto& segment : pp->segments())
+        {
+            double lnExtEnd = -segment.tauExt();  // extinction factor and its logarithm at end of current segment
+            double extEnd = exp(lnExtEnd);
+            int m = segment.m();
+            if (m >= 0)
+            {
+                // use this flavor of the lnmean function to avoid recalculating the logarithm of the extinction
+                double extMean = SpecialFunctions::lnmean(extEnd, extBeg, lnExtEnd, lnExtBeg);
+                double Lds = luminosity * extMean * segment.ds();
+                if (ell >= 0) LockFree::add(rf(m, ell), Lds);
+                if (dust.active())
+                {
+                    double Labs = dust.opacity(m) * Lds;
+                    LockFree::add(labs[m], Labs);
+                    if (ell < 0) LabsOutside += Labs;
+                }
+            }
+            lnExtBeg = lnExtEnd;
+            extBeg = extEnd;
+        }
+    }
     else
-        LockFree::add(_rf2c(m, ell), Lds);
+    {
+        double lnExtBeg = 0.;  // extinction factor and its logarithm at begin of current segment
+        double extBeg = 1.;
+        for (const auto& segment : pp->segments())
+        {
+            double lnExtEnd = -segment.tauExt();  // extinction factor and its logarithm at end of current segment
+            double extEnd = exp(lnExtEnd);
+            int m = segment.m();
+            if (m >= 0)
+            {
+                double lambda =
+                    pp->perceivedWavelength(_state.bulkVelocity(m), _config->hubbleExpansionRate() * segment.s());
+                int ell = _wavelengthGrid->bin(lambda);
+                DustAbsorptionOpacity dust(this, lambda, pp);
+                if (ell >= 0 || dust.active())
+                {
+                    // use this flavor of the lnmean function to avoid recalculating the logarithm of the extinction
+                    double extMean = SpecialFunctions::lnmean(extEnd, extBeg, lnExtEnd, lnExtBeg);
+                    double Lds = pp->perceivedLuminosity(lambda) * extMean * segment.ds();
+                    if (ell >= 0) LockFree::add(rf(m, ell), Lds);
+                    if (dust.active())
+                    {
+                        double Labs = dust.opacity(m) * Lds;
+                        LockFree::add(labs[m], Labs);
+                        if (ell < 0) LabsOutside += Labs;
+                    }
+                }
+            }
+            lnExtBeg = lnExtEnd;
+            extBeg = extEnd;
+        }
+    }
+
+    // add the part absorbed outside the grid once per path, so that threads do not contend for it in the loop
+    if (LabsOutside > 0.) LockFree::add(primary ? _labsOutside1 : _labsOutside2c, LabsOutside);
+}
+
+////////////////////////////////////////////////////////////////////
+
+namespace
+{
+    // returns the specified part of the sum of the specified array, after summing that part over all processes,
+    // or zero if the sum is zero
+    double fractionOfSum(double part, const Array& array)
+    {
+        Array partv(part, 1);
+        ProcessManager::sumToAll(partv);
+        double sum = array.sum();
+        return sum > 0. ? partv[0] / sum : 0.;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1382,11 +1541,24 @@ void MediumSystem::storeRadiationField(bool primary, int m, int ell, double Lds)
 void MediumSystem::communicateRadiationField(bool primary)
 {
     if (primary)
+    {
         ProcessManager::sumToAll(_rf1.data());
+        if (_labs1.size())
+        {
+            ProcessManager::sumToAll(_labs1);
+            _fractionOutside1 = fractionOfSum(_labsOutside1, _labs1);
+        }
+    }
     else
     {
         ProcessManager::sumToAll(_rf2c.data());
         _rf2 = _rf2c;
+        if (_labs2c.size())
+        {
+            ProcessManager::sumToAll(_labs2c);
+            _labs2 = _labs2c;
+            _fractionOutside2 = fractionOfSum(_labsOutside2c, _labs2);
+        }
     }
 }
 
@@ -1394,43 +1566,17 @@ void MediumSystem::communicateRadiationField(bool primary)
 
 std::pair<double, double> MediumSystem::totalDustAbsorbedLuminosity() const
 {
-    auto log = find<Log>();
-    auto parfac = find<ParallelFactory>();
+    // the arrays are identical on all processes after communicateRadiationField(), so no communication is needed
+    double Labs1 = _labs1.size() ? _labs1.sum() : 0.;
+    double Labs2 = _labs2.size() ? _labs2.sum() : 0.;
+    return std::make_pair(Labs1, Labs2);
+}
 
-    // provide room for results per spatial cell
-    Array Labs1v(_numCells);
-    Array Labs2v(_numCells);
+////////////////////////////////////////////////////////////////////
 
-    // loop over the spatial cells in parallel
-    log->info("Calculating dust-absorbed luminosity for " + std::to_string(_numCells) + " cells...");
-    log->infoSetElapsed(_numCells);
-    parfac->parallelDistributed()->call(_numCells, [this, log, &Labs1v, &Labs2v](size_t firstIndex, size_t numIndices) {
-        while (numIndices)
-        {
-            size_t currentChunkSize = min(logProgressChunkSize, numIndices);
-            for (size_t m = firstIndex; m != firstIndex + currentChunkSize; ++m)
-            {
-                int numWavelengths = _wavelengthGrid->numBins();
-                for (int ell = 0; ell != numWavelengths; ++ell)
-                {
-                    double lambda = _wavelengthGrid->wavelength(ell);
-                    double opacity = opacityAbs(lambda, m, MaterialMix::MaterialType::Dust);
-                    Labs1v[m] += opacity * _rf1(m, ell);
-                    Labs2v[m] += opacity * _rf2(m, ell);
-                }
-            }
-            log->infoIfElapsed("Calculated dust-absorbed luminosity: ", currentChunkSize);
-            firstIndex += currentChunkSize;
-            numIndices -= currentChunkSize;
-        }
-    });
-
-    // synchronize the results per spatial cell between processes, if needed
-    ProcessManager::sumToAll(Labs1v);
-    ProcessManager::sumToAll(Labs2v);
-
-    // return the respective totals
-    return std::make_pair(Labs1v.sum(), Labs2v.sum());
+double MediumSystem::dustAbsorbedFractionOutsideGrid(bool primary) const
+{
+    return primary ? _fractionOutside1 : _fractionOutside2;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1530,12 +1676,8 @@ double MediumSystem::indicativeGasTemperature(int m) const
 double MediumSystem::dustLuminosity(int m) const
 {
     double Labs = 0.;
-    int numWavelengths = _wavelengthGrid->numBins();
-    for (int ell = 0; ell < numWavelengths; ell++)
-    {
-        Labs +=
-            opacityAbs(_wavelengthGrid->wavelength(ell), m, MaterialMix::MaterialType::Dust) * radiationField(m, ell);
-    }
+    if (_labs1.size()) Labs += _labs1[m];
+    if (_labs2.size()) Labs += _labs2[m];
     return Labs;
 }
 

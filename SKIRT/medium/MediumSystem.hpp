@@ -629,40 +629,101 @@ public:
 
 public:
     /** This function initializes all values of the primary and/or secondary radiation field info
-        tables to zero. In simulation modes that record the radiation field, the function should be
-        called before starting a simulation segment (i.e. before a set of photon packets is
-        launched). If the \em primary flag is true, the function clears both the primary table and
-        the stable secondary table (if present). The stable secondary table is cleared as well so
-        that we can use its contents even if no secondary of photon packet segment has been
-        launched yet. If the flag is false, the function clears just the temporary secondary table,
-        so that the stable secondary table remains available for calculating secondary emission
-        spectra. */
+        tables to zero, together with the corresponding dust-absorbed luminosities (see the
+        storeRadiationField() function). In simulation modes that record the radiation field, the
+        function should be called before starting a simulation segment (i.e. before a set of
+        photon packets is launched). If the \em primary flag is true, the function clears both the
+        primary table and the stable secondary table (if present). The stable secondary table is
+        cleared as well so that we can use its contents even if no secondary of photon packet
+        segment has been launched yet. If the flag is false, the function clears just the
+        temporary secondary table, so that the stable secondary table remains available for
+        calculating secondary emission spectra. */
     void clearRadiationField(bool primary);
 
-    /** This function adds the specified value of \f$L\,\Delta s\f$ to the radiation field bin
-        corresponding to the spatial cell index \f$m\f$ and the wavelength index\f$\ell\f$. If the
-        \em primary flag is true, the value is added to the primary table; otherwise it is added to
-        the temporary secondary table.
+    /** This function stores the contribution of the specified photon packet along its current path
+        to the radiation field and, if the simulation has dust emission (see the
+        hasExactDustAbsorption() function), to the luminosity absorbed by dust in each cell crossed
+        by the path. If the \em primary flag is true, the contributions are added to the primary
+        table; otherwise they are added to the temporary secondary table. The function assumes that
+        both the geometric and optical depth information for the photon packet's path have been
+        set; if this is not the case, the behavior is undefined.
 
-        The addition happens in a thread-safe way, so that this function can be called from
-        multiple parallel threads, even for the same spatial/wavelength bin. If any of the indices
-        are out of range, undefined behavior results. */
-    void storeRadiationField(bool primary, int m, int ell, double Lds);
+        The radiation field is discretized on the spatial grid of the simulation and on a
+        wavelength grid provided specifically for this purpose (see the
+        Configuration::radiationFieldWLG() function for more information). Locating the
+        appropriate spatial bin is trivial because each segment in the photon packet's path stores
+        the index of the cell being crossed. The wavelength bin is derived from the photon packet's
+        perceived wavelength in the cell under consideration, taking into account the velocity of
+        the medium in that cell.
 
-    /** This function accumulates the radiation field between multiple processes. In simulation
-        modes that record the radiation field, the function should be called in serial code after
-        finishing a simulation segment (i.e. after a before set of photon packets has been
-        launched) and before querying the radiation field's contents. If the \em primary flag is
-        true, the primary table is synchronized; otherwise the temporary secondary table is
-        synchronized and its contents is copied into the stable secondary table. */
+        For each segment \f$n\f$ in the photon packet's path, this function first determines the
+        corresponding spatial/wavelength bin as described above. To the contents of that bin, the
+        function adds the product of the mean luminosity carried by the photon packet along the
+        segment and the distance covered by the segment, or \f[ (L\Delta s)_n = L_{\text{mean},n}
+        \,(\Delta s)_n = L\,\text{lnmean} \left(\text{e}^{-\tau_{n-1}}, \text{e}^{-\tau_n}\right)
+        \,(\Delta s)_n \f] where \f$L\f$ is the luminosity carried by the photon packet,
+        \f$\text{lnmean}()\f$ is the logarithmic mean, \f$\tau_{n-1}\f$ and \f$\tau_n\f$ represent
+        the cumulative optical depth at the start and end of the segment, and \f$(\Delta s)_n\f$ is
+        the distance covered by the segment. Using the logarithmic mean assumes an exponential
+        behavior of the extinction with distance within the segment. If the perceived wavelength
+        lies outside the radiation field wavelength grid, nothing is added to the radiation field.
+
+        Once this information has been accumulated for all photon packets launched during a segment
+        of the simulation, the mean intensity of the radiation field in each spatial/wavelength bin
+        can be calculated using \f[ (J_\lambda)_{\ell,m} = \frac{ (L\Delta s)_{\ell,m}
+        }{4\pi\,V_m\,(\Delta \lambda)_\ell} \f] where \f$\ell\f$ is the index of the wavelength
+        bin, \f$(\Delta \lambda)_\ell\f$ is the wavelength bin width, \f$m\f$ is the spatial cell
+        index, \f$V_m\f$ is the volume of the cell, and \f$(L\Delta s)_{\ell,m}\f$ has been
+        accumulated over all photon packets contributing to the bin. The resulting mean intensity
+        \f$J_\lambda\f$ is expressed as an amount of energy per unit of time, per unit of area, per
+        unit of wavelength, and per unit of solid angle.
+
+        In addition, the function adds \f$k^\text{abs}\,(L\Delta s)_n\f$ to the dust-absorbed
+        luminosity of the cell crossed by segment \f$n\f$, where \f$k^\text{abs}\f$ is the
+        absorption opacity of the dust in that cell at the packet's exact perceived wavelength,
+        whether or not that wavelength lies within the radiation field wavelength grid. This is
+        exactly the energy that the photon packet loses to dust absorption along the segment, so
+        that energy is conserved for any radiation field wavelength grid. The part absorbed at
+        wavelengths outside the grid is also accumulated separately (see the
+        dustAbsorbedFractionOutsideGrid() function).
+
+        The additions happen in a thread-safe way, so that this function can be called from
+        multiple parallel threads, even for paths crossing the same cells. */
+    void storeRadiationField(bool primary, const PhotonPacket* pp);
+
+    /** This function accumulates the radiation field and the dust-absorbed luminosities between
+        multiple processes. In simulation modes that record the radiation field, the function
+        should be called in serial code after finishing a simulation segment (i.e. after a before
+        set of photon packets has been launched) and before querying the radiation field's
+        contents. If the \em primary flag is true, the primary table is synchronized; otherwise the
+        temporary secondary table is synchronized and its contents is copied into the stable
+        secondary table. The function also determines the fraction of the dust-absorbed luminosity
+        of the segment that was absorbed at wavelengths outside the radiation field wavelength grid
+        (see the dustAbsorbedFractionOutsideGrid() function). */
     void communicateRadiationField(bool primary);
 
+    /** This function returns true if the medium system accumulates the luminosity absorbed by dust
+        in each spatial cell while photon packets are traced (see the storeRadiationField()
+        function), and false otherwise. This is the case if the simulation includes dust emission
+        and has at least one dust medium component. */
+    bool hasExactDustAbsorption() const { return _labs1.size() > 0; }
+
     /** This function returns a pair of values specifying the bolometric luminosity absorbed by
-        dust media across the complete domain of the spatial grid, respectively using the partial
-        radiation field stored in the primary table and the stable secondary table. The bolometric
-        absorbed luminosity in each cell is calculated as described for the dustLuminosity()
-        function. */
+        dust media across the complete domain of the spatial grid, respectively from primary
+        sources and, if the simulation records a secondary radiation field, from secondary sources
+        (using the stable secondary values). The absorbed luminosity in each cell is obtained as
+        described for the dustLuminosity() function. If the simulation does not include dust
+        emission, the function returns zero values. */
     std::pair<double, double> totalDustAbsorbedLuminosity() const;
+
+    /** This function returns the fraction of the dust-absorbed luminosity of the most recent
+        primary or secondary emission segment that was absorbed at wavelengths outside the radiation
+        field wavelength grid, or zero if no luminosity was absorbed or the simulation does not
+        include dust emission. The fraction is determined by the communicateRadiationField()
+        function. The emitted dust luminosity remains correct in this case, but the shape of the
+        dust emission spectrum, which is calculated from the binned radiation field, misses the
+        heating by the absorbed radiation outside the grid. */
+    double dustAbsorbedFractionOutsideGrid(bool primary) const;
 
 private:
     /** This function returns the sum of the values in both the primary and the stable secondary
@@ -770,14 +831,16 @@ public:
 
 public:
     /** This function returns the bolometric luminosity \f$L^\text{abs}_{\text{bol},m}\f$ that has
-        been absorbed by dust media in the spatial cell with index \f$m\f$.
+        been absorbed by dust media in the spatial cell with index \f$m\f$, from primary sources
+        and, if the simulation records a secondary radiation field, from secondary sources (using
+        the stable secondary values).
 
-        The bolometric luminosity is calculated using \f[ L^\text{abs}_{\text{bol},m} = \sum_\ell
-        (k^\text{abs}_\text{type})_{\ell,m} \,(L\Delta s)_{\ell,m} \f] where \f$\ell\f$ runs over
-        the wavelengths in the simulation's radiation field wavelength grid, \f$m\f$ is the spatial
-        cell index, \f$(k^\text{abs}_\text{dust})_{\ell,m}\f$ is the absorption opacity of the dust
-        in the cell, and \f$(L\Delta s)_{\ell,m}\f$ has been accumulated over all photon packets
-        contributing to the bin. */
+        The absorbed luminosity is accumulated while photon packets are traced, as the sum over all
+        path segments crossing the cell of \f$k^\text{abs}\,L\,\Delta s\f$, where
+        \f$k^\text{abs}\f$ is the absorption opacity of the dust in the cell at the packet's exact
+        wavelength (see the storeRadiationField() function). It is thus exactly the energy that the
+        photon packets lose to dust absorption, for any radiation field wavelength grid. If the
+        simulation does not include dust emission, the function returns zero. */
     double dustLuminosity(int m) const;
 
     /** This function returns the combined emission spectrum for all dust media in the spatial cell
@@ -897,6 +960,19 @@ private:
     Table<2> _rf1;   // radiation field from primary sources
     Table<2> _rf2;   // radiation field from secondary sources (copied from _rf2c at the appropriate time)
     Table<2> _rf2c;  // radiation field currently being accumulated from secondary sources
+
+    // relevant for any simulation mode that includes dust emission (if there are dust media)
+    // each array has an entry for each cell; the life cycle of each array follows that of the corresponding table
+    Array _labs1;   // dust-absorbed luminosity from primary sources
+    Array _labs2;   // dust-absorbed luminosity from secondary sources (copied from _labs2c at the appropriate time)
+    Array _labs2c;  // dust-absorbed luminosity currently being accumulated from secondary sources
+    double _labsOutside1{0.};      // part of _labs1 absorbed outside the radiation field wavelength grid
+    double _labsOutside2c{0.};     // part of _labs2c absorbed outside the radiation field wavelength grid
+    double _fractionOutside1{0.};  // fraction of _labs1 absorbed outside the grid, after communication
+    double _fractionOutside2{0.};  // fraction of _labs2 absorbed outside the grid, after communication
+
+    // a helper class calculating the dust absorption opacity along a path (defined in the source file)
+    class DustAbsorptionOpacity;
 
     // relevant for any simulation mode that includes dust emission
     int _numDustEmissionWavelengths{0};

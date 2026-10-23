@@ -10,11 +10,8 @@
 #include "Log.hpp"
 #include "MediumSystem.hpp"
 #include "NR.hpp"
-#include "Parallel.hpp"
-#include "ParallelFactory.hpp"
 #include "PhotonPacket.hpp"
 #include "PolarizationProfileInterface.hpp"
-#include "ProcessManager.hpp"
 #include "Random.hpp"
 #include "StringUtils.hpp"
 #include "Units.hpp"
@@ -34,16 +31,10 @@ double DustSecondarySource::prepareLuminosities()
 
     // --------- luminosities 1 ---------
 
-    // calculate the absorbed (and thus to be emitted) dust luminosity for each spatial cell
-    // this can be somewhat time-consuming, so we do this in parallel
+    // obtain the absorbed (and thus to be emitted) dust luminosity for each spatial cell; the medium system
+    // accumulates these values while tracing photon packets, and they are identical on all processes
     _Lv.resize(numCells);
-    find<ParallelFactory>()->parallelDistributed()->call(numCells, [this](size_t firstIndex, size_t numIndices) {
-        for (size_t m = firstIndex; m != firstIndex + numIndices; ++m)
-        {
-            _Lv[m] = _ms->dustLuminosity(m);
-        }
-    });
-    ProcessManager::sumToAll(_Lv);
+    for (int m = 0; m != numCells; ++m) _Lv[m] = _ms->dustLuminosity(m);
 
     // --------- library mapping ---------
 

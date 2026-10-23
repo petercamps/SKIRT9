@@ -337,6 +337,16 @@ void ConfigurationSetup::setupSelfBefore()
     _hasSingleConstantSectionMedium = numMedia == 1 && _hasConstantSectionMedium;
     _hasMultipleConstantSectionMedia = numMedia > 1 && _hasConstantSectionMedium;
 
+    // set the criterion for constant dust absorption cross sections, considering the dust media only
+    _hasConstantDustAbsorptionSections = _hasConstantPerceivedWavelength;
+    for (auto medium : ms->media())
+    {
+        auto capabilities = medium->capabilities();
+        if (capabilities.materialType == MaterialMix::MaterialType::Dust
+            && (medium->hasVariableMix() || capabilities.extraSpecificState || capabilities.polarizedAbsorption))
+            _hasConstantDustAbsorptionSections = false;
+    }
+
     // check for scattering dispersion and for emulating secondary emission
     for (auto medium : ms->media())
     {

@@ -11,7 +11,6 @@
 #include "ProcessManager.hpp"
 #include "SecondarySourceSystem.hpp"
 #include "ShortArray.hpp"
-#include "SpecialFunctions.hpp"
 #include "StringUtils.hpp"
 #include "TimeLogger.hpp"
 
@@ -134,7 +133,11 @@ void MonteCarloSimulation::runPrimaryEmission()
 
     // wait for all processes to finish and synchronize the radiation field
     wait(segment);
-    if (_config->hasRadiationField()) mediumSystem()->communicateRadiationField(true);
+    if (_config->hasRadiationField())
+    {
+        mediumSystem()->communicateRadiationField(true);
+        reportDustAbsorptionOutsideGrid(true, false);
+    }
 
     // update secondary dynamic medium state if applicable (in which case we have a medium system)
     if (_config->hasSecondaryDynamicState()) mediumSystem()->updateSecondaryDynamicMediumState();
@@ -172,7 +175,11 @@ void MonteCarloSimulation::runSecondaryEmission()
 
     // wait for all processes to finish and synchronize the radiation field if needed
     wait(segment);
-    if (storeRF) mediumSystem()->communicateRadiationField(false);
+    if (storeRF)
+    {
+        mediumSystem()->communicateRadiationField(false);
+        reportDustAbsorptionOutsideGrid(false, false);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -180,7 +187,18 @@ void MonteCarloSimulation::runSecondaryEmission()
 namespace
 {
     // the ids of the iteration history series kept by the simulation on its own behalf
-    enum HistoryId { DustAbsorbedLuminosity, NumPrimaryPackets, NumSecondaryPackets, LoopConverged };
+    enum HistoryId {
+        DustAbsorbedLuminosity,
+        NumPrimaryPackets,
+        NumSecondaryPackets,
+        LoopConverged,
+        PrimaryOutsideGrid,
+        SecondaryOutsideGrid
+    };
+
+    // the fraction of the dust-absorbed luminosity outside the radiation field wavelength grid above which a warning
+    // is issued
+    constexpr double maxFractionOutsideGrid = 0.01;
 
     // this function logs the convergence status and returns true if the loop should exit, false if it should continue
     // specifically, the loop exits
@@ -264,6 +282,35 @@ bool MonteCarloSimulation::isDustEmissionConverged(int iter, double fractionOfPr
 
 ////////////////////////////////////////////////////////////////////
 
+void MonteCarloSimulation::reportDustAbsorptionOutsideGrid(bool primary, bool record)
+{
+    if (!mediumSystem()->hasExactDustAbsorption()) return;
+
+    double fraction = mediumSystem()->dustAbsorbedFractionOutsideGrid(primary);
+    bool warn = fraction > maxFractionOutsideGrid;
+
+    // in an iteration loop, record the fraction and warn only if the previous iteration did not
+    if (record)
+    {
+        string description = string("fraction of absorbed ") + (primary ? "primary" : "secondary")
+                             + " luminosity outside the radiation field grid";
+        auto& series = _history->scalarSeries(this, primary ? PrimaryOutsideGrid : SecondaryOutsideGrid, 2,
+                                              IterationHistory::Lifetime::Loop, description);
+        if (series.has(1) && series.value(1) > maxFractionOutsideGrid) warn = false;
+        series.set(fraction);
+    }
+
+    string message = string("Fraction of the dust-absorbed ") + (primary ? "primary" : "secondary")
+                     + " luminosity outside the radiation field wavelength grid: "
+                     + StringUtils::toString(fraction * 100., 'f', 2) + "%";
+    if (warn)
+        log()->warning(message + "; consider extending the radiation field wavelength grid");
+    else
+        log()->info(message);
+}
+
+////////////////////////////////////////////////////////////////////
+
 void MonteCarloSimulation::runPrimaryEmissionIterations()
 {
     // when this function is called
@@ -322,6 +369,7 @@ void MonteCarloSimulation::runPrimaryEmissionIterations()
             // wait for all processes to finish and synchronize the radiation field
             wait(segment);
             mediumSystem()->communicateRadiationField(true);
+            reportDustAbsorptionOutsideGrid(true, true);
 
             // update the primary dynamic medium state and log convergence info
             converged = mediumSystem()->updatePrimaryDynamicMediumState();
@@ -392,6 +440,7 @@ void MonteCarloSimulation::runSecondaryEmissionIterations()
             // wait for all processes to finish and synchronize the radiation field
             wait(segment);
             mediumSystem()->communicateRadiationField(false);
+            reportDustAbsorptionOutsideGrid(false, true);
 
             // update secondary dynamic medium state and log convergence info
             converged &= mediumSystem()->updateSecondaryDynamicMediumState();
@@ -468,6 +517,7 @@ void MonteCarloSimulation::runMergedEmissionIterations()
             // wait for all processes to finish and synchronize the radiation field
             wait(segment1);
             mediumSystem()->communicateRadiationField(true);
+            reportDustAbsorptionOutsideGrid(true, true);
 
             // update secondary dynamic medium state and log convergence info
             converged &= mediumSystem()->updateSecondaryDynamicMediumState();
@@ -491,6 +541,7 @@ void MonteCarloSimulation::runMergedEmissionIterations()
             // wait for all processes to finish and synchronize the radiation field
             wait(segment2);
             mediumSystem()->communicateRadiationField(false);
+            reportDustAbsorptionOutsideGrid(false, true);
 
             // update the primary dynamic medium state and log convergence info
             converged &= mediumSystem()->updatePrimaryDynamicMediumState();
@@ -589,7 +640,7 @@ void MonteCarloSimulation::performLifeCycle(size_t firstIndex, size_t numIndices
                                 mediumSystem()->setExtinctionOpticalDepths(&pp);
 
                             // advance the packet
-                            if (store) storeRadiationField(primary, &pp);
+                            if (store) mediumSystem()->storeRadiationField(primary, &pp);
                             simulateForcedPropagation(&pp);
 
                             // if the packet's weight drops below the threshold, terminate it
@@ -674,64 +725,6 @@ void MonteCarloSimulation::peelOffEmission(const PhotonPacket* pp, PhotonPacket*
 
         // have the peel-off photon packet detected by the instruments in the group
         detectPeelOff(group, detections, ppp);
-    }
-}
-
-////////////////////////////////////////////////////////////////////
-
-void MonteCarloSimulation::storeRadiationField(bool primary, const PhotonPacket* pp)
-{
-    // use a faster version in case there are no kinematics
-    if (_config->hasConstantPerceivedWavelength())
-    {
-        int ell = _config->radiationFieldWLG()->bin(pp->wavelength());
-        if (ell >= 0)
-        {
-            double luminosity = pp->luminosity();
-            double lnExtBeg = 0.;  // extinction factor and its logarithm at begin of current segment
-            double extBeg = 1.;
-            for (const auto& segment : pp->segments())
-            {
-                double lnExtEnd = -segment.tauExt();  // extinction factor and its logarithm at end of current segment
-                double extEnd = exp(lnExtEnd);
-                int m = segment.m();
-                if (m >= 0)
-                {
-                    // use this flavor of the lnmean function to avoid recalculating the logarithm of the extinction
-                    double extMean = SpecialFunctions::lnmean(extEnd, extBeg, lnExtEnd, lnExtBeg);
-                    double Lds = luminosity * extMean * segment.ds();
-                    mediumSystem()->storeRadiationField(primary, m, ell, Lds);
-                }
-                lnExtBeg = lnExtEnd;
-                extBeg = extEnd;
-            }
-        }
-    }
-    else
-    {
-        double lnExtBeg = 0.;  // extinction factor and its logarithm at begin of current segment
-        double extBeg = 1.;
-        for (const auto& segment : pp->segments())
-        {
-            double lnExtEnd = -segment.tauExt();  // extinction factor and its logarithm at end of current segment
-            double extEnd = exp(lnExtEnd);
-            int m = segment.m();
-            if (m >= 0)
-            {
-                double lambda = pp->perceivedWavelength(mediumSystem()->bulkVelocity(m),
-                                                        _config->hubbleExpansionRate() * segment.s());
-                int ell = _config->radiationFieldWLG()->bin(lambda);
-                if (ell >= 0)
-                {
-                    // use this flavor of the lnmean function to avoid recalculating the logarithm of the extinction
-                    double extMean = SpecialFunctions::lnmean(extEnd, extBeg, lnExtEnd, lnExtBeg);
-                    double Lds = pp->perceivedLuminosity(lambda) * extMean * segment.ds();
-                    mediumSystem()->storeRadiationField(primary, m, ell, Lds);
-                }
-            }
-            lnExtBeg = lnExtEnd;
-            extBeg = extEnd;
-        }
     }
 }
 

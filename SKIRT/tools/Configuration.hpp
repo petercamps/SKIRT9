@@ -233,6 +233,20 @@ public:
         weight factors. */
     bool hasMultipleConstantSectionMedia() const { return _hasMultipleConstantSectionMedia; }
 
+    /** Returns true if the absorption cross sections of the dust medium components for a photon
+        packet traversing these components are spatially constant, so that the dust absorption
+        opacity in each crossed cell can be calculated by multiplying these constant cross sections
+        by the corresponding number densities in the cell. Otherwise the function returns false.
+        The medium components other than dust are not taken into account.
+
+        The following conditions cause this function to return false: Hubble expansion is enabled,
+        some media may have a non-zero velocity in some cells, so that the perceived wavelength
+        changes between cells; some dust media have a variable material mix; the cross sections
+        for some dust mixes depend on extra medium state variables such as fragment weight factors;
+        some dust mixes have polarized absorption, which depends on the direction and polarization
+        state of the photon packet. */
+    bool hasConstantDustAbsorptionSections() const { return _hasConstantDustAbsorptionSections; }
+
     /** Returns true if a scattering interaction for one or more media may emulate secondary
         emission, and false otherwise. */
     bool scatteringEmulatesSecondaryEmission() const { return _scatteringEmulatesSecondaryEmission; }
@@ -502,6 +516,7 @@ protected:
     bool _hasConstantPerceivedWavelength{false};
     bool _hasSingleConstantSectionMedium{false};
     bool _hasMultipleConstantSectionMedia{false};
+    bool _hasConstantDustAbsorptionSections{false};
     bool _hasScatteringDispersion{false};
     bool _scatteringEmulatesSecondaryEmission{false};
     bool _needIndividualPeelOff{false};
