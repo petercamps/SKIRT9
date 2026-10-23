@@ -1400,12 +1400,11 @@ class MediumSystem::DustAbsorptionOpacity
 {
 public:
     DustAbsorptionOpacity(const MediumSystem* ms, double lambda, const PhotonPacket* pp)
-        : _ms{ms}, _lambda{lambda}, _pp{pp}
+        : _ms{ms}, _lambda{lambda}, _pp{pp}, _sectionv(ms->_dust_hv.size())
     {
         if (_ms->hasExactDustAbsorption() && _ms->_config->hasConstantDustAbsorptionSections())
         {
             int numDust = _ms->_dust_hv.size();
-            _sectionv.resize(numDust);
             for (int i = 0; i != numDust; ++i) _sectionv[i] = _ms->mix(0, _ms->_dust_hv[i])->sectionAbs(_lambda);
             _constant = true;
         }
