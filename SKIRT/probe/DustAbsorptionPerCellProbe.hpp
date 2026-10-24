@@ -22,6 +22,14 @@
     \f$V_m\f$ is the volume of the spatial cell, and the sum represents the dust opacity in the
     cell.
 
+    Because this spectrum is calculated from the binned radiation field, using the dust opacity at
+    the characteristic wavelength of each bin, its integral over wavelength differs from the
+    luminosity absorbed by the dust in the cell as accumulated by the simulation, at the exact
+    wavelength of each photon packet (see the MediumSystem::storeRadiationField() function). It is
+    the latter that normalizes the dust emission of the cell. The difference shrinks roughly with
+    the square of the width of the wavelength bins. In addition, the spectrum misses any absorption
+    at wavelengths outside the radiation field wavelength grid.
+
     Specifically, the output file contains a line for each cell in the spatial grid of the
     simulation. The first columns specifies the cell index, and subsequent columns list the
     spectral luminosity absorbed by dust for each bin in the wavelength grid returned by the

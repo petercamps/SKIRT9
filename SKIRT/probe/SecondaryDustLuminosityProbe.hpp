@@ -15,6 +15,11 @@
     configured for the simulation. It produces output only if the simulation has at least one dust
     medium component and includes dust emission.
 
+    The emission spectrum of each cell is normalized to the luminosity absorbed by the dust in that
+    cell, as accumulated by the simulation at the exact wavelength of each photon packet (see the
+    MediumSystem::dustLuminosity() function), so that its integral over wavelength equals that
+    luminosity. The shape of the spectrum is calculated from the binned radiation field.
+
     When associated with a form that samples the luminosity per spatial cell or at a set of
     positions, such as for a linear or planar cut, the probe outputs a monochromatic luminosity
     volume density (with SI units of W/m/m3 for the per-wavelength flavor). When associated with a
