@@ -733,15 +733,17 @@ namespace ElectronScatteringHelper
 
     double AnomalousRayleighHelper::generateCosineFromPhaseFunction(double x, double Z) const
     {
+        // get the anomalous scattering functions, which depend on x but not on the scattering angle
+        double form1 = NR::clampedValue<NR::interpolateLogLin>(x, _F1v[2 * Z], _F1v[2 * Z + 1]);  // negative values
+        double form2 = NR::clampedValue<NR::interpolateLogLog>(x, _F2v[2 * Z], _F2v[2 * Z + 1]);
+
         // construct the normalized cumulative phase function distribution for this x
         Array thetaXv;
         Array formv = interpolateQ(x, _sintheta2v, _FFv, _logRatioFFv, Z);
-        NR::cdf(thetaXv, maxTheta, [this, x, Z, &formv](int t) {
+        NR::cdf(thetaXv, maxTheta, [this, form1, form2, &formv](int t) {
             t += 1;
             double phase = 1. + _cos2thetav[t];
             double form = formv[t];
-            double form1 = NR::clampedValue<NR::interpolateLogLin>(x, _F1v[2 * Z], _F1v[2 * Z + 1]);
-            double form2 = NR::clampedValue<NR::interpolateLogLog>(x, _F2v[2 * Z], _F2v[2 * Z + 1]);
             double formsum = form + form1;
             return phase * (formsum * formsum + form2 * form2) * _sinthetav[t];
         });
