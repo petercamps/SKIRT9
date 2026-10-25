@@ -60,9 +60,13 @@ namespace
         double xmax = *maxIt;
         if (!(xmax > xmin)) return binv;
 
-        // the index of the fine bin holding the specified coordinate
+        // the index of the fine bin holding the specified coordinate; a value outside the range, including a NaN,
+        // goes to the nearest outer bin, so that the conversion to an integer is always defined
         auto fineBin = [xmin, xmax](double x) {
-            return min(numFineBins - 1, static_cast<int>((x - xmin) / (xmax - xmin) * numFineBins));
+            double t = (x - xmin) / (xmax - xmin) * numFineBins;
+            if (!(t > 0.)) return 0;
+            if (!(t < numFineBins)) return numFineBins - 1;
+            return static_cast<int>(t);
         };
 
         // accumulate the weights in the fine bins
@@ -189,7 +193,7 @@ void SelfHeatingRebalancer::begin(const Array& absorbedPrimaryv, const Array& ab
             cellv.push_back(m);
             if (A > 0. && S > 0.)
             {
-                double u = log10(S / A);
+                double u = log10(S) - log10(A);  // a difference of logarithms cannot overflow
                 umin = min(umin, u);
                 umax = max(umax, u);
             }
@@ -207,8 +211,8 @@ void SelfHeatingRebalancer::begin(const Array& absorbedPrimaryv, const Array& ab
         double A = absorbedPrimaryv[m];
         double S = absorbedSecondaryv[m];
         double E = A + S;
-        uv[i] = A > 0. ? (S > 0. ? log10(S / A) : umin) : umax;
-        vv[i] = log10(E / dustMassv[m]);
+        uv[i] = A > 0. ? (S > 0. ? log10(S) - log10(A) : umin) : umax;
+        vv[i] = log10(E) - log10(dustMassv[m]);
         wv[i] = E;
     }
 
