@@ -48,9 +48,13 @@ class SimulationItem;
     value of \f$u\f$ over all cells, and a cell without absorbed secondary luminosity the smallest
     one. Each axis is divided into bins with borders at the weighted quantiles of the coordinate,
     with the emitted luminosity as weight, so that each bin holds about the same fraction of the
-    emission. The quantiles are obtained from a fine histogram with 4096 equal bins between the
-    smallest and largest coordinate. The regions are the combinations of a bin on each axis that
-    hold at least one cell, numbered consecutively.
+    emission. The quantiles are exact: the cells are sorted on the coordinate, and each group of
+    cells with the same coordinate goes to the bin holding the cumulative emission at the center of
+    the group, so that such cells, for example all cells without absorbed secondary luminosity,
+    always share a bin. Unlike a histogram, this does not depend on the range of the coordinates,
+    which a few cells with a tiny absorbed luminosity can stretch over hundreds of decades. The
+    regions are the combinations of a bin on each axis that hold at least one cell, numbered
+    consecutively.
 
     <b>Tallies</b>
 

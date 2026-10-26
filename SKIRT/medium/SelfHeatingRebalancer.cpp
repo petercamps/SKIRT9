@@ -37,9 +37,6 @@ namespace
         "effective factor",       "tallied self-absorbed fraction",
         "smallest tally closure", "largest tally closure"};
 
-    // the number of fine histogram bins used to determine the weighted quantiles of a region coordinate
-    constexpr int numFineBins = 4096;
-
     // the range to which the region factors are clamped
     constexpr double minFactor = 0.5;
     constexpr double maxFactor = 5.;
@@ -47,46 +44,41 @@ namespace
     // the ratio between a pivot and the largest element in its row below which the solution is rejected
     constexpr double minPivotRatio = 1e-12;
 
-    // returns the bin index for each of the specified coordinates, for the specified number of bins with borders at
-    // the weighted quantiles of the coordinates, so that each bin holds about the same fraction of the total weight;
-    // if all coordinates are equal or the total weight is zero, all coordinates go to the first bin
+    // returns the bin index for each of the specified finite coordinates with nonnegative finite weights, for the
+    // specified number of bins with borders at the exact weighted quantiles of the coordinates, so that each bin holds
+    // about the same fraction of the total weight; the coordinates are sorted, and each group of equal coordinates
+    // goes to the bin holding the cumulative weight at the center of the group, so that equal coordinates always
+    // share a bin; if the total weight is zero, all coordinates go to the first bin
     vector<int> quantileBins(const vector<double>& xv, const vector<double>& wv, int numBins)
     {
-        vector<int> binv(xv.size(), 0);
-        if (xv.empty() || numBins < 2) return binv;
+        size_t n = xv.size();
+        vector<int> binv(n, 0);
+        if (!n || numBins < 2) return binv;
 
-        auto [minIt, maxIt] = std::minmax_element(xv.begin(), xv.end());
-        double xmin = *minIt;
-        double xmax = *maxIt;
-        if (!(xmax > xmin)) return binv;
-
-        // the index of the fine bin holding the specified coordinate; a value outside the range, including a NaN,
-        // goes to the nearest outer bin, so that the conversion to an integer is always defined
-        auto fineBin = [xmin, xmax](double x) {
-            double t = (x - xmin) / (xmax - xmin) * numFineBins;
-            if (!(t > 0.)) return 0;
-            if (!(t < numFineBins)) return numFineBins - 1;
-            return static_cast<int>(t);
-        };
-
-        // accumulate the weights in the fine bins
-        vector<double> histv(numFineBins, 0.);
-        for (size_t i = 0; i != xv.size(); ++i) histv[fineBin(xv[i])] += wv[i];
         double total = 0.;
-        for (double w : histv) total += w;
-        if (!(total > 0.)) return binv;
+        for (double w : wv) total += w;
+        if (!(total > 0.) || !std::isfinite(total)) return binv;
 
-        // assign each fine bin to the bin holding the cumulative weight at its center
-        vector<int> coarsev(numFineBins);
+        // sort the indices of the coordinates in a total order, with ties broken by index, so that the cumulative
+        // weights do not depend on the sort implementation
+        vector<int> orderv(n);
+        std::iota(orderv.begin(), orderv.end(), 0);
+        std::sort(orderv.begin(), orderv.end(),
+                  [&xv](int a, int b) { return xv[a] < xv[b] || (xv[a] == xv[b] && a < b); });
+
+        // assign each group of equal coordinates to the bin holding the cumulative weight at the center of the group
         double cumulative = 0.;
-        for (int j = 0; j != numFineBins; ++j)
+        for (size_t first = 0; first != n;)
         {
-            double center = (cumulative + 0.5 * histv[j]) / total;
-            coarsev[j] = min(numBins - 1, static_cast<int>(center * numBins));
-            cumulative += histv[j];
+            double x = xv[orderv[first]];
+            double weight = wv[orderv[first]];
+            size_t last = first + 1;
+            for (; last != n && xv[orderv[last]] == x; ++last) weight += wv[orderv[last]];
+            int bin = min(numBins - 1, static_cast<int>((cumulative + 0.5 * weight) / total * numBins));
+            for (size_t k = first; k != last; ++k) binv[orderv[k]] = bin;
+            cumulative += weight;
+            first = last;
         }
-
-        for (size_t i = 0; i != xv.size(); ++i) binv[i] = coarsev[fineBin(xv[i])];
         return binv;
     }
 
@@ -180,7 +172,8 @@ void SelfHeatingRebalancer::begin(const Array& absorbedPrimaryv, const Array& ab
         return;
     }
 
-    // select the cells that emit and contain dust, and determine the range of the finite ratio coordinates
+    // select the cells that emit and contain dust, and determine the range of the finite ratio coordinates; the
+    // luminosity and mass of a selected cell are finite, so that its coordinates are finite as well
     vector<int> cellv;
     double umin = std::numeric_limits<double>::infinity();
     double umax = -umin;
@@ -188,7 +181,9 @@ void SelfHeatingRebalancer::begin(const Array& absorbedPrimaryv, const Array& ab
     {
         double A = absorbedPrimaryv[m];
         double S = absorbedSecondaryv[m];
-        if (A + S > 0. && dustMassv[m] > 0.)
+        double E = A + S;
+        double M = dustMassv[m];
+        if (E > 0. && std::isfinite(E) && M > 0. && std::isfinite(M))
         {
             cellv.push_back(m);
             if (A > 0. && S > 0.)
