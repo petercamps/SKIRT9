@@ -574,7 +574,7 @@ protected:
     double _numSecondaryIterationPackets{0.};
     double _maxFractionOfPrimary{0.01};
     double _maxLuminosityDeficit{0.01};
-    double _maxSecondaryChange{0.005};
+    double _maxSecondaryChange{0.01};
     int _numConvergenceIterations{3};
     bool _rebalanceSecondaryEmission{false};
     int _numAbsorptionRatioBins{10};
