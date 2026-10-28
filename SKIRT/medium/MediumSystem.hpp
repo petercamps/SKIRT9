@@ -22,6 +22,7 @@
 #include "SelfHeatingRebalancer.hpp"
 #include "SimulationItem.hpp"
 #include "SpatialGrid.hpp"
+#include <functional>
 class Configuration;
 class DynamicRefinementOptions;
 class IterationHistory;
