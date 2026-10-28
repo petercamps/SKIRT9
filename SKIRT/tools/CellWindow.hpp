@@ -65,6 +65,10 @@ private:
         sum of the indicated parent cell. */
     void appendCells(const vector<int>& parentCells);
 
+    /** This function reserves memory for the specified number of cells, so that the window can grow
+        to that number of cells without reallocation. */
+    void reserveCells(int numCells);
+
     //============= Data members =============
 
 private:

@@ -7,6 +7,7 @@
 #define MEDIUMSYSTEM_HPP
 
 #include "Array.hpp"
+#include "CellTable.hpp"
 #include "DustEmissionOptions.hpp"
 #include "DynamicStateOptions.hpp"
 #include "IterationOptions.hpp"
@@ -21,14 +22,15 @@
 #include "SelfHeatingRebalancer.hpp"
 #include "SimulationItem.hpp"
 #include "SpatialGrid.hpp"
-#include "Table.hpp"
 class Configuration;
+class DynamicRefinementOptions;
 class IterationHistory;
 class MaterialState;
 class PhotonPacket;
 class Random;
 class ShortArray;
 class SpatialGridPath;
+class TreeSpatialGrid;
 class WavelengthGrid;
 
 //////////////////////////////////////////////////////////////////////
@@ -97,7 +99,29 @@ class WavelengthGrid;
 
     These functions support the secondary source system by offering a generic interface for
     calculating the secondary emission properties in a given spatial cell and for a given material
-    type, including luminosities, spectra and polarization. */
+    type, including luminosities, spectra and polarization.
+
+    <b>Dynamic grid refinement</b>
+
+    If the spatial grid is a tree grid with dynamic refinement options (see the
+    DynamicRefinementOptions class), the medium system performs the refinement step at the end of
+    each iteration of each iteration loop: it accumulates the fields of the refinement criteria and
+    conditions in the iteration history, evaluates the criteria with their conditions and limits at
+    the end of each averaging window, selects the cells to subdivide, asks the grid to subdivide
+    them, and grows all per-cell data structures. It keeps no refinement state of its own: all data
+    that must survive from one iteration to the next are kept in the iteration history.
+
+    When cells are subdivided, the first child of each cell keeps the cell index of its parent, and
+    the other children are appended to the cell list, so that no existing cell index changes. Every
+    per-cell data structure therefore only needs to grow, with each new cell copying its parent's
+    values. A single function grows all of them, and then verifies that the size of each matches the
+    new number of cells: the medium state (intensive and categorical variables copied, extensive
+    variables divided in proportion to the volume of the children), the radiation field tables and
+    the dust-absorbed luminosities (divided in proportion to the volume of the children, so that
+    each child starts with its parent's mean intensity), the material mixes per cell, if
+    applicable, and the cell windows of the iteration history. If a cap on the number of cells is
+    configured, these data structures reserve capacity for that number of cells at the end of
+    setup, so that a refinement round extends them in place. */
 class MediumSystem : public SimulationItem
 {
     ITEM_CONCRETE(MediumSystem, SimulationItem, "a medium system")
@@ -961,6 +985,40 @@ public:
         This function assumes that the radiation field has been calculated. */
     bool updateSecondaryDynamicMediumState();
 
+    //=============== Dynamic grid refinement ===================
+
+public:
+    /** This function performs the dynamic grid refinement step for the current iteration, as
+        described for the DynamicRefinementOptions class, and returns true if the refinement has
+        settled in this iteration, i.e. if a decision was taken that did not lead to a refinement
+        round, and false otherwise. If the simulation has no dynamic refinement, or if no
+        refinement criterion takes part in the current iteration loop, the function does nothing
+        and returns true. The argument specifies the number of photon packets launched in the
+        iteration, which the function uses only to report the number of packets per cell. The
+        function must be called as the last step of each iteration in each iteration loop, after
+        all updates of the medium state and the radiation field, and after the convergence checks.
+        It assumes that the radiation field and the medium state have been synchronized between
+        processes, so that all processes make identical decisions without communication. */
+    bool updateDynamicRefinement(double numPackets);
+
+private:
+    /** This function verifies the dynamic refinement configuration at the end of setup, and, if a
+        cap on the number of cells is configured, reserves capacity for that number of cells in all
+        per-cell data structures, logs the amount of memory reserved, and issues a warning if the
+        memory of the process would exceed the physical memory of the host or if the number of
+        photon packets per cell would be below 100 for a grid with the maximum number of cells. */
+    void setupDynamicRefinement();
+
+    /** This function grows all per-cell data structures after the grid has subdivided the cells in
+        \em subdividedCells, creating a new cell for each element of \em parentCells (see the
+        TreeSpatialGrid::subdivide() function), and then verifies that the size of each structure
+        matches the new number of cells. */
+    void growCellData(const vector<int>& subdividedCells, const vector<int>& parentCells);
+
+    /** This function returns the number of bytes held per cell by the per-cell data structures,
+        including the spatial grid and the existing cell windows of the iteration history. */
+    double bytesPerCell() const;
+
     //=============== Specialty probing ===================
 
 public:
@@ -995,16 +1053,16 @@ private:
     // - the sum of rf1 and rf2 represents the stable radiation field to be used as input for regular calculations
     // - rf2c serves as a target for storing the secondary radiation field so that rf1+rf2 remain available for
     //   calculating secondary emission spectra while already shooting photons through the grid
-    Table<2> _rf1;   // radiation field from primary sources
-    Table<2> _rf2;   // radiation field from secondary sources (copied from _rf2c at the appropriate time)
-    Table<2> _rf2c;  // radiation field currently being accumulated from secondary sources
+    CellTable _rf1;   // radiation field from primary sources
+    CellTable _rf2;   // radiation field from secondary sources (copied from _rf2c at the appropriate time)
+    CellTable _rf2c;  // radiation field currently being accumulated from secondary sources
 
     // relevant for any simulation mode that includes dust emission (if there are dust media)
     // each array has an entry for each cell; the life cycle of each array follows that of the corresponding table
-    Array _labs1;   // dust-absorbed luminosity from primary sources
-    Array _labs2;   // dust-absorbed luminosity from secondary sources (copied from _labs2c at the appropriate time)
-    Array _labs2c;  // dust-absorbed luminosity currently being accumulated from secondary sources
-    double _labsOutside1{0.};      // part of _labs1 absorbed outside the radiation field wavelength grid
+    vector<double> _labs1;     // dust-absorbed luminosity from primary sources
+    vector<double> _labs2;     // dust-absorbed luminosity from secondary sources (copied from _labs2c when appropriate)
+    vector<double> _labs2c;    // dust-absorbed luminosity currently being accumulated from secondary sources
+    double _labsOutside1{0.};  // part of _labs1 absorbed outside the radiation field wavelength grid
     double _labsOutside2c{0.};     // part of _labs2c absorbed outside the radiation field wavelength grid
     double _fractionOutside1{0.};  // fraction of _labs1 absorbed outside the grid, after communication
     double _fractionOutside2{0.};  // fraction of _labs2 absorbed outside the grid, after communication
@@ -1017,6 +1075,10 @@ private:
 
     // relevant for any simulation mode that includes dust emission
     int _numDustEmissionWavelengths{0};
+
+    // relevant for any simulation with dynamic grid refinement
+    TreeSpatialGrid* _tree{nullptr};                 // the spatial grid, if it performs dynamic refinement
+    DynamicRefinementOptions* _refinement{nullptr};  // the dynamic refinement options of that grid
 };
 
 ////////////////////////////////////////////////////////////////

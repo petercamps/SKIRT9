@@ -56,9 +56,9 @@ public:
     int childIndex(const Box& extent, int level, Vec position) const override;
 
 protected:
-    /** This function establishes the neighbor links for all nodes in the specified array, as
-        described in the class header. */
-    void linkNeighbors(vector<Node>& nodes) const override;
+    /** This function establishes the neighbor links for the children of the nonleaf node with
+        index \f$p\f$ in the specified array, as described in the class header. */
+    void linkChildren(vector<Node>& nodes, int p) const override;
 };
 
 //////////////////////////////////////////////////////////////////////

@@ -115,6 +115,7 @@ CellWindow& IterationHistory::cellWindow(const SimulationItem* item, int id, int
     }
 
     auto& entry = _windows.emplace(key, WindowEntry{CellWindow(key, numCells, description), lifetime}).first->second;
+    if (_cellCapacity) entry.window.reserveCells(_cellCapacity);
     _windowOrder.push_back(&entry);
     return entry.window;
 }
@@ -145,6 +146,14 @@ void IterationHistory::appendCells(const vector<int>& parentCells)
 {
     for (auto entry : _windowOrder) entry->window.appendCells(parentCells);
     _gridChanged = true;
+}
+
+////////////////////////////////////////////////////////////////////
+
+void IterationHistory::reserveCells(int numCells)
+{
+    _cellCapacity = numCells;
+    for (auto entry : _windowOrder) entry->window.reserveCells(numCells);
 }
 
 ////////////////////////////////////////////////////////////////////

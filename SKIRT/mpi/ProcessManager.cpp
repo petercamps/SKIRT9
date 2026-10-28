@@ -195,12 +195,25 @@ void ProcessManager::wait()
 
 void ProcessManager::sumToAll(Array& arr)
 {
+    sumToAll(begin(arr), arr.size());
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void ProcessManager::sumToAll(vector<double>& vec)
+{
+    sumToAll(vec.data(), vec.size());
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void ProcessManager::sumToAll(double* data, size_t size)
+{
 #ifdef BUILD_WITH_MPI
     if (isMultiProc())
     {
-        if (_logger) _logger("MPI BEGIN: sum to all of size " + std::to_string(arr.size()));
-        double* data = begin(arr);
-        size_t remaining = arr.size();
+        if (_logger) _logger("MPI BEGIN: sum to all of size " + std::to_string(size));
+        size_t remaining = size;
         while (remaining > maxMessageSize)
         {
             MPI_Allreduce(MPI_IN_PLACE, data, maxMessageSize, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -214,7 +227,8 @@ void ProcessManager::sumToAll(Array& arr)
         if (_logger) _logger("MPI END: sum to all");
     }
 #else
-    (void)arr;
+    (void)data;
+    (void)size;
 #endif
 }
 

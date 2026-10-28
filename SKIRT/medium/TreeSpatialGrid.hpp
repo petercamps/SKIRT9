@@ -8,6 +8,7 @@
 
 #include "BoxCellDensityMixIn.hpp"
 #include "BoxSpatialGrid.hpp"
+#include "DynamicRefinementOptions.hpp"
 #include "TreePolicy.hpp"
 #include <array>
 #include <deque>
@@ -102,7 +103,28 @@ class ColumnOutFile;
     The search and the path segment generator are implemented once, as a class template that is
     instantiated for the selection rule of each tree type, so that selecting a child does not
     involve a function call in the inner loop. This base class supports binary trees and octtrees,
-    i.e. subclasses with 2 or 8 children per node. */
+    i.e. subclasses with 2 or 8 children per node.
+
+    <b>Dynamic refinement</b>
+
+    If the simulation iterates over primary or secondary emission, the optional \em
+    dynamicRefinementOptions property configures the subdivision of cells between iterations,
+    wherever the medium state or the radiation field calculated so far shows that a cell is too
+    coarse (see the DynamicRefinementOptions class). The medium system performs the refinement
+    step, and uses the functions of this class to subdivide the selected cells and to obtain the
+    information needed by the refinement criteria: the level of each cell, its level in the initial
+    grid, its size, and its face neighbors. The \em maxLevel property limits the construction of the
+    initial grid only.
+
+    To subdivide a leaf node holding cell \f$m\f$, the grid appends its children to the end of the
+    node array. The first child takes over cell index \f$m\f$, and the other children receive new
+    cell indices at the end of the cell list, so that no existing cell index changes. The neighbor
+    links of the children are established from those of the parent, exactly as in the top-down
+    pass after construction. The links of other nodes that point to the parent remain valid: a
+    neighbor link always points to a node at the same or a coarser level, and the path segment
+    generator descends into a neighbor that has children. The neighbor of a node can thus be a
+    coarser node that has been subdivided since the link was established, which the function
+    returning the face neighbors takes into account. */
 class TreeSpatialGrid : public BoxSpatialGrid, public BoxCellDensityMixIn
 {
     ITEM_ABSTRACT(TreeSpatialGrid, BoxSpatialGrid, "a hierarchical tree spatial grid")
@@ -120,6 +142,11 @@ class TreeSpatialGrid : public BoxSpatialGrid, public BoxCellDensityMixIn
         ATTRIBUTE_MIN_VALUE(maxLevel, "0")
         ATTRIBUTE_MAX_VALUE(maxLevel, "99")
         ATTRIBUTE_DEFAULT_VALUE(maxLevel, "OctTreeSpatialGrid:7;BinTreeSpatialGrid:21")
+
+        PROPERTY_ITEM(dynamicRefinementOptions, DynamicRefinementOptions, "the dynamic grid refinement options")
+        ATTRIBUTE_RELEVANT_IF(dynamicRefinementOptions, "IteratePrimary|IterateSecondary")
+        ATTRIBUTE_DISPLAYED_IF(dynamicRefinementOptions, "Level3")
+        ATTRIBUTE_REQUIRED_IF(dynamicRefinementOptions, "false")
 
     ITEM_END()
 
@@ -254,11 +281,15 @@ public:
     virtual int childIndex(const Box& extent, int level, Vec position) const = 0;
 
 protected:
-    /** This function must be implemented in a subclass to establish the neighbor links for all
-        nodes in the specified array, as described in the class header. On entry, the nodes have
-        their extent, level, and children, but no neighbors. The nodes are ordered such that each
-        node comes after its parent, and the root node has index zero. */
-    virtual void linkNeighbors(vector<Node>& nodes) const = 0;
+    /** This function must be implemented in a subclass to establish the neighbor links for the
+        children of the nonleaf node with index \f$p\f$ in the specified array, as described in the
+        class header. On entry, the parent node has its neighbor links, and its children have their
+        extent and level, but no neighbors. The parent's neighbors, and the children of a parent's
+        neighbor at the same level as the parent, if any, must have been established as well. The
+        function is used both for establishing the links of a newly constructed tree in a single
+        top-down pass, and for linking the children of a leaf node subdivided during dynamic
+        refinement. */
+    virtual void linkChildren(vector<Node>& nodes, int p) const = 0;
 
     //======================== Other Functions =======================
 
@@ -311,6 +342,49 @@ public:
         in the class header. */
     std::unique_ptr<PathSegmentGenerator> createPathSegmentGenerator() const override;
 
+    //======================== Dynamic refinement =======================
+
+public:
+    /** This function returns the level in the tree of the cell with index \f$m\f$, with level
+        zero for the root node. */
+    int cellLevel(int m) const;
+
+    /** This function returns the level in the tree of the cell with index \f$m\f$ in the initial
+        grid, i.e. the grid constructed during setup. For a cell created by dynamic refinement, this
+        is the level of its ancestor in the initial grid. */
+    int initialCellLevel(int m) const;
+
+    /** This function returns the size of the cell with index \f$m\f$, defined as the largest
+        extent of the cell along the coordinate axes. */
+    double cellSize(int m) const;
+
+    /** This function stores the indices of the face neighbors of the cell with index \f$m\f$ into
+        the specified vector, replacing any previous contents. The face neighbors are the cells that
+        share a wall, or part of a wall, with the cell. A wall on the edge of the domain has no
+        neighbors. For each wall, the function takes the node linked across that wall. If that node
+        is a leaf, it is the single neighbor on that wall. Otherwise, the function collects the
+        leaves in the subtree of that node that touch the wall, descending only into the children
+        on the side facing the cell, and only into those that overlap the wall of the cell (the
+        linked node may be a coarser node that has been subdivided since the link was established).
+        */
+    void faceNeighbors(int m, vector<int>& neighbors) const;
+
+    /** This function subdivides the cells with the specified indices, which must be leaf nodes.
+        The children of each cell are appended to the node array. The first child takes over the
+        index of the cell, and the other children receive new cell indices in order of appending,
+        following the existing cells. The function returns a vector holding, for each new cell in
+        order of cell index, the index of the subdivided cell from which it originates (its parent
+        cell). The cells in the initial grid keep their initial level. */
+    vector<int> subdivide(const vector<int>& cells);
+
+    /** This function reserves memory for the node array and the per-cell data of the grid, so
+        that the grid can grow to the specified number of cells without reallocation. */
+    void reserveCells(int numCells);
+
+    /** This function returns the average number of bytes held by the grid for each cell added by
+        dynamic refinement, including the nodes. */
+    double bytesPerAddedCell() const;
+
 protected:
     /** This function writes the intersection of the grid with the xy plane to the specified
         SpatialGridPlotFile object. */
@@ -341,6 +415,10 @@ private:
         subdivision levels, and returns the resulting list of nodes. */
     std::deque<Node> constructTree() const;
 
+    /** This function establishes the neighbor links for all nodes in the tree, in a single
+        top-down pass over the nonleaf nodes calling the linkChildren() function for each. */
+    void linkNeighbors();
+
     /** This function returns a reference to the leaf node corresponding to the cell with index
         \f$m\f$. */
     const Node& cellNode(int m) const { return _nodev[_idv[m]]; }
@@ -348,10 +426,11 @@ private:
     //======================== Data Members ========================
 
 private:
-    // data members initialized during setup
-    double _eps{0.};      // a small fraction relative to the spatial extent of the grid
-    vector<Node> _nodev;  // all nodes in the tree; the first one is the root node
-    vector<int> _idv;     // index in _nodev of the leaf node for each cell (i.e. for each cell index)
+    // data members initialized during setup, and extended by dynamic refinement
+    double _eps{0.};                 // a small fraction relative to the spatial extent of the grid
+    vector<Node> _nodev;             // all nodes in the tree; the first one is the root node
+    vector<int> _idv;                // index in _nodev of the leaf node for each cell (i.e. for each cell index)
+    vector<uint8_t> _initialLevelv;  // the level of each cell in the initial grid
 };
 
 //////////////////////////////////////////////////////////////////////

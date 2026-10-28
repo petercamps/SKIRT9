@@ -155,9 +155,9 @@ void TreeSpatialGrid::setupSelfAfter()
     }
 
     // establish the neighbor links
-    linkNeighbors(_nodev);
+    linkNeighbors();
 
-    // determine the cell indices and the leaf node for each cell
+    // determine the cell indices, the leaf node for each cell, and the initial level of each cell
     int numNodes = static_cast<int>(_nodev.size());
     for (int n = 0; n != numNodes; ++n)
     {
@@ -165,6 +165,7 @@ void TreeSpatialGrid::setupSelfAfter()
         {
             _nodev[n].setCell(static_cast<int>(_idv.size()));
             _idv.push_back(n);
+            _initialLevelv.push_back(static_cast<uint8_t>(_nodev[n].level()));
         }
     }
 
@@ -195,6 +196,16 @@ void TreeSpatialGrid::setupSelfAfter()
 
     // make the BoxCellDensityMixIn verify whether we can offer the DensityInCellInterface
     BoxCellDensityMixIn::setup(this);
+}
+
+////////////////////////////////////////////////////////////////////
+
+void TreeSpatialGrid::linkNeighbors()
+{
+    // the nodes are in parent-first order, so that the links of each parent are known before its children are linked
+    int numNodes = static_cast<int>(_nodev.size());
+    for (int p = 0; p != numNodes; ++p)
+        if (!_nodev[p].isLeaf()) linkChildren(_nodev, p);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -469,6 +480,143 @@ std::unique_ptr<PathSegmentGenerator> TreeSpatialGrid::createPathSegmentGenerato
 {
     if (numChildren() == 2) return std::make_unique<SegmentGenerator<BinTreeRule>>(extent(), _eps, _nodev, _idv);
     return std::make_unique<SegmentGenerator<OctTreeRule>>(extent(), _eps, _nodev, _idv);
+}
+
+////////////////////////////////////////////////////////////////////
+
+int TreeSpatialGrid::cellLevel(int m) const
+{
+    return cellNode(m).level();
+}
+
+////////////////////////////////////////////////////////////////////
+
+int TreeSpatialGrid::initialCellLevel(int m) const
+{
+    return _initialLevelv[m];
+}
+
+////////////////////////////////////////////////////////////////////
+
+double TreeSpatialGrid::cellSize(int m) const
+{
+    Box box = cellNode(m).extent();
+    return max({box.xwidth(), box.ywidth(), box.zwidth()});
+}
+
+////////////////////////////////////////////////////////////////////
+
+void TreeSpatialGrid::faceNeighbors(int m, vector<int>& neighbors) const
+{
+    neighbors.clear();
+    const Node& node = cellNode(m);
+    int numChildren = this->numChildren();
+
+    // returns true if the specified node overlaps the wall of the cell perpendicular to axis a in the other two
+    // directions, with a nonzero area (so that nodes touching only an edge or a corner of the wall are excluded)
+    auto overlaps = [&node](const Node& other, int a) {
+        for (int b = 0; b != 3; ++b)
+        {
+            if (b != a && (other.wall(2 * b) >= node.wall(2 * b + 1) || other.wall(2 * b + 1) <= node.wall(2 * b)))
+                return false;
+        }
+        return true;
+    };
+
+    vector<int> stack;
+    for (int w = 0; w != 6; ++w)
+    {
+        int q = node.neighbor(w);
+        if (q < 0) continue;
+
+        // the side of the neighbor facing the cell is its lower wall if w is the upper wall of the cell, and vice versa;
+        // a child of a node touches that side if its wall on that side coincides with the wall of the node (children
+        // copy the walls of their parent, so the coordinates are identical)
+        int a = w / 2;
+        int facing = w % 2 ? 2 * a : 2 * a + 1;
+        stack.push_back(q);
+        while (!stack.empty())
+        {
+            const Node& other = _nodev[stack.back()];
+            stack.pop_back();
+            if (other.isLeaf())
+            {
+                if (overlaps(other, a)) neighbors.push_back(other.cell());
+            }
+            else
+            {
+                for (int c = 0; c != numChildren; ++c)
+                {
+                    const Node& child = _nodev[other.child() + c];
+                    if (child.wall(facing) == other.wall(facing) && overlaps(child, a))
+                        stack.push_back(other.child() + c);
+                }
+            }
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////
+
+vector<int> TreeSpatialGrid::subdivide(const vector<int>& cells)
+{
+    int numChildren = this->numChildren();
+    vector<int> parents;
+    parents.reserve(cells.size() * (numChildren - 1));
+
+    for (int m : cells)
+    {
+        // get the properties of the leaf node holding the cell (by index, because appending invalidates references)
+        int p = _idv[m];
+        if (!_nodev[p].isLeaf()) throw FATALERROR("Cannot subdivide a cell that is not a leaf node");
+        Box extent = _nodev[p].extent();
+        int level = _nodev[p].level();
+
+        // the node and cell indices are 32-bit integers
+        if (_nodev.size() + numChildren >= static_cast<size_t>(std::numeric_limits<int>::max()))
+            throw FATALERROR("The spatial tree grid has too many nodes");
+
+        // append the children and turn the leaf node into a nonleaf node
+        int c0 = static_cast<int>(_nodev.size());
+        for (int c = 0; c != numChildren; ++c) _nodev.emplace_back(childExtent(extent, level, c), level + 1);
+        _nodev[p].setChild(c0);
+        _nodev[p].setCell(-1);
+
+        // establish the neighbor links of the children from those of the parent
+        linkChildren(_nodev, p);
+
+        // the first child takes over the cell index, and the other children receive new cell indices
+        _nodev[c0].setCell(m);
+        _idv[m] = c0;
+        for (int c = 1; c != numChildren; ++c)
+        {
+            _nodev[c0 + c].setCell(static_cast<int>(_idv.size()));
+            _idv.push_back(c0 + c);
+            _initialLevelv.push_back(_initialLevelv[m]);
+            parents.push_back(m);
+        }
+    }
+    return parents;
+}
+
+////////////////////////////////////////////////////////////////////
+
+void TreeSpatialGrid::reserveCells(int numCells)
+{
+    size_t numAdded = numCells > this->numCells() ? numCells - this->numCells() : 0;
+    size_t numChildren = this->numChildren();
+    size_t numSubdivisions = (numAdded + numChildren - 2) / (numChildren - 1);
+    _nodev.reserve(_nodev.size() + numSubdivisions * numChildren);
+    _idv.reserve(numCells);
+    _initialLevelv.reserve(numCells);
+}
+
+////////////////////////////////////////////////////////////////////
+
+double TreeSpatialGrid::bytesPerAddedCell() const
+{
+    double numChildren = this->numChildren();
+    return numChildren / (numChildren - 1.) * sizeof(Node) + sizeof(int) + sizeof(uint8_t);
 }
 
 ////////////////////////////////////////////////////////////////////

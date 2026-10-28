@@ -131,6 +131,10 @@ public:
         nothing. */
     static void sumToAll(Array& arr);
 
+    /** This function adds the floating point values of a vector element-wise across the different
+        processes, in the same way as the sumToAll() function for an Array. */
+    static void sumToAll(vector<double>& vec);
+
     /** This function adds the floating point values of an array element-wise across the different
         processes. The resulting sums are then stored in the same Array passed to this function on
         the root process. The arrays on the other processes are left untouched. All processes must
@@ -176,6 +180,12 @@ public:
         communication primitives. */
     static void broadcastAllToAll(const std::function<void(vector<double>& data)>& producer,
                                   const std::function<void(const vector<double>& data)>& consumer);
+
+private:
+    /** This function adds the specified number of floating point values starting at the specified
+        address element-wise across the different processes, as described for the public
+        sumToAll() functions. */
+    static void sumToAll(double* data, size_t size);
 
     //======== Data members  ===========
 

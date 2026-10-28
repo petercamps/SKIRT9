@@ -29,6 +29,9 @@ LineGasSecondarySource::LineGasSecondarySource(SimulationItem* parent, int h) : 
 
 double LineGasSecondarySource::prepareLuminosities()
 {
+    // start a new launch preparation, so that the per-thread caches discard any outdated information
+    beginPreparation();
+
     // cache some pointers for later use
     _config = find<Configuration>();
     _ms = find<MediumSystem>();
@@ -125,9 +128,10 @@ namespace
     {
     private:
         // information on a particular spatial cell, initialized by calculateIfNeeded()
-        int _m{-1};      // spatial cell index
-        Array _pv, _Pv;  // normalized discrete emission spectrum (relative line luminosities)
-        Vec _vbulk;      // bulk velocity
+        size_t _preparation{0};  // the launch preparation number of the source
+        int _m{-1};              // spatial cell index
+        Array _pv, _Pv;          // normalized discrete emission spectrum (relative line luminosities)
+        Vec _vbulk;              // bulk velocity
 
         // information on a particular photon packet launch, initialized by generateThermalVelocity()
         Vec _vtherm;  // random thermal velocity
@@ -141,8 +145,17 @@ namespace
         //   m:  cell index
         //   h:  medium component index
         //   ms: medium system
-        void calculateIfNeeded(int m, int h, MediumSystem* ms)
+        //   preparation: the launch preparation number of the source
+        void calculateIfNeeded(int m, int h, MediumSystem* ms, size_t preparation)
         {
+            // the information on the cells is never reused from an earlier launch preparation or from another source,
+            // because the radiation field or even the number of cells may have changed since
+            if (_preparation != preparation)
+            {
+                _preparation = preparation;
+                _m = -1;
+            }
+
             // if this photon packet is launched from the same cell as the previous one, we don't need to do anything
             if (m == _m) return;
 
@@ -198,7 +211,7 @@ void LineGasSecondarySource::launch(PhotonPacket* pp, size_t historyIndex, doubl
     double ws = _Wv[m] > 0. ? _Lv[m] / _Wv[m] : 0.;
 
     // calculate the emission spectrum and bulk velocity for this cell, if not already available
-    t_gascell.calculateIfNeeded(m, _h, _ms);
+    t_gascell.calculateIfNeeded(m, _h, _ms, preparation());
 
     // randomly select a line from the luminosity distribution and/or from a uniform distribution
     int index = 0;

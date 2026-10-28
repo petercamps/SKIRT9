@@ -97,12 +97,24 @@ class StateVariableList;
     provides a mapping to locate a particular state variable in this array. This is accomplished by
     also storing the offset for each variable within the set of variables per spatial cell. To
     facilitate access, these offsets are stored for all supported variables (by name) and not just
-    for the required variables. The offsets for unused variables remain at zero.
+    for the required variables. The offsets for unused variables remain at zero. The array is a
+    standard vector, so that capacity for additional cells can be reserved in advance.
 
     Given the offset \f$O_x\f$ for a particular state variable \f$x\f$, a spatial cell index
     \f$m\f$ and a medium component index \f$h\f$, the index of the variable in the data array can
     be calculated as \f$i=K \times m + O_x\f$. This implies that variables are stored contiguously
     per cell.
+
+    <b>Dynamic grid refinement</b>
+
+    When dynamic grid refinement subdivides a cell, the first child keeps the cell index of its
+    parent, and the other children are appended to the cell list. The appendCells() function grows
+    the medium state accordingly, copying the state of the parent to each new cell, and the
+    resizeCell() function then sets the volume of each child, scaling its extensive variables by
+    the ratio of the new to the old volume. As a result, intensive and categorical variables are
+    copied to each child, and extensive variables are divided among the children in proportion to
+    their volume (see the QuantityKind enumeration). The common state variables and the number
+    density are intensive.
 
     <b>Access to undefined variables</b>
 
@@ -156,6 +168,28 @@ public:
         more processes updated the state of the same cell, the result of the synchronization is
         undefined. */
     std::pair<int, int> synchronize(const vector<UpdateStatus>& cellFlags);
+
+    //============= Dynamic grid refinement =============
+
+public:
+    /** This function grows the medium state by one cell for each element of \em parentCells. The
+        new cells receive consecutive indices following the existing cells, and start with the
+        values of all state variables of the indicated parent cell, including its volume. The
+        function must be called on all processes after the state has been synchronized. */
+    void appendCells(const vector<int>& parentCells);
+
+    /** This function sets the volume of the spatial cell with index \f$m\f$ to the specified
+        value, and multiplies the extensive specific state variables of the cell by the ratio of the
+        new to the old volume. It is intended for the children of a subdivided cell, which start
+        with the volume and the state of their parent (see the appendCells() function). */
+    void resizeCell(int m, double volume);
+
+    /** This function reserves memory for the specified number of cells, so that the medium state
+        can grow to that number of cells without reallocation. */
+    void reserveCells(int numCells);
+
+    /** This function returns the number of bytes held by the medium state for each cell. */
+    size_t bytesPerCell() const { return _numVars * sizeof(double); }
 
     //============= Setting =============
 
@@ -231,7 +265,7 @@ public:
         \f$m\f$. */
     Span<const double> customs(int m, int h, int i, int n) const
     {
-        return Span<const double>(std::begin(_data) + _numVars * m + _off_cust[h] + i, n);
+        return Span<const double>(_data.data() + _numVars * m + _off_cust[h] + i, n);
     }
 
     /** This function returns a writable view on the \f$n\f$ consecutive custom variables starting
@@ -239,14 +273,14 @@ public:
         \f$m\f$. */
     Span<double> customs(int m, int h, int i, int n)
     {
-        return Span<double>(std::begin(_data) + _numVars * m + _off_cust[h] + i, n);
+        return Span<double>(_data.data() + _numVars * m + _off_cust[h] + i, n);
     }
 
     //======================== Data Members ========================
 
 private:
     // data array containing the medium state variables
-    Array _data;
+    vector<double> _data;
 
     // overall configuration
     int _numCells{0};
@@ -259,6 +293,7 @@ private:
     int _off_mfld{0};
     vector<int> _off_dens;
     vector<int> _off_cust;
+    vector<int> _off_extensive;  // offsets of the extensive specific state variables, for all components
 
     // indices indicating the next item to be initialized; used only during initialization
     int _nextOffset{0};

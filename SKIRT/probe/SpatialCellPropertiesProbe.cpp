@@ -7,6 +7,7 @@
 #include "ColumnOutFile.hpp"
 #include "MediumSystem.hpp"
 #include "StringUtils.hpp"
+#include "TreeSpatialGrid.hpp"
 #include "Units.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -33,6 +34,8 @@ void SpatialCellPropertiesProbe::probe()
         out.addColumn("dust mass density in cell", units->umassvolumedensity());
         out.addColumn("electron number density in cell", units->unumbervolumedensity());
         out.addColumn("hydrogen number density in cell", units->unumbervolumedensity());
+        auto tree = dynamic_cast<const TreeSpatialGrid*>(grid);
+        if (tree) out.addColumn("tree level of cell", "", 'd');
 
         // write a line for each cell
         int numMedia = ms->numMedia();
@@ -51,9 +54,11 @@ void SpatialCellPropertiesProbe::probe()
                 if (ms->isElectrons(h)) elec += ms->numberDensity(m, h);
                 if (ms->isGas(h)) gas += ms->numberDensity(m, h);
             }
-            out.writeRow(vector<double>({static_cast<double>(m), units->olength(p.x()), units->olength(p.y()),
-                                         units->olength(p.z()), units->ovolume(V), tau, units->omassvolumedensity(dust),
-                                         units->onumbervolumedensity(elec), units->onumbervolumedensity(gas)}));
+            vector<double> row({static_cast<double>(m), units->olength(p.x()), units->olength(p.y()),
+                                units->olength(p.z()), units->ovolume(V), tau, units->omassvolumedensity(dust),
+                                units->onumbervolumedensity(elec), units->onumbervolumedensity(gas)});
+            if (tree) row.push_back(tree->cellLevel(m));
+            out.writeRow(row);
         }
         out.close();
     }

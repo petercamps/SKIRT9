@@ -85,6 +85,8 @@
 #include "DustEmissivityProbe.hpp"
 #include "DustGrainPopulationsProbe.hpp"
 #include "DustGrainSizeDistributionProbe.hpp"
+#include "DustTemperatureGradientCriterion.hpp"
+#include "DynamicRefinementOptions.hpp"
 #include "EinastoGeometry.hpp"
 #include "ElectronMix.hpp"
 #include "ExpDiskGeometry.hpp"
@@ -113,6 +115,7 @@
 #include "GaussianGeometry.hpp"
 #include "GeometricMedium.hpp"
 #include "GeometricSource.hpp"
+#include "GradientCriterion.hpp"
 #include "GrainPopulation.hpp"
 #include "GridWavelengthDistribution.hpp"
 #include "HEALPixSkyInstrument.hpp"
@@ -189,6 +192,9 @@
 #include "MeanPascucciBenchmarkDustMix.hpp"
 #include "MeanPinteBenchmarkDustMix.hpp"
 #include "MeanTrustBenchmarkDustMix.hpp"
+#include "MediumStateCondition.hpp"
+#include "MediumStateGradientCriterion.hpp"
+#include "MediumStateValueCriterion.hpp"
 #include "MediumSystem.hpp"
 #include "MeridionalCutForm.hpp"
 #include "MetallicityProbe.hpp"
@@ -240,6 +246,8 @@
 #include "ReadFitsGeometry.hpp"
 #include "RedistributeGeometryDecorator.hpp"
 #include "ReferenceWavelengthGrid.hpp"
+#include "RefinementCondition.hpp"
+#include "RefinementCriterion.hpp"
 #include "ResolutionBorderWavelengthGrid.hpp"
 #include "ResolutionWavelengthGrid.hpp"
 #include "ResolvedSpheresTreePolicy.hpp"
@@ -303,6 +311,7 @@
 #include "TreeSpatialGrid.hpp"
 #include "TreeSpatialGridTopologyProbe.hpp"
 #include "TriaxialGeometryDecorator.hpp"
+#include "TrivialBoxCriterion.hpp"
 #include "TrivialGasMix.hpp"
 #include "TrivialStagedGasMix.hpp"
 #include "TrustBenchmarkDustMix.hpp"
@@ -312,6 +321,7 @@
 #include "UnidirectionalVectorField.hpp"
 #include "UniformBoxGeometry.hpp"
 #include "UniformSmoothingKernel.hpp"
+#include "ValueCriterion.hpp"
 #include "VelocityProbe.hpp"
 #include "VoronoiMeshGeometry.hpp"
 #include "VoronoiMeshMedium.hpp"
@@ -567,6 +577,18 @@ SimulationItemRegistry::SimulationItemRegistry(const string& version, const stri
     ItemRegistry::add<ResolvedSpheresTreePolicy>();
     ItemRegistry::add<AdaptiveMeshTreePolicy>();
     ItemRegistry::add<CellTreePolicy>();
+
+    // dynamic grid refinement
+    ItemRegistry::add<DynamicRefinementOptions>();
+    ItemRegistry::add<RefinementCriterion>();
+    ItemRegistry::add<GradientCriterion>();
+    ItemRegistry::add<ValueCriterion>();
+    ItemRegistry::add<MediumStateGradientCriterion>();
+    ItemRegistry::add<MediumStateValueCriterion>();
+    ItemRegistry::add<DustTemperatureGradientCriterion>();
+    ItemRegistry::add<TrivialBoxCriterion>();
+    ItemRegistry::add<RefinementCondition>();
+    ItemRegistry::add<MediumStateCondition>();
 
     // one-dimensional meshes for spatial grids
     ItemRegistry::add<Mesh>();

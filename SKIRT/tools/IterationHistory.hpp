@@ -149,6 +149,11 @@ public:
         lifetime. */
     void appendCells(const vector<int>& parentCells);
 
+    /** This function reserves memory for the specified number of cells in all existing cell
+        windows and in those declared later, so that the windows can grow to that number of cells
+        without reallocation. */
+    void reserveCells(int numCells);
+
     //======== Listing ========
 
 public:
@@ -183,6 +188,7 @@ private:
     Loop _loop{Loop::None};
     int _iteration{0};
     bool _gridChanged{false};  // true if cells were appended since the previous call to beginIteration()
+    int _cellCapacity{0};      // the number of cells for which memory is reserved in each cell window
 
     // the series indexed on their key (node-based containers, so that references remain valid),
     // and pointers to the same series in the order of declaration

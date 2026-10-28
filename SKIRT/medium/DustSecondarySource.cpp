@@ -22,6 +22,9 @@
 
 double DustSecondarySource::prepareLuminosities()
 {
+    // start a new launch preparation, so that the per-thread caches discard any outdated information
+    beginPreparation();
+
     // cache some pointers for later use
     _config = find<Configuration>();
     _ms = find<MediumSystem>();
@@ -151,14 +154,14 @@ namespace
     class DustCellEmission : public VelocityInterface
     {
     private:
-        // information initialized once, during the first call to calculateIfNeeded()
+        // information initialized during the first call to calculateIfNeeded() for a given launch preparation
+        size_t _preparation{0};      // the launch preparation number of the source
         MediumSystem* _ms{nullptr};  // the medium system
         Array _wavelengthGrid;       // the dust emission wavelength grid
         Range _wavelengthRange;      // the range of the dust emission wavelength grid
         int _numWavelengths{0};      // the number of wavelengths in the dust emission wavelength grid
         vector<int> _hv;             // a list of the media indices for the media containing dust
         int _numMedia{0};            // the number of dust media in the system (and thus the size of hv)
-        int _numCells{0};            // the number of cells in the spatial grid (and thus the size of mv and nv)
 
         // information on a particular spatial cell, initialized by calculateIfNeeded()
         int _p{-1};                // spatial cell launch-order index
@@ -178,12 +181,16 @@ namespace
         //   nv: map from regular cell index m to library entry index n
         //   ms: medium system
         //   config: configuration object
+        //   preparation: the launch preparation number of the source
         void calculateIfNeeded(int p, const vector<int>& mv, const vector<int>& nv, MediumSystem* ms,
-                               Configuration* config)
+                               Configuration* config, size_t preparation)
         {
-            // when called for the first time for a given simulation, cache some info
-            if (_ms != ms)
+            // when called for the first time for a given launch preparation, cache some info; the information on
+            // the cells is never reused from an earlier preparation, because the radiation field or even the number
+            // of cells may have changed since
+            if (_preparation != preparation)
             {
+                _preparation = preparation;
                 _p = -1;
                 _n = -1;
                 _ms = ms;
@@ -193,7 +200,6 @@ namespace
                 _numWavelengths = _wavelengthGrid.size();
                 _hv = ms->dustMediumIndices();
                 _numMedia = _hv.size();
-                _numCells = ms->numCells();
                 _evv.resize(ms->numMedia());
             }
 
@@ -212,8 +218,9 @@ namespace
                 _n = n;
 
                 // determine the number of cells mapped to this library entry (they are consecutive in p)
+                int numCells = static_cast<int>(mv.size());
                 int pp = p + 1;
-                for (; pp != _numCells; ++pp)
+                for (; pp != numCells; ++pp)
                     if (nv[mv[pp]] != n) break;
                 int numMappedCells = pp - p;
 
@@ -330,7 +337,8 @@ namespace
     class DustCellPolarisedEmission : public AngularDistributionInterface, public PolarizationProfileInterface
     {
     private:
-        // information initialized once, during the first call to calculateIfNeeded()
+        // information initialized during the first call to calculateIfNeeded() for a given launch preparation
+        size_t _preparation{0};      // the launch preparation number of the source
         MediumSystem* _ms{nullptr};  // the medium system
         vector<int> _hv;             // a list of the media indices for the media containing dust
 
@@ -348,20 +356,22 @@ namespace
 
         // calculates the emission information for the given cell and photon packet wavelength
         // if it is different from what's already stored
-        void calculateIfNeeded(int m, MediumSystem* ms, double lambda)
+        void calculateIfNeeded(int m, MediumSystem* ms, double lambda, size_t preparation)
         {
             // always remember the photon packet wavelength
             _lambda = lambda;
 
-            // if this packet is launched from the same cell as the previous one, we don't need to do anything else
-            if (m == _m) return;
-
-            // when called for the first time, cache some info
-            if (_m == -1)
+            // when called for the first time for a given launch preparation, cache some info
+            if (_preparation != preparation)
             {
+                _preparation = preparation;
+                _m = -1;
                 _ms = ms;
                 _hv = ms->dustMediumIndices();
             }
+
+            // if this packet is launched from the same cell as the previous one, we don't need to do anything else
+            if (m == _m) return;
 
             // remember the new cell index and map to the other indices
             _m = m;
@@ -513,7 +523,7 @@ void DustSecondarySource::launch(PhotonPacket* pp, size_t historyIndex, double L
     double ws = _Wv[m] > 0. ? _Lv[m] / _Wv[m] : 0.;
 
     // calculate the emission spectrum and bulk velocity for this cell, if not already available
-    t_dustcell.calculateIfNeeded(p, _mv, _nv, _ms, _config);
+    t_dustcell.calculateIfNeeded(p, _mv, _nv, _ms, _config, preparation());
 
     // generate a random wavelength from the emission spectrum for the cell and/or from the bias distribution
     double lambda, w;
@@ -563,7 +573,7 @@ void DustSecondarySource::launch(PhotonPacket* pp, size_t historyIndex, double L
     Direction bfk;
     if (_config->hasSpheroidalPolarization())
     {
-        t_dustcellpol.calculateIfNeeded(m, _ms, lambda);
+        t_dustcellpol.calculateIfNeeded(m, _ms, lambda, preparation());
         dpe = &t_dustcellpol;
         bfk = t_dustcellpol.generateDirection(_random);
     }

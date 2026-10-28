@@ -153,8 +153,8 @@ SelfHeatingRebalancer::SelfHeatingRebalancer(int numAbsorptionRatioBins, int num
 
 ////////////////////////////////////////////////////////////////////
 
-void SelfHeatingRebalancer::begin(const Array& absorbedPrimaryv, const Array& absorbedSecondaryv,
-                                  const Array& dustMassv)
+void SelfHeatingRebalancer::begin(const vector<double>& absorbedPrimaryv, const vector<double>& absorbedSecondaryv,
+                                  const vector<double>& dustMassv)
 {
     int numCells = static_cast<int>(absorbedPrimaryv.size());
 
@@ -163,7 +163,7 @@ void SelfHeatingRebalancer::begin(const Array& absorbedPrimaryv, const Array& ab
         _history->scalarSeries(_key, id, 1, IterationHistory::Lifetime::Loop, seriesDescriptions[id]);
 
     // without a secondary radiation field, as in the first iteration of a loop, the regions cannot be formed
-    _rebalancing = absorbedSecondaryv.sum() > 0.;
+    _rebalancing = std::accumulate(absorbedSecondaryv.begin(), absorbedSecondaryv.end(), 0.) > 0.;
     _numRegions = 0;
     _factorv.clear();
     if (!_rebalancing)
@@ -257,7 +257,7 @@ SelfHeatingRebalancer::Tally SelfHeatingRebalancer::tally(int emissionCell)
 
 ////////////////////////////////////////////////////////////////////
 
-void SelfHeatingRebalancer::end(const Array& absorbedPrimaryv, const Array& absorbedSecondaryv)
+void SelfHeatingRebalancer::end(const vector<double>& absorbedPrimaryv, const vector<double>& absorbedSecondaryv)
 {
     _active = false;
     if (!_rebalancing) return;

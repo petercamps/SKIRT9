@@ -28,6 +28,9 @@ ContGasSecondarySource::ContGasSecondarySource(SimulationItem* parent, int h) : 
 
 double ContGasSecondarySource::prepareLuminosities()
 {
+    // start a new launch preparation, so that the per-thread caches discard any outdated information
+    beginPreparation();
+
     // cache some pointers for later use
     _config = find<Configuration>();
     _ms = find<MediumSystem>();
@@ -110,7 +113,8 @@ namespace
     class GasCellEmission : public VelocityInterface
     {
     private:
-        // information initialized once, during the first call to calculateIfNeeded()
+        // information initialized during the first call to calculateIfNeeded() for a given launch preparation
+        size_t _preparation{0};               // the launch preparation number of the source
         const EmittingGasMix* _mix{nullptr};  // the gas mix;
         Array _wavelengthGrid;                // the emission wavelength grid
         Range _wavelengthRange;               // the range of the emission wavelength grid
@@ -131,11 +135,15 @@ namespace
         //   h:  medium component index
         //   mix: material mix for the medium component
         //   ms: medium system
-        void calculateIfNeeded(int m, int h, const EmittingGasMix* mix, MediumSystem* ms)
+        //   preparation: the launch preparation number of the source
+        void calculateIfNeeded(int m, int h, const EmittingGasMix* mix, MediumSystem* ms, size_t preparation)
         {
-            // when called for the first time for a given gas mix, cache info on the emission wavelength grid
-            if (_mix != mix)
+            // when called for the first time for a given launch preparation, cache info on the emission wavelength
+            // grid; the information on the cells is never reused from an earlier preparation, because the radiation
+            // field or even the number of cells may have changed since
+            if (_preparation != preparation)
             {
+                _preparation = preparation;
                 _m = -1;
                 _mix = mix;
                 auto wavelengthGrid = mix->emissionWavelengthGrid();
@@ -189,7 +197,7 @@ void ContGasSecondarySource::launch(PhotonPacket* pp, size_t historyIndex, doubl
     double ws = _Wv[m] > 0. ? _Lv[m] / _Wv[m] : 0.;
 
     // calculate the emission spectrum and bulk velocity for this cell, if not already available
-    t_gascell.calculateIfNeeded(m, _h, _mix, _ms);
+    t_gascell.calculateIfNeeded(m, _h, _mix, _ms, preparation());
 
     // generate a random wavelength from the emission spectrum for the cell and/or from the bias distribution
     double lambda, w;

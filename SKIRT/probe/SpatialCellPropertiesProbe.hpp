@@ -15,7 +15,8 @@
     the simulation. Each line contains columns representing the following cell properties:
     cell index, x,y,z coordinates of the cell center, volume, total optical depth of the cell
     diagonal at a user-configured wavelength (for all material types combined), dust mass density,
-    electron number density, and (gas) hydrogen number density. */
+    electron number density, and (gas) hydrogen number density. If the spatial grid is a tree grid,
+    a last column holds the level of each cell in the tree, with level zero for the root node. */
 class SpatialCellPropertiesProbe : public SpecialtyWavelengthProbe
 {
     ITEM_CONCRETE(SpatialCellPropertiesProbe, SpecialtyWavelengthProbe, "properties: basic info for each spatial cell")

@@ -431,6 +431,9 @@ void MonteCarloSimulation::runPrimaryEmissionIterations()
 
             // update the primary dynamic medium state and log convergence info
             converged = mediumSystem()->updatePrimaryDynamicMediumState();
+
+            // perform the dynamic grid refinement step, if applicable
+            converged &= mediumSystem()->updateDynamicRefinement(Npp);
         }
 
         // record the convergence status in the iteration history and notify the probe system
@@ -514,6 +517,9 @@ void MonteCarloSimulation::runSecondaryEmissionIterations()
             // log dust emission convergence info, and rebalance the secondary radiation field if needed
             if (hasDustEmission) converged &= isDustEmissionConverged(Lemitted);
             if (rebalance) mediumSystem()->endRebalance();
+
+            // perform the dynamic grid refinement step, if applicable
+            converged &= mediumSystem()->updateDynamicRefinement(Npp);
         }
 
         // record the convergence status in the iteration history and notify the probe system
@@ -623,6 +629,9 @@ void MonteCarloSimulation::runMergedEmissionIterations()
             // log dust emission convergence info, and rebalance the secondary radiation field if needed
             if (hasDustEmission) converged &= isDustEmissionConverged(Lemitted);
             if (rebalance) mediumSystem()->endRebalance();
+
+            // perform the dynamic grid refinement step, if applicable
+            converged &= mediumSystem()->updateDynamicRefinement(static_cast<double>(Npp1) + Npp2);
         }
 
         // record the convergence status in the iteration history and notify the probe system

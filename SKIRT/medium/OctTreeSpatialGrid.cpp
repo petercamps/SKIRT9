@@ -40,36 +40,30 @@ int OctTreeSpatialGrid::childIndex(const Box& extent, int /*level*/, Vec positio
 
 ////////////////////////////////////////////////////////////////////
 
-void OctTreeSpatialGrid::linkNeighbors(vector<Node>& nodes) const
+void OctTreeSpatialGrid::linkChildren(vector<Node>& nodes, int p) const
 {
-    // establish the neighbors of the children of each nonleaf node, using the neighbors of the node itself (which
-    // are known because the neighbors of the root node are all absent, and the nodes are in parent-first order)
-    int numNodes = static_cast<int>(nodes.size());
-    for (int p = 0; p != numNodes; ++p)
+    // establish the neighbors of the children of the node, using the neighbors of the node itself
+    const Node& parent = nodes[p];
+    int c0 = parent.child();  // the first child
+
+    for (int i = 0; i != 8; ++i)
     {
-        const Node& parent = nodes[p];
-        if (parent.isLeaf()) continue;
-        int c0 = parent.child();  // the first child
-
-        for (int i = 0; i != 8; ++i)
+        Node& child = nodes[c0 + i];
+        for (int a = 0; a != 3; ++a)
         {
-            Node& child = nodes[c0 + i];
-            for (int a = 0; a != 3; ++a)
-            {
-                int bit = 1 << a;
-                bool upper = (i & bit) != 0;  // true if the child covers the upper half of the parent along axis a
+            int bit = 1 << a;
+            bool upper = (i & bit) != 0;  // true if the child covers the upper half of the parent along axis a
 
-                // the wall on the side of the parent's center touches the sibling on the other side of the center
-                child.setNeighbor(upper ? 2 * a : 2 * a + 1, c0 + (i ^ bit));
+            // the wall on the side of the parent's center touches the sibling on the other side of the center
+            child.setNeighbor(upper ? 2 * a : 2 * a + 1, c0 + (i ^ bit));
 
-                // the wall on the other side coincides with a wall of the parent; if the parent has a neighbor at the
-                // same level that is subdivided, the neighbor at that wall is the child of the parent's neighbor in
-                // the mirrored octant across that wall; otherwise it is the same node as for the parent
-                int w = upper ? 2 * a + 1 : 2 * a;
-                int q = parent.neighbor(w);
-                bool subdivided = q >= 0 && !nodes[q].isLeaf() && nodes[q].level() == parent.level();
-                child.setNeighbor(w, subdivided ? nodes[q].child() + (i ^ bit) : q);
-            }
+            // the wall on the other side coincides with a wall of the parent; if the parent has a neighbor at the
+            // same level that is subdivided, the neighbor at that wall is the child of the parent's neighbor in
+            // the mirrored octant across that wall; otherwise it is the same node as for the parent
+            int w = upper ? 2 * a + 1 : 2 * a;
+            int q = parent.neighbor(w);
+            bool subdivided = q >= 0 && !nodes[q].isLeaf() && nodes[q].level() == parent.level();
+            child.setNeighbor(w, subdivided ? nodes[q].child() + (i ^ bit) : q);
         }
     }
 }

@@ -25,6 +25,9 @@
 #include "SpecialFunctions.hpp"
 #include "StateVariableList.hpp"
 #include "StringUtils.hpp"
+#include "System.hpp"
+#include "Table.hpp"
+#include "TreeSpatialGrid.hpp"
 #include <unordered_set>
 
 ////////////////////////////////////////////////////////////////////
@@ -499,6 +502,9 @@ void MediumSystem::setupSelfAfter()
     recordAggregates();
 
     log->info("Done determining medium properties");
+
+    // verify the dynamic refinement configuration and reserve memory, if applicable
+    setupDynamicRefinement();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1383,13 +1389,13 @@ void MediumSystem::clearRadiationField(bool primary)
     if (primary)
     {
         _rf1.setToZero();
-        _labs1 = 0.;
+        std::fill(_labs1.begin(), _labs1.end(), 0.);
         _labsOutside1 = 0.;
     }
     else
     {
         _rf2c.setToZero();
-        _labs2c = 0.;
+        std::fill(_labs2c.begin(), _labs2c.end(), 0.);
         _labsOutside2c = 0.;
     }
 }
@@ -1452,8 +1458,8 @@ private:
 void MediumSystem::storeRadiationField(bool primary, const PhotonPacket* pp)
 {
     // the targets for the radiation field and the dust-absorbed luminosity
-    Table<2>& rf = primary ? _rf1 : _rf2c;
-    Array& labs = primary ? _labs1 : _labs2c;
+    CellTable& rf = primary ? _rf1 : _rf2c;
+    vector<double>& labs = primary ? _labs1 : _labs2c;
     double LabsOutside = 0.;  // the part of the absorbed luminosity along the path outside the wavelength grid
 
     // the rebalance tallies for this path, which are active only for dust emission during a rebalanced iteration
@@ -1543,11 +1549,11 @@ namespace
 {
     // returns the specified part of the sum of the specified array, after summing that part over all processes,
     // or zero if the sum is zero
-    double fractionOfSum(double part, const Array& array)
+    double fractionOfSum(double part, const vector<double>& array)
     {
         Array partv(part, 1);
         ProcessManager::sumToAll(partv);
-        double sum = array.sum();
+        double sum = std::accumulate(array.begin(), array.end(), 0.);
         return sum > 0. ? partv[0] / sum : 0.;
     }
 }
@@ -1583,8 +1589,8 @@ void MediumSystem::communicateRadiationField(bool primary)
 std::pair<double, double> MediumSystem::totalDustAbsorbedLuminosity() const
 {
     // the arrays are identical on all processes after communicateRadiationField(), so no communication is needed
-    double Labs1 = _labs1.size() ? _labs1.sum() : 0.;
-    double Labs2 = _labs2.size() ? _labs2.sum() : 0.;
+    double Labs1 = std::accumulate(_labs1.begin(), _labs1.end(), 0.);
+    double Labs2 = std::accumulate(_labs2.begin(), _labs2.end(), 0.);
     return std::make_pair(Labs1, Labs2);
 }
 
@@ -1600,7 +1606,7 @@ double MediumSystem::dustAbsorbedFractionOutsideGrid(bool primary) const
 void MediumSystem::beginRebalance()
 {
     // calculate the dust mass in each cell
-    Array dustMassv(_numCells);
+    vector<double> dustMassv(_numCells);
     for (int m = 0; m != _numCells; ++m)
     {
         double rho = 0.;
@@ -1957,6 +1963,512 @@ bool MediumSystem::updateSecondaryDynamicMediumState()
     bool converged = true;
     if (_config->hasSecondaryDynamicStateMedia()) converged &= updateDynamicStateMedia(false);
     return converged;
+}
+
+////////////////////////////////////////////////////////////////////
+
+namespace
+{
+    // the ids of the iteration history series and cell windows kept by the medium system for dynamic refinement,
+    // keyed on the dynamic refinement options, on a refinement criterion, or on a refinement condition
+    enum RefinementId {
+        Subdivided,
+        Rounds,
+        Accumulated,
+        NumCells,
+        PacketsPerCell,
+        CellMemory,
+        Settled,
+        Candidates,
+        LowestPriority,
+        CriterionCandidates,
+        BlockedByLevel,
+        BlockedByColumnDensity,
+        Field
+    };
+
+    // the bit flags recording the outcome of the evaluation of a cell for a refinement criterion
+    constexpr int candidateFlag = 1;      // the cell is a candidate for the criterion
+    constexpr int levelFlag = 2;          // the criterion flags the cell, but it has reached the level limit
+    constexpr int columnDensityFlag = 4;  // the criterion flags the cell, but it has reached the column density limit
+
+    // the number of photon packets per cell launched in an iteration below which a warning is issued
+    constexpr double minPacketsPerCell = 100.;
+
+    // returns a description of the specified refinement criterion for use in log messages and series descriptions
+    string criterionDescription(const RefinementCriterion* criterion)
+    {
+        return criterion->type() + " on " + criterion->fieldDescription();
+    }
+
+    // returns a description of the specified iteration loop for use in log messages
+    string loopDescription(IterationHistory::Loop loop)
+    {
+        switch (loop)
+        {
+            case IterationHistory::Loop::None: break;
+            case IterationHistory::Loop::Primary: return "primary emission";
+            case IterationHistory::Loop::Secondary: return "secondary emission";
+            case IterationHistory::Loop::Merged: return "merged primary and secondary emission";
+        }
+        return "unknown";
+    }
+}
+
+////////////////////////////////////////////////////////////////////
+
+void MediumSystem::setupDynamicRefinement()
+{
+    // dynamic refinement requires a tree grid with refinement options in a simulation that iterates
+    _tree = dynamic_cast<TreeSpatialGrid*>(_grid);
+    if (!_tree || !_tree->dynamicRefinementOptions()
+        || (!_config->hasPrimaryIterations() && !_config->hasSecondaryIterations()))
+    {
+        _tree = nullptr;
+        return;
+    }
+    _refinement = _tree->dynamicRefinementOptions();
+    auto log = find<Log>();
+
+    // determine the iteration loops of the simulation and the number of photon packets launched in each iteration
+    using Loop = IterationHistory::Loop;
+    vector<std::pair<Loop, double>> loops;
+    double numPrimary = _config->numPrimaryIterationPackets();
+    double numSecondary = _config->numSecondaryIterationPackets();
+    if (_config->hasPrimaryIterations()) loops.emplace_back(Loop::Primary, numPrimary);
+    if (_config->hasMergedIterations())
+        loops.emplace_back(Loop::Merged, numPrimary + numSecondary);
+    else if (_config->hasSecondaryIterations())
+        loops.emplace_back(Loop::Secondary, numSecondary);
+
+    // keep the loops in which at least one criterion takes part
+    vector<std::pair<Loop, double>> refiningLoops;
+    for (const auto& loop : loops)
+    {
+        for (auto criterion : _refinement->criteria())
+        {
+            if (criterion->changesIn(loop.first))
+            {
+                refiningLoops.push_back(loop);
+                break;
+            }
+        }
+    }
+    if (refiningLoops.empty())
+        log->warning("None of the dynamic grid refinement criteria takes part in an iteration loop of this simulation");
+
+    // the remainder applies only if there is a cap on the number of cells
+    int maxCells = _refinement->maxCells();
+    if (!maxCells) return;
+    if (maxCells <= _numCells)
+    {
+        log->warning("The maximum number of cells for dynamic grid refinement (" + std::to_string(maxCells)
+                     + ") does not exceed the number of cells in the initial grid (" + std::to_string(_numCells) + ")");
+        return;
+    }
+
+    // reserve capacity for the maximum number of cells in all per-cell data structures
+    _tree->reserveCells(maxCells);
+    _state.reserveCells(maxCells);
+    for (auto table : {&_rf1, &_rf2, &_rf2c})
+        if (table->size()) table->reserveCells(maxCells);
+    for (auto labs : {&_labs1, &_labs2, &_labs2c})
+        if (labs->size()) labs->reserve(maxCells);
+    if (_mixPerCell) _mixv.reserve(static_cast<size_t>(maxCells) * _numMedia);
+    _history->reserveCells(maxCells);
+
+    // log the reserved memory, including the cell windows of the refinement criteria and conditions declared later
+    size_t numFields = 0;
+    for (auto criterion : _refinement->criteria()) numFields += 1 + criterion->conditions().size();
+    double perCell = bytesPerCell() + numFields * sizeof(double);
+    log->info("Reserved memory for the per-cell data of up to " + std::to_string(maxCells)
+              + " cells: " + StringUtils::toMemSizeString(perCell * maxCells) + " per process ("
+              + StringUtils::toString(perCell, 'f', 0) + " bytes per cell)");
+
+    // warn if the memory of the process with all of that capacity in use would exceed the physical memory
+    double needed = System::currentMemoryUsage() + perCell * (maxCells - _numCells);
+    size_t available = System::availableMemory();
+    if (available && needed > available)
+        log->warning("The memory needed per process with the maximum number of cells ("
+                     + StringUtils::toMemSizeString(needed) + ") exceeds the physical memory of the host ("
+                     + StringUtils::toMemSizeString(available) + ")");
+
+    // warn if the number of photon packets per cell would be low for a grid with the maximum number of cells
+    for (const auto& loop : refiningLoops)
+    {
+        double packetsPerCell = loop.second / maxCells;
+        if (packetsPerCell < minPacketsPerCell)
+            log->warning("With the maximum number of cells, each " + loopDescription(loop.first)
+                         + " iteration launches only " + StringUtils::toString(packetsPerCell, 'g', 3)
+                         + " photon packets per cell");
+    }
+}
+
+////////////////////////////////////////////////////////////////////
+
+double MediumSystem::bytesPerCell() const
+{
+    double bytes = _state.bytesPerCell();
+    bytes += _rf1.bytesPerCell() + _rf2.bytesPerCell() + _rf2c.bytesPerCell();
+    for (auto labs : {&_labs1, &_labs2, &_labs2c})
+        if (labs->size()) bytes += sizeof(double);
+    if (_mixPerCell) bytes += _numMedia * sizeof(const MaterialMix*);
+    bytes += _history->allCellWindows().size() * sizeof(double);
+    if (_tree) bytes += _tree->bytesPerAddedCell();
+    return bytes;
+}
+
+////////////////////////////////////////////////////////////////////
+
+void MediumSystem::growCellData(const vector<int>& subdividedCells, const vector<int>& parentCells)
+{
+    int numOldCells = _numCells;
+    _numCells = _grid->numCells();
+
+    // copy the values of the parent to each new cell
+    _state.appendCells(parentCells);
+    for (auto table : {&_rf1, &_rf2, &_rf2c})
+        if (table->size()) table->appendCells(parentCells);
+    for (auto labs : {&_labs1, &_labs2, &_labs2c})
+        if (labs->size())
+            for (int parent : parentCells) labs->push_back((*labs)[parent]);
+    if (_mixPerCell)
+        for (int parent : parentCells)
+            for (int h = 0; h != _numMedia; ++h) _mixv.push_back(_mixv[parent * _numMedia + h]);
+    _history->appendCells(parentCells);
+
+    // set the volume of each child, which still holds the volume of its parent, and divide the radiation field, the
+    // dust-absorbed luminosities, and the extensive state variables in proportion to the volume of the children
+    auto resize = [this](int m) {
+        double volume = _grid->volume(m);
+        double oldVolume = _state.volume(m);
+        double fraction = oldVolume > 0. ? volume / oldVolume : 0.;
+        for (auto table : {&_rf1, &_rf2, &_rf2c})
+            if (table->size()) table->scaleCell(m, fraction);
+        for (auto labs : {&_labs1, &_labs2, &_labs2c})
+            if (labs->size()) (*labs)[m] *= fraction;
+        _state.resizeCell(m, volume);
+    };
+    for (int m : subdividedCells) resize(m);
+    for (int m = numOldCells; m != _numCells; ++m) resize(m);
+
+    // verify that each per-cell data structure has grown to the new number of cells
+    auto verify = [this](size_t size, size_t expected, string name) {
+        if (size != expected)
+            throw FATALERROR("The size of the " + name + " (" + std::to_string(size)
+                             + ") does not match the number of cells after dynamic refinement ("
+                             + std::to_string(_numCells) + ")");
+    };
+    verify(_state.numCells(), _numCells, "medium state");
+    for (auto table : {&_rf1, &_rf2, &_rf2c})
+        if (table->size()) verify(table->numCells(), _numCells, "radiation field table");
+    for (auto labs : {&_labs1, &_labs2, &_labs2c})
+        if (labs->size()) verify(labs->size(), _numCells, "dust-absorbed luminosity array");
+    if (_mixPerCell) verify(_mixv.size(), static_cast<size_t>(_numCells) * _numMedia, "material mix array");
+    for (auto window : _history->allCellWindows()) verify(window->numCells(), _numCells, "cell window");
+}
+
+////////////////////////////////////////////////////////////////////
+
+bool MediumSystem::updateDynamicRefinement(double numPackets)
+{
+    if (!_refinement) return true;
+
+    // determine the criteria that take part in the current iteration loop
+    auto loop = _history->loop();
+    vector<const RefinementCriterion*> criteria;
+    for (auto criterion : _refinement->criteria())
+        if (criterion->changesIn(loop)) criteria.push_back(criterion);
+    if (criteria.empty()) return true;
+    int numCriteria = criteria.size();
+
+    auto log = find<Log>();
+    auto options = _refinement;
+    auto lifetime = IterationHistory::Lifetime::Loop;
+    int numLeftOut = options->numIterationsAfterRefinement();
+    int numAveraged = options->numAveragedIterations();
+    int iteration = _history->iteration();
+    int maxIterations =
+        loop == IterationHistory::Loop::Primary ? _config->maxPrimaryIterations() : _config->maxSecondaryIterations();
+
+    // declare all scalar series in every iteration (declaring is idempotent), so that they exist from the first
+    // iteration of the loop, including those that receive a value only in decision iterations
+    auto& subdivided =
+        _history->scalarSeries(options, Subdivided, numLeftOut + 1, lifetime, "number of subdivided cells");
+    auto& rounds = _history->scalarSeries(options, Rounds, 2, lifetime, "number of refinement rounds");
+    auto& accumulated =
+        _history->scalarSeries(options, Accumulated, 1, lifetime, "number of iterations in the refinement window");
+    auto& cells = _history->scalarSeries(options, NumCells, 1, lifetime, "total number of cells");
+    auto& packets = _history->scalarSeries(options, PacketsPerCell, 1, lifetime, "number of photon packets per cell");
+    auto& memory = _history->scalarSeries(options, CellMemory, 1, lifetime, "memory held by the per-cell data (bytes)");
+    auto& settled = _history->scalarSeries(options, Settled, 1, lifetime, "refinement settled");
+    auto& candidates = _history->scalarSeries(options, Candidates, 1, lifetime, "number of refinement candidates");
+    auto& lowest =
+        _history->scalarSeries(options, LowestPriority, 1, lifetime, "lowest priority among the subdivided cells");
+    vector<ScalarSeries*> criterionCandidates, blockedByLevel, blockedByColumnDensity;
+    for (auto criterion : criteria)
+    {
+        string description = criterionDescription(criterion);
+        criterionCandidates.push_back(&_history->scalarSeries(criterion, CriterionCandidates, 1, lifetime,
+                                                              "number of candidates for " + description));
+        blockedByLevel.push_back(&_history->scalarSeries(
+            criterion, BlockedByLevel, 1, lifetime, "number of cells blocked by the level limit of " + description));
+        blockedByColumnDensity.push_back(
+            &_history->scalarSeries(criterion, BlockedByColumnDensity, 1, lifetime,
+                                    "number of cells blocked by the column density limit of " + description));
+    }
+
+    // record the values set in every iteration; the number of rounds is carried over from the previous iteration
+    subdivided.set(0.);
+    int numRounds = rounds.has(1) ? static_cast<int>(rounds.value(1)) : 0;
+    rounds.set(numRounds);
+    cells.set(_numCells);
+    packets.set(numPackets / _numCells);
+    memory.set(bytesPerCell() * _numCells);
+
+    // this function records whether the refinement has settled, warns if the loop ends before it has settled, and
+    // returns the result
+    auto finish = [&settled, &log, iteration, maxIterations, loop](bool hasSettled) {
+        settled.set(hasSettled ? 1. : 0.);
+        if (!hasSettled && iteration >= maxIterations)
+            log->warning("The " + loopDescription(loop)
+                         + " iteration loop ends before the dynamic grid refinement has settled");
+        return hasSettled;
+    };
+
+    // during the initial iterations, refinement is not considered at all
+    if (iteration <= options->numIterationsBeforeRefinement())
+    {
+        accumulated.set(0.);
+        return finish(false);
+    }
+
+    // an iteration shortly after a refinement round is left out of the averaging
+    bool leftOut = false;
+    for (int lag = 1; lag <= numLeftOut; ++lag) leftOut |= subdivided.has(lag) && subdivided.value(lag) > 0.;
+
+    // obtain the cell windows of the criteria and of their conditions, which share a single schedule
+    vector<CellWindow*> fieldWindows;
+    vector<vector<std::pair<const RefinementCondition*, CellWindow*>>> conditionWindows(numCriteria);
+    for (int c = 0; c != numCriteria; ++c)
+    {
+        auto criterion = criteria[c];
+        fieldWindows.push_back(&_history->cellWindow(criterion, Field, _numCells, lifetime,
+                                                     "window-averaged " + criterion->fieldDescription()));
+        for (auto condition : criterion->conditions())
+            conditionWindows[c].emplace_back(condition,
+                                             &_history->cellWindow(condition, Field, _numCells, lifetime,
+                                                                   "window-averaged " + condition->description()));
+    }
+
+    // accumulate the current values, unless the iteration is left out
+    if (leftOut)
+    {
+        log->info("Dynamic grid refinement: iteration left out of the averaging after a refinement round");
+    }
+    else
+    {
+        auto parallel = find<ParallelFactory>()->parallelDistributed();
+        for (int c = 0; c != numCriteria; ++c)
+        {
+            auto criterion = criteria[c];
+            if (criterion->hasCostlyValue())
+            {
+                // calculate the values in parallel, each cell on a single process, and sum them over the processes
+                Array values(_numCells);
+                parallel->call(_numCells, [criterion, &values](size_t firstIndex, size_t numIndices) {
+                    for (size_t m = firstIndex; m != firstIndex + numIndices; ++m) values[m] = criterion->value(m);
+                });
+                ProcessManager::sumToAll(values);
+                fieldWindows[c]->accumulate([&values](int m) { return values[m]; });
+            }
+            else
+            {
+                fieldWindows[c]->accumulate([criterion](int m) { return criterion->value(m); });
+            }
+            for (auto& entry : conditionWindows[c])
+            {
+                auto condition = entry.first;
+                entry.second->accumulate([condition](int m) { return condition->value(m); });
+            }
+        }
+    }
+    int numAccumulated = fieldWindows[0]->numIterations();
+    accumulated.set(numAccumulated);
+
+    // if the windows are not yet complete, the refinement has not settled
+    if (numAccumulated < numAveraged)
+    {
+        if (!leftOut)
+            log->info("Dynamic grid refinement: accumulated " + std::to_string(numAccumulated) + " of "
+                      + std::to_string(numAveraged) + " iterations of the averaging window");
+        return finish(false);
+    }
+
+    // ----- decision -----
+
+    // evaluate all cells in parallel, recording for each cell and criterion whether the cell is a candidate or has
+    // reached a limit, and for each cell the highest priority over the criteria for which it is a candidate;
+    // each cell is evaluated by a single process, and the results are summed over the processes, so that they are
+    // identical on all processes
+    bool needsNeighbors = false;
+    for (auto criterion : criteria) needsNeighbors |= criterion->needsNeighbors();
+    Array priorityv(_numCells);
+    Array flagv(static_cast<size_t>(_numCells) * numCriteria);
+    find<ParallelFactory>()->parallelDistributed()->call(_numCells, [&](size_t firstIndex, size_t numIndices) {
+        vector<int> neighbors;
+        const vector<int> noNeighbors;
+        for (size_t m = firstIndex; m != firstIndex + numIndices; ++m)
+        {
+            if (needsNeighbors) _tree->faceNeighbors(m, neighbors);
+            int gainedLevels = _tree->cellLevel(m) - _tree->initialCellLevel(m);
+            double size = _tree->cellSize(m);
+            for (int c = 0; c != numCriteria; ++c)
+            {
+                auto criterion = criteria[c];
+
+                // skip the cell if one of the conditions of the criterion does not hold
+                bool holds = true;
+                for (const auto& entry : conditionWindows[c])
+                {
+                    if (!entry.first->holds(entry.second->mean(m)))
+                    {
+                        holds = false;
+                        break;
+                    }
+                }
+                if (!holds) continue;
+
+                // skip the cell if the criterion does not flag it
+                double excess =
+                    criterion->excess(m, *fieldWindows[c], criterion->needsNeighbors() ? neighbors : noNeighbors);
+                if (!(excess > 0.)) continue;
+
+                // check the limits of the criterion; if none has been reached, the cell is a candidate
+                int flags = 0;
+                int maxExtraLevels = criterion->maxExtraLevels();
+                if (maxExtraLevels && gainedLevels >= maxExtraLevels) flags |= levelFlag;
+                double minColumnDensity = criterion->minColumnDensity();
+                double columnDensity = criterion->numberDensity(m) * size;
+                if (minColumnDensity && !(columnDensity >= minColumnDensity)) flags |= columnDensityFlag;
+                if (!flags)
+                {
+                    flags = candidateFlag;
+                    double priority = excess * (minColumnDensity ? columnDensity / minColumnDensity : 1.);
+                    priorityv[m] = max(priorityv[m], priority);
+                }
+                flagv[m * numCriteria + c] = flags;
+            }
+        }
+    });
+    ProcessManager::sumToAll(priorityv);
+    ProcessManager::sumToAll(flagv);
+
+    // count the candidates and the cells blocked by each limit, and collect the candidates in order of cell index
+    vector<int> candidatev;
+    vector<int> numCandidatesv(numCriteria), numLevelv(numCriteria), numColumnDensityv(numCriteria);
+    for (int m = 0; m != _numCells; ++m)
+    {
+        bool isCandidate = false;
+        for (int c = 0; c != numCriteria; ++c)
+        {
+            int flags = static_cast<int>(flagv[static_cast<size_t>(m) * numCriteria + c]);
+            if (flags & candidateFlag)
+            {
+                numCandidatesv[c]++;
+                isCandidate = true;
+            }
+            if (flags & levelFlag) numLevelv[c]++;
+            if (flags & columnDensityFlag) numColumnDensityv[c]++;
+        }
+        if (isCandidate) candidatev.push_back(m);
+    }
+    int numCandidates = candidatev.size();
+    candidates.set(numCandidates);
+    log->info("Dynamic grid refinement: " + std::to_string(numCandidates) + " candidate cells out of "
+              + std::to_string(_numCells));
+    for (int c = 0; c != numCriteria; ++c)
+    {
+        criterionCandidates[c]->set(numCandidatesv[c]);
+        blockedByLevel[c]->set(numLevelv[c]);
+        blockedByColumnDensity[c]->set(numColumnDensityv[c]);
+        log->info("  " + criterionDescription(criteria[c]) + ": " + std::to_string(numCandidatesv[c])
+                  + " candidates; blocked by level limit: " + std::to_string(numLevelv[c])
+                  + ", by column density limit: " + std::to_string(numColumnDensityv[c]));
+    }
+
+    // decide whether to start a refinement round, and how many candidates to subdivide
+    int numSelected = 0;
+    string reason;
+    if (numCandidates)
+    {
+        int maxRounds = options->maxRounds();
+        int maxCells = options->maxCells();
+        if (maxRounds && numRounds >= maxRounds)
+        {
+            reason = "the maximum number of refinement rounds has been reached";
+        }
+        else if (maxIterations - iteration < numLeftOut + numAveraged)
+        {
+            reason = "too few iterations remain in the loop";
+        }
+        else
+        {
+            numSelected = numCandidates;
+            if (maxCells)
+            {
+                int room = maxCells > _numCells ? (maxCells - _numCells) / (_tree->numChildren() - 1) : 0;
+                if (room < numSelected) numSelected = room;
+                if (!numSelected) reason = "the maximum number of cells has been reached";
+            }
+        }
+    }
+
+    // if the cell cap does not leave room for all candidates, select those with the highest priority; among
+    // candidates with equal priority, the larger cells go first, and among those the cells with the lower index
+    if (numSelected && numSelected < numCandidates)
+    {
+        std::sort(candidatev.begin(), candidatev.end(), [this, &priorityv](int m1, int m2) {
+            if (priorityv[m1] != priorityv[m2]) return priorityv[m1] > priorityv[m2];
+            double size1 = _tree->cellSize(m1);
+            double size2 = _tree->cellSize(m2);
+            if (size1 != size2) return size1 > size2;
+            return m1 < m2;
+        });
+        lowest.set(priorityv[candidatev[numSelected - 1]]);
+        candidatev.resize(numSelected);
+        std::sort(candidatev.begin(), candidatev.end());
+        reason = "the maximum number of cells has been reached";
+    }
+
+    // perform the refinement round, if any
+    if (numSelected)
+    {
+        int numOldCells = _numCells;
+        auto parentCells = _tree->subdivide(candidatev);
+        growCellData(candidatev, parentCells);
+        rounds.set(numRounds + 1);
+        subdivided.set(numSelected);
+
+        // record the aggregates again, so that they describe the refined grid
+        recordAggregates();
+
+        log->info("  Subdivided " + std::to_string(numSelected) + " cells, adding "
+                  + std::to_string(_numCells - numOldCells) + " cells, for a total of " + std::to_string(_numCells)
+                  + " cells (" + StringUtils::toString(numPackets / numOldCells, 'g', 3)
+                  + " photon packets per cell in this iteration)");
+    }
+    if (numCandidates > numSelected)
+        log->warning("Dynamic grid refinement left " + std::to_string(numCandidates - numSelected)
+                     + " candidate cells unsplit because " + reason);
+
+    // reset the windows, so that a new window starts with the next iteration that is not left out
+    for (auto window : fieldWindows) window->reset();
+    for (auto& entries : conditionWindows)
+        for (auto& entry : entries) entry.second->reset();
+
+    // the refinement has settled if the decision did not lead to a refinement round
+    return finish(numSelected == 0);
 }
 
 ////////////////////////////////////////////////////////////////////

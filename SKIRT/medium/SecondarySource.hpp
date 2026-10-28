@@ -45,6 +45,28 @@ public:
     /** This function causes the photon packet \em pp to be launched for this source from one of
         the cells in the spatial grid using the given history index and luminosity. */
     virtual void launch(PhotonPacket* pp, size_t historyIndex, double L) const = 0;
+
+    //======================== Launch preparations =======================
+
+protected:
+    /** This function starts a new launch preparation for this source, and must be called at the
+        start of the prepareLuminosities() function of each subclass. It assigns the source a
+        preparation number that differs from the number of any earlier preparation of any secondary
+        source in the process. The per-thread caches that a subclass uses while launching photon
+        packets compare the preparation number with the one for which they hold information, so
+        that they never use information calculated for another source, or for an earlier
+        preparation, for example before the number of cells changed through dynamic grid refinement
+        or before the radiation field was updated in a new iteration. */
+    void beginPreparation();
+
+    /** This function returns the preparation number assigned by the most recent call to
+        beginPreparation(). */
+    size_t preparation() const { return _preparation; }
+
+    //======================== Data Members ========================
+
+private:
+    size_t _preparation{0};
 };
 
 ////////////////////////////////////////////////////////////////

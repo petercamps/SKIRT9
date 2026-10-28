@@ -38,13 +38,44 @@
     lacked the column information line.
 
     If the output path of the simulation includes an HDF5 file, the topology is written as a text
-    column file bundle in that file instead, with a single dataset holding the same values. */
+    column file bundle in that file instead, with a single dataset holding the same values.
+
+    By default, the probe is performed after setup, recording the topology of the grid constructed
+    by the tree policies. If the grid is refined dynamically during the iterations of the
+    simulation (see the DynamicRefinementOptions class), the \em probeAfter property can be set to
+    record the topology of the refined grid at the end of the simulation run, or after each primary
+    or secondary emission iteration. In the latter case, the name of the output file includes the
+    iteration index, as in <tt>prefix_probe001_treetop.dat</tt>. A subsequent simulation can load
+    the topology of the refined grid with the TopologyTreePolicy, and then starts from the refined
+    grid. The reloaded grid has the same cells as the refined grid, but not in the same order,
+    because the TopologyTreePolicy numbers the cells level by level, as for any tree, whereas
+    dynamic refinement keeps the existing cell indices and appends the new cells. */
 class TreeSpatialGridTopologyProbe : public SpecialtyProbe
 {
+    /** The enumeration type indicating when probing occurs. */
+    ENUM_DEF(ProbeAfter, Setup, Run, Primary, Secondary)
+        ENUM_VAL(ProbeAfter, Setup, "after setup")
+        ENUM_VAL(ProbeAfter, Run, "after the complete simulation run")
+        ENUM_VAL(ProbeAfter, Primary, "after each iteration over primary emission")
+        ENUM_VAL(ProbeAfter, Secondary, "after each iteration over secondary emission")
+    ENUM_END()
+
     ITEM_CONCRETE(TreeSpatialGridTopologyProbe, SpecialtyProbe,
                   "specialty: data file representing the topology of the tree spatial grid")
         ATTRIBUTE_TYPE_DISPLAYED_IF(TreeSpatialGridTopologyProbe, "Level3&TreeSpatialGrid")
+
+        PROPERTY_ENUM(probeAfter, ProbeAfter, "perform the probe after")
+        ATTRIBUTE_DEFAULT_VALUE(probeAfter, "Setup")
+        ATTRIBUTE_DISPLAYED_IF(probeAfter, "IteratePrimary|IterateSecondary")
+
     ITEM_END()
+
+    //============= Construction - Setup - Destruction =============
+
+protected:
+    /** This function returns an enumeration indicating when probing for this probe should be
+        performed corresponding to the configured value of the \em probeAfter property. */
+    When when() const override;
 
     //======================== Other Functions =======================
 

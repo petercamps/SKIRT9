@@ -174,7 +174,8 @@ public:
         tallies inactive, and the subsequent call to end() does nothing. In any case, the function
         declares the rebalance series in the iteration history, so that they exist from the first
         iteration of the loop, as required by the HistoryProbe. */
-    void begin(const Array& absorbedPrimaryv, const Array& absorbedSecondaryv, const Array& dustMassv);
+    void begin(const vector<double>& absorbedPrimaryv, const vector<double>& absorbedSecondaryv,
+               const vector<double>& dustMassv);
 
     /** This function returns a tally handle for a photon packet path, bound to the tally object of
         the current execution thread and to the region of the specified emission cell. The handle is
@@ -192,7 +193,7 @@ public:
         rebalanced. The function must be called after the radiation field of the secondary emission
         segment has been communicated between processes, and before the stable secondary radiation
         field is rescaled. */
-    void end(const Array& absorbedPrimaryv, const Array& absorbedSecondaryv);
+    void end(const vector<double>& absorbedPrimaryv, const vector<double>& absorbedSecondaryv);
 
     /** This function returns the factor determined by the most recent call to end() for the
         spatial cell with index \em m, or one if the cell belongs to no region or if nothing was

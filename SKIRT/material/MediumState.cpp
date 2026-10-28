@@ -57,7 +57,11 @@ void MediumState::initSpecificStateVariables(const StateVariableList& variables)
                 _off_dens[_nextComponent] = _nextOffset++;
                 _off_cust[_nextComponent] = _nextOffset;
                 break;
-            case StateVariable::Identifier::Custom: _nextOffset += variable.count(); break;
+            case StateVariable::Identifier::Custom:
+                if (variable.kind() == QuantityKind::Extensive)
+                    for (int k = 0; k != variable.count(); ++k) _off_extensive.push_back(_nextOffset + k);
+                _nextOffset += variable.count();
+                break;
             case StateVariable::Identifier::Volume:
             case StateVariable::Identifier::BulkVelocity:
             case StateVariable::Identifier::MagneticField:
@@ -142,6 +146,40 @@ std::pair<int, int> MediumState::synchronize(const vector<UpdateStatus>& cellFla
         }
     }
     return std::make_pair(numUpdated, numNotConverged);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void MediumState::appendCells(const vector<int>& parentCells)
+{
+    // copy all variables of the parent cell to each new cell; the parents precede the new cells, so that copying
+    // after growing the vector never reads values of a new cell
+    size_t numOld = _numCells;
+    size_t numNew = parentCells.size();
+    _data.resize(_numVars * (numOld + numNew));
+    for (size_t i = 0; i != numNew; ++i)
+    {
+        auto parent = _data.begin() + _numVars * parentCells[i];
+        std::copy(parent, parent + _numVars, _data.begin() + _numVars * (numOld + i));
+    }
+    _numCells = numOld + numNew;
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void MediumState::resizeCell(int m, double volume)
+{
+    double oldVolume = this->volume(m);
+    double fraction = oldVolume > 0. ? volume / oldVolume : 0.;
+    for (int offset : _off_extensive) _data[_numVars * m + offset] *= fraction;
+    setVolume(m, volume);
+}
+
+//////////////////////////////////////////////////////////////////////
+
+void MediumState::reserveCells(int numCells)
+{
+    _data.reserve(_numVars * static_cast<size_t>(numCells));
 }
 
 //////////////////////////////////////////////////////////////////////
