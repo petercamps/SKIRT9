@@ -1740,6 +1740,13 @@ double MediumSystem::dustLuminosity(int m) const
 
 ////////////////////////////////////////////////////////////////////
 
+double MediumSystem::primaryDustLuminosity(int m) const
+{
+    return _labs1.size() ? _labs1[m] : 0.;
+}
+
+////////////////////////////////////////////////////////////////////
+
 Array MediumSystem::dustEmissionSpectrum(int m) const
 {
     const Array& Jv = meanIntensity(m);
@@ -2272,6 +2279,7 @@ bool MediumSystem::updateDynamicRefinement(double numPackets)
         for (int c = 0; c != numCriteria; ++c)
         {
             auto criterion = criteria[c];
+            criterion->prepareValues();
             if (criterion->hasCostlyValue())
             {
                 // calculate the values in parallel, each cell on a single process, and sum them over the processes
@@ -2364,12 +2372,17 @@ bool MediumSystem::updateDynamicRefinement(double numPackets)
     ProcessManager::sumToAll(priorityv);
     ProcessManager::sumToAll(flagv);
 
-    // count the candidates and the cells blocked by each limit, and collect the candidates in order of cell index
+    // count the candidates and the cells blocked by each limit, and collect the candidates in order of cell index;
+    // for each candidate, determine the number of levels by which a round may subdivide it, which is the number of
+    // levels per round, or fewer if the level limits of all criteria for which it is a candidate allow fewer
+    int levelsPerRound = options->levelsPerRound();
     vector<int> candidatev;
+    vector<int> levelsv(_numCells);
     vector<int> numCandidatesv(numCriteria), numLevelv(numCriteria), numColumnDensityv(numCriteria);
     for (int m = 0; m != _numCells; ++m)
     {
         bool isCandidate = false;
+        int levels = 0;
         for (int c = 0; c != numCriteria; ++c)
         {
             int flags = static_cast<int>(flagv[static_cast<size_t>(m) * numCriteria + c]);
@@ -2377,11 +2390,19 @@ bool MediumSystem::updateDynamicRefinement(double numPackets)
             {
                 numCandidatesv[c]++;
                 isCandidate = true;
+                int maxExtraLevels = criteria[c]->maxExtraLevels();
+                int allowed = maxExtraLevels ? maxExtraLevels - (_tree->cellLevel(m) - _tree->initialCellLevel(m))
+                                             : levelsPerRound;
+                levels = max(levels, min(levelsPerRound, allowed));
             }
             if (flags & levelFlag) numLevelv[c]++;
             if (flags & columnDensityFlag) numColumnDensityv[c]++;
         }
-        if (isCandidate) candidatev.push_back(m);
+        if (isCandidate)
+        {
+            candidatev.push_back(m);
+            levelsv[m] = max(1, levels);
+        }
     }
     int numCandidates = candidatev.size();
     candidates.set(numCandidates);
@@ -2403,7 +2424,6 @@ bool MediumSystem::updateDynamicRefinement(double numPackets)
     if (numCandidates)
     {
         int maxRounds = options->maxRounds();
-        int maxCells = options->maxCells();
         if (maxRounds && numRounds >= maxRounds)
         {
             reason = "the maximum number of refinement rounds has been reached";
@@ -2415,47 +2435,85 @@ bool MediumSystem::updateDynamicRefinement(double numPackets)
         else
         {
             numSelected = numCandidates;
-            if (maxCells)
-            {
-                int room = maxCells > _numCells ? (maxCells - _numCells) / (_tree->numChildren() - 1) : 0;
-                if (room < numSelected) numSelected = room;
-                if (!numSelected) reason = "the maximum number of cells has been reached";
-            }
         }
     }
 
+    // the number of cells added by subdividing a candidate by its number of levels
+    int numChildren = _tree->numChildren();
+    auto addedCells = [numChildren, &levelsv](int m) {
+        std::int64_t n = 1;
+        for (int level = 0; level != levelsv[m]; ++level) n *= numChildren;
+        return n - 1;
+    };
+
     // if the cell cap does not leave room for all candidates, select those with the highest priority; among
     // candidates with equal priority, the larger cells go first, and among those the cells with the lower index
-    if (numSelected && numSelected < numCandidates)
+    int maxCells = options->maxCells();
+    if (numSelected && maxCells)
     {
-        std::sort(candidatev.begin(), candidatev.end(), [this, &priorityv](int m1, int m2) {
-            if (priorityv[m1] != priorityv[m2]) return priorityv[m1] > priorityv[m2];
-            double size1 = _tree->cellSize(m1);
-            double size2 = _tree->cellSize(m2);
-            if (size1 != size2) return size1 > size2;
-            return m1 < m2;
-        });
-        lowest.set(priorityv[candidatev[numSelected - 1]]);
-        candidatev.resize(numSelected);
-        std::sort(candidatev.begin(), candidatev.end());
-        reason = "the maximum number of cells has been reached";
+        std::int64_t room = maxCells > _numCells ? maxCells - _numCells : 0;
+        std::int64_t needed = 0;
+        for (int m : candidatev) needed += addedCells(m);
+        if (needed > room)
+        {
+            std::sort(candidatev.begin(), candidatev.end(), [this, &priorityv](int m1, int m2) {
+                if (priorityv[m1] != priorityv[m2]) return priorityv[m1] > priorityv[m2];
+                double size1 = _tree->cellSize(m1);
+                double size2 = _tree->cellSize(m2);
+                if (size1 != size2) return size1 > size2;
+                return m1 < m2;
+            });
+            numSelected = 0;
+            std::int64_t used = 0;
+            for (int m : candidatev)
+            {
+                if (used + addedCells(m) > room) break;
+                used += addedCells(m);
+                numSelected++;
+            }
+            if (numSelected) lowest.set(priorityv[candidatev[numSelected - 1]]);
+            candidatev.resize(numSelected);
+            std::sort(candidatev.begin(), candidatev.end());
+            reason = "the maximum number of cells has been reached";
+        }
     }
 
-    // perform the refinement round, if any
+    // perform the refinement round, if any, subdividing the selected cells one level at a time, and the children of
+    // a cell again as long as the cell has levels left
     if (numSelected)
     {
         int numOldCells = _numCells;
-        auto parentCells = _tree->subdivide(candidatev);
-        growCellData(candidatev, parentCells);
+        vector<int> cells = candidatev;
+        vector<int> remaining(_numCells);
+        for (int m : cells) remaining[m] = levelsv[m];
+        while (!cells.empty())
+        {
+            int numBefore = _numCells;
+            auto parentCells = _tree->subdivide(cells);
+            growCellData(cells, parentCells);
+
+            // each child of a cell has one level less left than its parent had; the subdivided cell keeps its index
+            // and becomes the first child, and the other children are appended in the order of their parents
+            remaining.resize(_numCells);
+            for (int m : cells) remaining[m]--;
+            for (int m = numBefore; m != _numCells; ++m) remaining[m] = remaining[parentCells[m - numBefore]];
+            vector<int> next;
+            for (int m : cells)
+                if (remaining[m] > 0) next.push_back(m);
+            for (int m = numBefore; m != _numCells; ++m)
+                if (remaining[m] > 0) next.push_back(m);
+            cells = std::move(next);
+        }
         rounds.set(numRounds + 1);
         subdivided.set(numSelected);
 
         // record the aggregates again, so that they describe the refined grid
         recordAggregates();
 
-        log->info("  Subdivided " + std::to_string(numSelected) + " cells, adding "
-                  + std::to_string(_numCells - numOldCells) + " cells, for a total of " + std::to_string(_numCells)
-                  + " cells (" + StringUtils::toString(numPackets / numOldCells, 'g', 3)
+        log->info("  Subdivided " + std::to_string(numSelected) + " cells"
+                  + (levelsPerRound > 1 ? " by up to " + std::to_string(levelsPerRound) + " levels" : string())
+                  + ", adding " + std::to_string(_numCells - numOldCells) + " cells, for a total of "
+                  + std::to_string(_numCells) + " cells (" + StringUtils::toString(numPackets / numOldCells, 'g', 3)
                   + " photon packets per cell in this iteration)");
     }
     if (numCandidates > numSelected)

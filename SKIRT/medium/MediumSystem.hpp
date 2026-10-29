@@ -906,6 +906,12 @@ public:
         simulation does not include dust emission, the function returns zero. */
     double dustLuminosity(int m) const;
 
+    /** This function returns the part of the luminosity returned by the dustLuminosity() function
+        that is absorbed from primary sources, i.e. the luminosity absorbed by dust in the spatial
+        cell with index \f$m\f$ during the most recent primary emission segment. If the simulation
+        does not include dust emission, the function returns zero. */
+    double primaryDustLuminosity(int m) const;
+
     /** This function returns the combined emission spectrum for all dust media in the spatial cell
         with index \f$m\f$. Depending on a simulation-wide configuration option, the spectrum is
         calculated under the assumption of local thermal equilibrium (LTE) or taking into account

@@ -66,6 +66,16 @@
     iterations. In each of these cases, a warning reports the number of candidates that were left
     unsplit.
 
+    A refinement round subdivides each selected candidate by \em levelsPerRound tree levels, or by
+    fewer levels if the level limits of the criteria that flag the candidate allow fewer (see the
+    RefinementCriterion class). With the default of one level, an octree splits a candidate into 8
+    children, and a binary tree into 2 children along a single axis; with three levels, a binary
+    tree splits a candidate into 8 children along all three axes, as an octree does in one level.
+    A round thus subdivides a candidate into up to \f$c^k\f$ cells, where \f$c\f$ is the number of
+    children of a tree node and \f$k\f$ the number of levels. The other limits, and the cell cap,
+    are applied to each candidate before the round, so that a round may take a cell beyond its
+    column density limit.
+
     The iteration loop is considered converged only if the medium state has converged and the
     refinement has settled. The refinement has settled in an iteration if a decision was taken in
     that iteration and did not lead to a refinement round. As a result, each refinement round costs
@@ -128,6 +138,12 @@ class DynamicRefinementOptions : public SimulationItem
         ATTRIBUTE_MIN_VALUE(maxRounds, "0")
         ATTRIBUTE_MAX_VALUE(maxRounds, "1000")
         ATTRIBUTE_DEFAULT_VALUE(maxRounds, "0")
+
+        PROPERTY_INT(levelsPerRound, "the number of tree levels by which a refinement round subdivides each candidate")
+        ATTRIBUTE_MIN_VALUE(levelsPerRound, "1")
+        ATTRIBUTE_MAX_VALUE(levelsPerRound, "9")
+        ATTRIBUTE_DEFAULT_VALUE(levelsPerRound, "1")
+        ATTRIBUTE_DISPLAYED_IF(levelsPerRound, "Level3")
 
         PROPERTY_ITEM_LIST(criteria, RefinementCriterion, "the refinement criteria")
 

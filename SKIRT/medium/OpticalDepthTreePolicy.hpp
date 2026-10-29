@@ -61,7 +61,7 @@ class OpticalDepthTreePolicy : public TreePolicy, public MaterialWavelengthRange
 
         PROPERTY_DOUBLE(maxOpticalDepth, "the maximum diagonal optical depth for each cell")
         ATTRIBUTE_MIN_VALUE(maxOpticalDepth, "]0")
-        ATTRIBUTE_MAX_VALUE(maxOpticalDepth, "100]")
+        ATTRIBUTE_MAX_VALUE(maxOpticalDepth, "1e4]")
 
         PROPERTY_DOUBLE(wavelength, "the wavelength at which to evaluate the optical depth")
         ATTRIBUTE_QUANTITY(wavelength, "wavelength")

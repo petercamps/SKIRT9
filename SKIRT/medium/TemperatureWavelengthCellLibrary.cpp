@@ -7,6 +7,9 @@
 #include "Configuration.hpp"
 #include "Log.hpp"
 #include "MediumSystem.hpp"
+#include "Parallel.hpp"
+#include "ParallelFactory.hpp"
+#include "ProcessManager.hpp"
 #include "StringUtils.hpp"
 #include "Units.hpp"
 #include "WavelengthGrid.hpp"
@@ -53,33 +56,44 @@ vector<int> TemperatureWavelengthCellLibrary::mapping(const Array& bv) const
     auto ms = find<MediumSystem>();
     int numCells = ms->numCells();
 
-    // calculate the indicative temperature and wavelength for all spatial cells
-    // and track their minimum and maximum values
+    // calculate the indicative temperature and wavelength for all spatial cells in parallel, each cell on a single
+    // process, and sum the results over the processes, so that they are identical on all processes
+    Array Tv(numCells);
+    Array lambdav(numCells);
+    find<ParallelFactory>()->parallelDistributed()->call(numCells, [&](size_t firstIndex, size_t numIndices) {
+        for (size_t m = firstIndex; m != firstIndex + numIndices; ++m)
+        {
+            // ignore cells that won't be used by the caller
+            if (bv[m])
+            {
+                double T = ms->indicativeDustTemperature(m);
+                double lambda = indicativeDustWavelength(m, ms, wavelengthGrid);
+
+                // ignore cells with meaningless property values
+                if (T > 0. && lambda > 0.)
+                {
+                    Tv[m] = T;
+                    lambdav[m] = lambda;
+                }
+            }
+        }
+    });
+    ProcessManager::sumToAll(Tv);
+    ProcessManager::sumToAll(lambdav);
+
+    // track the minimum and maximum values
     double Tmin = DBL_MAX;
     double Tmax = 0.0;
     double lambdamin = DBL_MAX;
     double lambdamax = 0.0;
-    Array Tv(numCells);
-    Array lambdav(numCells);
     for (int m = 0; m != numCells; ++m)
     {
-        // ignore cells that won't be used by the caller
-        if (bv[m])
+        if (Tv[m] > 0. && lambdav[m] > 0.)
         {
-            double T = ms->indicativeDustTemperature(m);
-            double lambda = indicativeDustWavelength(m, ms, wavelengthGrid);
-
-            // ignore cells with meaningless property values
-            if (T > 0. && lambda > 0.)
-            {
-                Tv[m] = T;
-                lambdav[m] = lambda;
-
-                Tmin = min(Tmin, T);
-                Tmax = max(Tmax, T);
-                lambdamin = min(lambdamin, lambda);
-                lambdamax = max(lambdamax, lambda);
-            }
+            Tmin = min(Tmin, Tv[m]);
+            Tmax = max(Tmax, Tv[m]);
+            lambdamin = min(lambdamin, lambdav[m]);
+            lambdamax = max(lambdamax, lambdav[m]);
         }
     }
 

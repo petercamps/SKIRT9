@@ -97,6 +97,12 @@ public:
         with index \f$m\f$. The function may be called from multiple threads at the same time. */
     virtual double value(int m) const = 0;
 
+    /** This function is called on each process once per iteration, before the field values of the
+        iteration are requested through the value() function, so that a criterion can calculate
+        information shared by all cells, such as a normalization. The default implementation does
+        nothing. */
+    virtual void prepareValues() const;
+
     /** This function returns true if calculating the field value of a cell is expensive, so that
         the medium system calculates the values for all cells in parallel before accumulating
         them, and false otherwise. The default implementation returns false. */

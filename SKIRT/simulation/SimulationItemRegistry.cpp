@@ -85,6 +85,7 @@
 #include "DustEmissivityProbe.hpp"
 #include "DustGrainPopulationsProbe.hpp"
 #include "DustGrainSizeDistributionProbe.hpp"
+#include "DustLuminosityCriterion.hpp"
 #include "DustTemperatureGradientCriterion.hpp"
 #include "DynamicRefinementOptions.hpp"
 #include "EinastoGeometry.hpp"
@@ -586,6 +587,7 @@ SimulationItemRegistry::SimulationItemRegistry(const string& version, const stri
     ItemRegistry::add<MediumStateGradientCriterion>();
     ItemRegistry::add<MediumStateValueCriterion>();
     ItemRegistry::add<DustTemperatureGradientCriterion>();
+    ItemRegistry::add<DustLuminosityCriterion>();
     ItemRegistry::add<TrivialBoxCriterion>();
     ItemRegistry::add<RefinementCondition>();
     ItemRegistry::add<MediumStateCondition>();

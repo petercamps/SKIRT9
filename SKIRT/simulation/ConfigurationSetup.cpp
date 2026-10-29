@@ -16,6 +16,7 @@
 #include "ProbeSystem.hpp"
 #include "ReferenceWavelengthGrid.hpp"
 #include "StringUtils.hpp"
+#include "TreeSpatialGrid.hpp"
 #include "VoronoiMeshSpatialGrid.hpp"
 #include "WavelengthGridPool.hpp"
 #include <set>
@@ -221,10 +222,13 @@ void ConfigurationSetup::setupSelfBefore()
         _hasPrimaryDynamicState = _hasDynamicStateRecipes || _hasPrimaryDynamicStateMedia;
     }
 
-    // when iterating over primary emission, there must be primary dynamic state recipes or media
-    if (_hasPrimaryIterations && !_hasPrimaryDynamicState)
-        throw FATALERROR(
-            "At least one dynamic state recipe or medium must be configured when iterating over primary emission");
+    // when iterating over primary emission, there must be primary dynamic state recipes or media, or dynamic grid
+    // refinement, which can refine the grid on the primary radiation field during the primary iterations
+    auto treeGrid = dynamic_cast<TreeSpatialGrid*>(ms->grid());
+    bool hasDynamicRefinement = treeGrid && treeGrid->dynamicRefinementOptions();
+    if (_hasPrimaryIterations && !_hasPrimaryDynamicState && !hasDynamicRefinement)
+        throw FATALERROR("At least one dynamic state recipe or medium, or dynamic grid refinement, must be configured "
+                         "when iterating over primary emission");
 
     // check for secondary dynamic medium state
     if (_hasSecondaryEmission)
