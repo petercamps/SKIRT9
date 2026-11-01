@@ -907,6 +907,54 @@ PhotoIonizationSolver::CellResult PhotoIonizationSolver::solveIonizationAtFixedT
 
 //////////////////////////////////////////////////////////////////////
 
+void PhotoIonizationSolver::initializeOpacityGrid(const Array& lambdav)
+{
+    const size_t n = lambdav.size();
+    _opacitySigma.resize(n * VernerCrossSections::numIons);
+    for (size_t i = 0; i < n; i++)
+    {
+        // same photon energy expression as opacityAbs()
+        double E_eV = Constants::h() * Constants::c() / (lambdav[i] * Constants::Qelectron());
+        double* s = &_opacitySigma[i * VernerCrossSections::numIons];
+        s[0] = VernerCrossSections::sigmaHI(E_eV);
+        s[1] = VernerCrossSections::sigmaHeI(E_eV);
+        s[2] = VernerCrossSections::sigmaHeII(E_eV);
+        for (int ion = 3; ion < VernerCrossSections::numIons; ion++) s[ion] = VernerCrossSections::sigma(ion, E_eV);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
+
+double PhotoIonizationSolver::opacityAbsAtGridPoint(int i, const double ionFracs[totalStages], double nH, double yHe,
+                                                    const double metalAbundances[8]) const
+{
+    const double* sigma = &_opacitySigma[static_cast<size_t>(i) * VernerCrossSections::numIons];
+
+    double kappa = 0.;
+
+    // H
+    kappa += nH * ionFracs[0] * sigma[0];
+
+    // He
+    double nHe = nH * yHe;
+    kappa += nHe * ionFracs[2] * sigma[1];
+    kappa += nHe * ionFracs[3] * sigma[2];
+
+    // metals
+    for (int e = 2; e < nElements; e++)
+    {
+        double nElem = nH * metalAbundances[e - 2];
+        int off = offset[e];
+        int voff = vernerOffset[e];
+        int nxs = nIonsXS[e];
+        for (int s = 0; s < nxs; s++) kappa += nElem * ionFracs[off + s] * sigma[voff + s];
+    }
+
+    return kappa;  // [cm^-1]
+}
+
+//////////////////////////////////////////////////////////////////////
+
 double PhotoIonizationSolver::opacityAbs(double lambda, const double ionFracs[totalStages], double nH, double yHe,
                                          const double metalAbundances[8]) const
 {

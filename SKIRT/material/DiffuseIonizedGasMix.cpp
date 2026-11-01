@@ -372,6 +372,7 @@ void DiffuseIonizedGasMix::setupSelfBefore()
         rfLambdav = rfWavelengthGrid->lambdav();
         rfDlambdav = rfWavelengthGrid->dlambdav();
         _emissionSolver.initialize(rfLambdav, rfDlambdav);
+        _emissionSolver.initializeOpacityGrid(_opacityWavelengthGrid);
 
         // Assign each radiation field bin to the energy bin that holds its characteristic wavelength. The stored
         // field per bin is the mean intensity over the bin, so the width-weighted mean over the assigned bins is the
@@ -2177,8 +2178,8 @@ void DiffuseIonizedGasMix::precomputeOpacityArrays(MaterialState* state, const d
             if (lambda <= _lambdaLow && analyticalOpacityReady)
             {
                 // opacityAbs returns cm^-1; convert to m^-1
-                totalOpacity = _emissionSolver.opacityAbs(lambda, solverIonFracs, nH_cgs_opacity, He_abundance,
-                                                          analyticalAbundances)
+                totalOpacity = _emissionSolver.opacityAbsAtGridPoint(i, solverIonFracs, nH_cgs_opacity, He_abundance,
+                                                                     analyticalAbundances)
                                * 100.0;
             }
         }
