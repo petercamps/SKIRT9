@@ -173,6 +173,7 @@ private:
     vector<double> _dlambda;    ///< wavelength bin widths [m]
     vector<double> _energy;     ///< photon energy per bin [eV]
     vector<double> _energyErg;  ///< photon energy per bin [erg]
+    vector<double> _sigma;      ///< sigma(ion, _energy[i]) [cm^2], bin-major, fixed after initialize()
 
     //======== Effective stage counts (may be capped by maxIonizationEnergy) =======
 
