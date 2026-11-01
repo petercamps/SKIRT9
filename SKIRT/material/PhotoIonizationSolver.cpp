@@ -630,6 +630,38 @@ double PhotoIonizationSolver::solveIonizationBalance(double T, double ne, const 
                                                      const double metalAbundances[8], double ionFracs[],
                                                      const int effNS[]) const
 {
+    // At fixed T, all of these coefficients are independent of ne and the
+    // iterated ion fractions. Compute only the active stages, once per solve.
+    const double aHII = PhotoIonizationRates::alphaBHII(T);
+    const double bHI = PhotoIonizationRates::betaHI(T);
+    const double aHeII = PhotoIonizationRates::alphaBHeII(T) + PhotoIonizationRates::alphaDRHeII(T);
+    const double bHeI = PhotoIonizationRates::betaHeI(T);
+    const double eHeII = PhotoIonizationRates::xiHIHeII(T);
+    const double aHeIII = PhotoIonizationRates::alphaBHeIII(T);
+    const double bHeII = PhotoIonizationRates::betaHeII(T);
+    const double eHeIII = PhotoIonizationRates::xiHIHeIII(T);
+    struct Coefficients
+    {
+        double beta, alpha, xiHI, chiHII, xiHeI, chiHeII;
+    };
+    Coefficients coefficients[VernerCrossSections::numIons] = {};
+    for (int e = 2; e < nElements; e++)
+    {
+        int nxs = effNS[e] - 1;
+        int voff = vernerOffset[e];
+        for (int s = nxs - 1; s >= 0; s--)
+        {
+            int vi = voff + s;
+            auto& c = coefficients[vi];
+            c.beta = PhotoIonizationRates::beta(vi, T);
+            c.alpha = PhotoIonizationRates::alphaTotal(vi, T);
+            c.xiHI = PhotoIonizationRates::xiHI(vi + 1, T);
+            c.chiHII = PhotoIonizationRates::chiHII(vi, T);
+            c.xiHeI = PhotoIonizationRates::xiHeI(vi + 1, T);
+            c.chiHeII = PhotoIonizationRates::chiHeII(vi, T);
+        }
+    }
+
     // iterate until electron density converges; start fully ionized (xe=1)
     double xe = 1.;
     ne = nH;
@@ -638,8 +670,6 @@ double PhotoIonizationSolver::solveIonizationBalance(double T, double ne, const 
     for (int iter = 0; iter < maxNeIterations; iter++)
     {
         // -- Hydrogen --
-        double aHII = PhotoIonizationRates::alphaBHII(T);
-        double bHI = PhotoIonizationRates::betaHI(T);
         double gHI = gamma[0];
         double cHI = (bHI + gHI / ne) / aHII;
         double xHI = 1. / (1. + cHI);
@@ -651,14 +681,8 @@ double PhotoIonizationSolver::solveIonizationBalance(double T, double ne, const 
         double HIIe = xHII / xe;  // n_HII / n_e (per H density)
 
         // -- Helium --
-        double aHeII = PhotoIonizationRates::alphaBHeII(T) + PhotoIonizationRates::alphaDRHeII(T);
-        double bHeI = PhotoIonizationRates::betaHeI(T);
         double gHeI = gamma[1];
-        double eHeII = PhotoIonizationRates::xiHIHeII(T);
-        double aHeIII = PhotoIonizationRates::alphaBHeIII(T);
-        double bHeII = PhotoIonizationRates::betaHeII(T);
         double gHeII = gamma[2];
-        double eHeIII = PhotoIonizationRates::xiHIHeIII(T);
 
         double cHeI = safediv(bHeI + gHeI / ne, aHeII + eHeII * HIe);
         double cHeII = safediv(bHeII + gHeII / ne, aHeIII + eHeIII * HIe);
@@ -690,16 +714,16 @@ double PhotoIonizationSolver::solveIonizationBalance(double T, double ne, const 
             {
                 int vi = voff + s;  // Verner index for this ion stage
                 double photoRate = gamma[vi];
-                double betaRate = PhotoIonizationRates::beta(vi, T);
-                double alphaRate = PhotoIonizationRates::alphaTotal(vi, T);  // recomb into stage s
+                double betaRate = coefficients[vi].beta;
+                double alphaRate = coefficients[vi].alpha;  // recomb into stage s
 
                 // charge exchange with H
-                double xiHIRate = PhotoIonizationRates::xiHI(vi + 1, T);  // ion(s+1) + HI -> ion(s) + HII
-                double chiHIIRate = PhotoIonizationRates::chiHII(vi, T);  // ion(s) + HII -> ion(s+1) + HI
+                double xiHIRate = coefficients[vi].xiHI;      // ion(s+1) + HI -> ion(s) + HII
+                double chiHIIRate = coefficients[vi].chiHII;  // ion(s) + HII -> ion(s+1) + HI
 
                 // charge exchange with He
-                double xiHeIRate = PhotoIonizationRates::xiHeI(vi + 1, T);  // ion(s+1) + HeI -> ion(s) + HeII
-                double chiHeIIRate = PhotoIonizationRates::chiHeII(vi, T);  // ion(s) + HeII -> ion(s+1) + HeI
+                double xiHeIRate = coefficients[vi].xiHeI;      // ion(s+1) + HeI -> ion(s) + HeII
+                double chiHeIIRate = coefficients[vi].chiHeII;  // ion(s) + HeII -> ion(s+1) + HeI
 
                 c[s] = safediv(betaRate + chiHIIRate * HIIe + chiHeIIRate * HeIIe + photoRate / ne,
                                alphaRate + xiHIRate * HIe + xiHeIRate * HeIe);
