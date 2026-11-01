@@ -1386,17 +1386,20 @@ void DiffuseIonizedGasMix::updateTemperatureFromStab(MaterialState* state) const
     bracketDeltaAxis(dC, _dCAxisValues, _dCAxisDeltaIds, dClo, dChi, wC);
 
     auto stdTempSeparable = [&]() -> double {
-        const double logT_dN_lo =
-            _standardTemperatureTable(Z, n_H, logU, logR2, logR3, logR4, logR5, static_cast<double>(dNlo));
-        const double logT_dN_hi =
-            _standardTemperatureTable(Z, n_H, logU, logR2, logR3, logR4, logR5, static_cast<double>(dNhi));
-        const double logT_dC_lo =
-            _standardTemperatureTable(Z, n_H, logU, logR2, logR3, logR4, logR5, static_cast<double>(dClo));
-        const double logT_dC_hi =
-            _standardTemperatureTable(Z, n_H, logU, logR2, logR3, logR4, logR5, static_cast<double>(dChi));
+        // each distinct delta_id slice is queried once and zero-weight terms are skipped
         const double logT_ctr = _standardTemperatureTable(Z, n_H, logU, logR2, logR3, logR4, logR5, centreDeltaId);
-        const double logT_dN = (1.0 - wN) * logT_dN_lo + wN * logT_dN_hi;
-        const double logT_dC = (1.0 - wC) * logT_dC_lo + wC * logT_dC_hi;
+        auto logTAt = [&](int id) {
+            const double d = static_cast<double>(id);
+            return d == centreDeltaId ? logT_ctr
+                                      : _standardTemperatureTable(Z, n_H, logU, logR2, logR3, logR4, logR5, d);
+        };
+        auto mix = [&](int lo, int hi, double w) {
+            const double a = logTAt(lo);
+            if (w == 0.) return a;
+            return (1.0 - w) * a + w * (hi == lo ? a : logTAt(hi));
+        };
+        const double logT_dN = mix(dNlo, dNhi, wN);
+        const double logT_dC = mix(dClo, dChi, wC);
         return logT_dN + logT_dC - logT_ctr;
     };
 
@@ -2124,22 +2127,24 @@ void DiffuseIonizedGasMix::precomputeOpacityArrays(MaterialState* state, const d
                 // cross. Linear blend in log-kappa to keep the (smooth in log) opacity behaviour:
                 //   log10(kappa)(dN, dC) = log10(kappa_dN(dN)) + log10(kappa_dC(dC)) - log10(kappa_centre).
                 auto stdOpacitySeparable = [&]() -> double {
-                    const double k_dN_lo =
-                        _standardOpacityTable(lambda, logU, logR2, logR3, logR4, logR5, Z, n_H, dNloD);
-                    const double k_dN_hi =
-                        _standardOpacityTable(lambda, logU, logR2, logR3, logR4, logR5, Z, n_H, dNhiD);
-                    const double k_dC_lo =
-                        _standardOpacityTable(lambda, logU, logR2, logR3, logR4, logR5, Z, n_H, dCloD);
-                    const double k_dC_hi =
-                        _standardOpacityTable(lambda, logU, logR2, logR3, logR4, logR5, Z, n_H, dChiD);
-                    const double k_ctr =
-                        _standardOpacityTable(lambda, logU, logR2, logR3, logR4, logR5, Z, n_H, centreDeltaId);
+                    // each distinct delta_id slice is queried once and zero-weight terms are skipped
                     constexpr double eps = 1e-99;
-                    const double logK_dN =
-                        (1.0 - wN) * std::log10(std::max(k_dN_lo, eps)) + wN * std::log10(std::max(k_dN_hi, eps));
-                    const double logK_dC =
-                        (1.0 - wC) * std::log10(std::max(k_dC_lo, eps)) + wC * std::log10(std::max(k_dC_hi, eps));
-                    const double logK_ctr = std::log10(std::max(k_ctr, eps));
+                    const double logK_ctr = std::log10(std::max(
+                        _standardOpacityTable(lambda, logU, logR2, logR3, logR4, logR5, Z, n_H, centreDeltaId), eps));
+                    auto logK = [&](double id) {
+                        return id == centreDeltaId
+                                   ? logK_ctr
+                                   : std::log10(std::max(
+                                         _standardOpacityTable(lambda, logU, logR2, logR3, logR4, logR5, Z, n_H, id),
+                                         eps));
+                    };
+                    auto mix = [&](double lo, double hi, double w) {
+                        const double logLo = logK(lo);
+                        if (w == 0.) return logLo;
+                        return (1.0 - w) * logLo + w * (hi == lo ? logLo : logK(hi));
+                    };
+                    const double logK_dN = mix(dNloD, dNhiD, wN);
+                    const double logK_dC = mix(dCloD, dChiD, wC);
                     return std::pow(10.0, logK_dN + logK_dC - logK_ctr);
                 };
 
