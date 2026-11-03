@@ -27,6 +27,10 @@
     recipes, which may update the state of any component, the criterion also takes part in the
     primary and merged loops.
 
+    The criterion has no estimate of the noise of the variable, so that it ignores the \em
+    significance property (see the GradientCriterion class): setup logs a warning if the property
+    is nonzero, and the medium system does not track the noise for this criterion.
+
     The number density for the column density limit is the one stored in the medium state for the
     medium component that provides the variable. Its meaning depends on the material mix. For the
     DiffuseIonizedGasMix, it counts hydrogen plus helium nuclei, so that a limit intended as a
@@ -44,7 +48,8 @@ class MediumStateGradientCriterion : public GradientCriterion
     //============= Construction - Setup - Destruction =============
 
 protected:
-    /** This function selects the medium state variable. */
+    /** This function selects the medium state variable, and logs a warning if the \em
+        significance property is nonzero. */
     void setupSelfAfter() override;
 
     //======================== Other Functions =======================
@@ -60,6 +65,10 @@ public:
     /** This function returns the number density of the medium component that provides the
         variable in the spatial cell with index \f$m\f$. */
     double numberDensity(int m) const override;
+
+    /** This function returns false, because the criterion has no estimate of the noise of the
+        variable (see the class header). */
+    bool usesNoise() const override;
 
     /** This function returns a description of the variable. */
     string fieldDescription() const override;
