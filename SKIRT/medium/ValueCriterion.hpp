@@ -58,7 +58,8 @@ public:
 
     /** This function returns one if the field value of the spatial cell with index \f$m\f$ lies in
         the range of the criterion, and zero otherwise. */
-    double excess(int m, const CellWindow& window, const vector<int>& neighbors) const override;
+    double excess(int m, const CellWindow& window, const CellWindow* noiseWindow,
+                  const vector<int>& neighbors) const override;
 };
 
 ////////////////////////////////////////////////////////////////////

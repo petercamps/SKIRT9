@@ -100,7 +100,8 @@ public:
     /** This function returns the ratio of the window-averaged field value of the spatial cell with
         index \f$m\f$ to the \em maxFraction threshold if the ratio exceeds one, and zero
         otherwise. */
-    double excess(int m, const CellWindow& window, const vector<int>& neighbors) const override;
+    double excess(int m, const CellWindow& window, const CellWindow* noiseWindow,
+                  const vector<int>& neighbors) const override;
 
     //======================== Data Members ========================
 

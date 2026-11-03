@@ -809,6 +809,24 @@ public:
         area, per unit of wavelength, and per unit of solid angle. */
     Array meanIntensity(int m) const;
 
+    /** This function returns an estimate of the relative noise of the radiation field in the
+        spatial cell with index \f$m\f$, i.e. the relative standard error of the radiation field
+        summed over all wavelength bins, as accumulated in the current iteration, or zero if the
+        simulation does not track this noise. The noise is tracked only if a dynamic grid refinement
+        criterion or a dynamic medium state recipe asks for it (see the
+        RefinementCriterion::usesNoise() and DynamicStateRecipe::usesNoise() functions).
+
+        The photon packets of an emission segment are divided into \f$B=8\f$ interleaved batches
+        by their history index, and the radiation field of each cell, summed over all wavelength
+        bins, is accumulated separately for each batch, for the primary and for the secondary
+        radiation field. The batch sums \f$S_b\f$ of the primary and stable secondary radiation
+        field are independent estimates of the cell's radiation field, because all contributions of
+        a photon packet, including those of the paths after each scattering event, belong to a
+        single batch. The variance of their sum \f$S\f$ is estimated as
+        \f$B/(B-1)\,\sum_b (S_b-S/B)^2\f$, which holds 7 degrees of freedom. If a batch received no
+        contributions, the estimate is unreliable, and the function returns infinity. */
+    double radiationFieldNoise(int m) const;
+
     //=============== Indicative temperature ===================
 
 public:
@@ -855,8 +873,12 @@ public:
         field \em is being tracked, this function assumes that the radiation field information has
         been accumulated and the communicateRadiationField() function has been called before
         invoking this function; see the meanIntensity() function. If this is not the case, the
-        behavior is undefined. */
-    double indicativeTemperature(int m, MaterialMix::MaterialType type) const;
+        behavior is undefined.
+
+        If a \em factor other than one is specified, the radiation field of the cell is multiplied
+        by this factor before calculating the temperatures, which allows estimating how the
+        temperature responds to a change of the radiation field. */
+    double indicativeTemperature(int m, MaterialMix::MaterialType type, double factor = 1.) const;
 
     /** This function returns an indicative dust temperature for the spatial cell with index
         \f$m\f$, or zero if the simulation does not track the radiation field. Also see the
@@ -873,8 +895,12 @@ public:
         grains (depending on the embedding radiation field), and even when ignoring this problem,
         averaging temperatures over the dust components and over the various grain material types
         and grain sizes within a particular dust mix has no clear-cut physical justification nor
-        interpretation. */
-    double indicativeDustTemperature(int m) const;
+        interpretation.
+
+        If a \em factor other than one is specified, the radiation field of the cell is multiplied
+        by this factor before calculating the temperatures (see the indicativeTemperature()
+        function). */
+    double indicativeDustTemperature(int m, double factor = 1.) const;
 
     /** This function returns an indicative electron temperature in the spatial cell with index
         \f$m\f$. This temperature is obtained by averaging the temperature over the electron medium
@@ -1073,6 +1099,15 @@ private:
     double _labsOutside2c{0.};     // part of _labs2c absorbed outside the radiation field wavelength grid
     double _fractionOutside1{0.};  // fraction of _labs1 absorbed outside the grid, after communication
     double _fractionOutside2{0.};  // fraction of _labs2 absorbed outside the grid, after communication
+
+    // relevant if a dynamic refinement criterion or a dynamic medium state recipe uses the noise of the radiation field
+    // each array holds, for each cell, the radiation field summed over all wavelength bins for each batch of photon
+    // packets (the history index of a packet modulo the number of batches), stored with the batches of a cell
+    // consecutively; the life cycle of each array follows that of the corresponding table
+    vector<double> _rfb1;  // batches of the radiation field from primary sources
+    vector<double>
+        _rfb2;  // batches of the radiation field from secondary sources (copied from _rfb2c when appropriate)
+    vector<double> _rfb2c;  // batches of the radiation field from secondary sources, currently being accumulated
 
     // a helper class calculating the dust absorption opacity along a path (defined in the source file)
     class DustAbsorptionOpacity;

@@ -66,6 +66,14 @@
     iterations. In each of these cases, a warning reports the number of candidates that were left
     unsplit.
 
+    A decision also does not lead to a refinement round if the number of candidates is below the
+    fraction \em minCandidateFraction of the number of cells, which is zero by default. Monte Carlo
+    noise lets a few cells cross the threshold of a gradient criterion in nearly every decision,
+    and because a smaller cell is crossed by fewer photon packets, its children are noisier still
+    and more likely to be flagged in turn. Without such a lower limit, the refinement may therefore
+    never settle, and may even run away. The candidates left unsplit for this reason are reported
+    in an informational message rather than a warning, and the refinement counts as settled.
+
     A refinement round subdivides each selected candidate by \em levelsPerRound tree levels, or by
     fewer levels if the level limits of the criteria that flag the candidate allow fewer (see the
     RefinementCriterion class). With the default of one level, an octree splits a candidate into 8
@@ -138,6 +146,14 @@ class DynamicRefinementOptions : public SimulationItem
         ATTRIBUTE_MIN_VALUE(maxRounds, "0")
         ATTRIBUTE_MAX_VALUE(maxRounds, "1000")
         ATTRIBUTE_DEFAULT_VALUE(maxRounds, "0")
+
+        PROPERTY_DOUBLE(minCandidateFraction,
+                        "the fraction of the number of cells below which the candidates do not lead to a refinement "
+                        "round")
+        ATTRIBUTE_MIN_VALUE(minCandidateFraction, "[0")
+        ATTRIBUTE_MAX_VALUE(minCandidateFraction, "1]")
+        ATTRIBUTE_DEFAULT_VALUE(minCandidateFraction, "0")
+        ATTRIBUTE_DISPLAYED_IF(minCandidateFraction, "Level3")
 
         PROPERTY_INT(levelsPerRound, "the number of tree levels by which a refinement round subdivides each candidate")
         ATTRIBUTE_MIN_VALUE(levelsPerRound, "1")

@@ -316,6 +316,10 @@ public:
     /** Returns the geometric ramp-up factor for primary iteration photon packets. */
     double primaryIterationPacketsRamp() const { return _primaryIterationPacketsRamp; }
 
+    /** Returns the number of primary iteration photon packets per spatial cell, or zero if the
+        number of packets does not scale with the number of cells. */
+    double primaryIterationPacketsPerCell() const { return _primaryIterationPacketsPerCell; }
+
     /** Returns the number of photon packets launched per regular secondary emission simulation
         segment. */
     double numSecondaryPackets() const { return _numSecondaryPackets; }
@@ -570,6 +574,7 @@ protected:
     double _numPrimaryIterationPackets{0.};
     double _primaryIterationInitialPacketsFraction{1.};
     double _primaryIterationPacketsRamp{1.};
+    double _primaryIterationPacketsPerCell{0.};
     double _numSecondaryPackets{0.};
     double _numSecondaryIterationPackets{0.};
     double _maxFractionOfPrimary{0.01};

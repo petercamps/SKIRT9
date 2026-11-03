@@ -27,7 +27,8 @@ bool ValueCriterion::needsNeighbors() const
 
 ////////////////////////////////////////////////////////////////////
 
-double ValueCriterion::excess(int m, const CellWindow& window, const vector<int>& /*neighbors*/) const
+double ValueCriterion::excess(int m, const CellWindow& window, const CellWindow* /*noiseWindow*/,
+                              const vector<int>& /*neighbors*/) const
 {
     double value = window.mean(m);
     return value >= minValue() && value <= maxValue() ? 1. : 0.;

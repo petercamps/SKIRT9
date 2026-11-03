@@ -382,6 +382,7 @@ void MonteCarloSimulation::runPrimaryEmissionIterations()
     double minNpp = max(1., _config->numPrimaryIterationPackets() * _config->primaryIterationInitialPacketsFraction());
     double maxNpp = max(1., _config->numPrimaryIterationPackets());
     double ramp = _config->primaryIterationPacketsRamp();
+    double perCell = _config->primaryIterationPacketsPerCell();
     int minIters = _config->minPrimaryIterations();
     int maxIters = _config->maxPrimaryIterations();
 
@@ -396,8 +397,10 @@ void MonteCarloSimulation::runPrimaryEmissionIterations()
         ++iter;
         _history->beginIteration();
 
-        // compute ramped packet count, and record it in the iteration history
-        size_t Npp = min(maxNpp, minNpp * std::pow(ramp, iter - 1));
+        // compute the ramped packet count, or the count scaled with the number of cells, and record it in the
+        // iteration history
+        size_t Npp = perCell > 0. ? min(maxNpp, max(minNpp, perCell * mediumSystem()->numCells()))
+                                  : min(maxNpp, minNpp * std::pow(ramp, iter - 1));
         _history
             ->scalarSeries(this, NumPrimaryPackets, 1, IterationHistory::Lifetime::Loop,
                            "number of primary photon packets")

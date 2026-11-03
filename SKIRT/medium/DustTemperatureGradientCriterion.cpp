@@ -45,6 +45,17 @@ bool DustTemperatureGradientCriterion::hasCostlyValue() const
 
 ////////////////////////////////////////////////////////////////////
 
+double DustTemperatureGradientCriterion::noise(int m) const
+{
+    // the change of the temperature when the radiation field changes by its relative noise; a cell without any
+    // contributions to the radiation field has infinite noise, and a noise that is not tracked is zero
+    double sigma = _ms->radiationFieldNoise(m);
+    if (!(sigma > 0.) || std::isinf(sigma)) return sigma;
+    return abs(_ms->indicativeDustTemperature(m, 1. + sigma) - _ms->indicativeDustTemperature(m));
+}
+
+////////////////////////////////////////////////////////////////////
+
 double DustTemperatureGradientCriterion::numberDensity(int m) const
 {
     double n = 0.;

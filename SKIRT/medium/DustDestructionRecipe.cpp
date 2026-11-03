@@ -14,8 +14,9 @@
 
 void DustDestructionRecipe::beginUpdate(int /*numCells*/)
 {
-    // store radiation field wavelength grid
+    // store radiation field wavelength grid and the medium system
     _dlambdav = find<Configuration>()->radiationFieldWLG()->dlambdav();
+    _ms = find<MediumSystem>();
 
     // store a pointer for each medium component: either the corresponding fragmented dust mix or a null pointer
     bool hasValidFragDecorator = false;
@@ -54,6 +55,9 @@ UpdateStatus DustDestructionRecipe::update(MaterialState* state, const Array& Jv
     auto fd = _fdv[state->mediumIndex()];
     if (fd && state->numberDensity() > 0.)
     {
+        // get the relative noise of the radiation field in this cell, if requested
+        double sigma = significance() > 0. ? _ms->radiationFieldNoise(state->cellIndex()) : 0.;
+
         // loop over all fragments
         int numFrags = fd->numPopulations();
         for (int f = 0; f != numFrags; ++f)
@@ -77,8 +81,10 @@ UpdateStatus DustDestructionRecipe::update(MaterialState* state, const Array& Jv
                 {
                     state->setCustom(numFrags + f, fraction);
 
-                    // if the difference is smaller than the configured tolerance, consider it to be converged
-                    if (difference > densityFractionTolerance())
+                    // if the difference is smaller than the configured tolerance, widened by the change that the
+                    // noise of the radiation field could cause, consider it to be converged
+                    double allowance = sigma > 0. ? noiseAllowance(fd, f, Jv, sigma) : 0.;
+                    if (difference > densityFractionTolerance() + allowance)
                         status.updateNotConverged();
                     else
                         status.updateConverged();
@@ -87,6 +93,32 @@ UpdateStatus DustDestructionRecipe::update(MaterialState* state, const Array& Jv
         }
     }
     return status;
+}
+
+////////////////////////////////////////////////////////////////////
+
+bool DustDestructionRecipe::usesNoise() const
+{
+    return significance() > 0.;
+}
+
+////////////////////////////////////////////////////////////////////
+
+double DustDestructionRecipe::noiseAllowance(const FragmentDustMixDecorator* fd, int f, const Array& Jv,
+                                             double sigma) const
+{
+    // a cell without contributions to one of the noise batches has infinite noise
+    if (std::isinf(sigma)) return 1.;
+
+    // calculate the fraction for the radiation field scaled down and up by the significance times the noise
+    bool graphite = fd->populationIsGraphite(f);
+    double a = fd->populationGrainRadius(f);
+    double k = significance() * sigma;
+    Array Jlo = Jv * max(0., 1. - k);
+    Array Jhi = Jv * (1. + k);
+    double flo = densityFraction(graphite, a, Jlo, fd->populationTemperature(f, Jlo));
+    double fhi = densityFraction(graphite, a, Jhi, fd->populationTemperature(f, Jhi));
+    return abs(fhi - flo);
 }
 
 ////////////////////////////////////////////////////////////////////

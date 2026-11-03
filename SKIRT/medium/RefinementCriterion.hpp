@@ -108,6 +108,20 @@ public:
         them, and false otherwise. The default implementation returns false. */
     virtual bool hasCostlyValue() const;
 
+    /** This function returns true if the test of the criterion uses an estimate of the noise of
+        its field, in which case the medium system tracks the noise of the radiation field (see the
+        MediumSystem::radiationFieldNoise() function) and accumulates the squared noise of the field
+        over the averaging window, and false otherwise. The default implementation returns false.
+        */
+    virtual bool usesNoise() const;
+
+    /** This function returns an estimate of the standard error of the field value of the spatial
+        cell with index \f$m\f$ calculated in the current iteration, as returned by the value()
+        function, or zero if the noise is unknown. It is called only if usesNoise() returns true,
+        after the value() function has been called for the iteration. The function may be called
+        from multiple threads at the same time. The default implementation returns zero. */
+    virtual double noise(int m) const;
+
     /** This function returns the number density used for the column density limit of the
         criterion in the spatial cell with index \f$m\f$. */
     virtual double numberDensity(int m) const = 0;
@@ -123,11 +137,14 @@ public:
     /** This function returns the excess with which the test of the criterion flags the spatial cell
         with index \f$m\f$, or zero if it does not flag the cell. The test is applied to the field
         values averaged over the window, which the function obtains from the specified cell window
-        for any cell index. If needsNeighbors() returns true, the vector \em neighbors holds the
-        indices of the face neighbors of the cell; otherwise it is empty. The function does not
+        for any cell index. If usesNoise() returns true, \em noiseWindow points to a cell window
+        holding the squared noise of the field accumulated over the same iterations, and otherwise
+        it is the null pointer. If needsNeighbors() returns true, the vector \em neighbors holds
+        the indices of the face neighbors of the cell; otherwise it is empty. The function does not
         consider the conditions or the limits of the criterion. It may be called from multiple
         threads at the same time. */
-    virtual double excess(int m, const CellWindow& window, const vector<int>& neighbors) const = 0;
+    virtual double excess(int m, const CellWindow& window, const CellWindow* noiseWindow,
+                          const vector<int>& neighbors) const = 0;
 };
 
 ////////////////////////////////////////////////////////////////////

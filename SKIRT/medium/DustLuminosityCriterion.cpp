@@ -73,7 +73,8 @@ bool DustLuminosityCriterion::needsNeighbors() const
 
 ////////////////////////////////////////////////////////////////////
 
-double DustLuminosityCriterion::excess(int m, const CellWindow& window, const vector<int>& /*neighbors*/) const
+double DustLuminosityCriterion::excess(int m, const CellWindow& window, const CellWindow* /*noiseWindow*/,
+                                       const vector<int>& /*neighbors*/) const
 {
     double ratio = window.mean(m) / maxFraction();
     return ratio > 1. ? ratio : 0.;

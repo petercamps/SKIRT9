@@ -33,6 +33,11 @@ class MediumSystem;
     cells along that boundary may keep asking for subdivision until a limit or the cell cap stops
     them.
 
+    The noise of the field, used if the \em significance property is nonzero (see the
+    GradientCriterion class), is estimated as the change of the indicative dust temperature when
+    the radiation field of the cell is multiplied by one plus its relative noise (see the
+    MediumSystem::radiationFieldNoise() function).
+
     The number density for the column density limit is the sum of the number densities of the dust
     medium components. */
 class DustTemperatureGradientCriterion : public GradientCriterion
@@ -61,6 +66,10 @@ public:
     /** This function returns true, because calculating the indicative dust temperature is
         expensive. */
     bool hasCostlyValue() const override;
+
+    /** This function returns an estimate of the noise of the indicative dust temperature in the
+        spatial cell with index \f$m\f$, as described in the class header. */
+    double noise(int m) const override;
 
     /** This function returns the sum of the number densities of the dust medium components in the
         spatial cell with index \f$m\f$. */

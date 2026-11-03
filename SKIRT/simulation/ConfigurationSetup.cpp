@@ -199,6 +199,7 @@ void ConfigurationSetup::setupSelfBefore()
                     ms->iterationOptions()->primaryIterationInitialPacketsFraction();
                 if (_primaryIterationInitialPacketsFraction < 1.)
                     _primaryIterationPacketsRamp = ms->iterationOptions()->primaryIterationPacketsRamp();
+                _primaryIterationPacketsPerCell = ms->iterationOptions()->primaryIterationPacketsPerCell();
             }
         }
         else

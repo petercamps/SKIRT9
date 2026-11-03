@@ -28,6 +28,7 @@
 #include "System.hpp"
 #include "Table.hpp"
 #include "TreeSpatialGrid.hpp"
+#include <array>
 #include <unordered_set>
 
 ////////////////////////////////////////////////////////////////////
@@ -36,6 +37,9 @@ namespace
 {
     // maximum number of cell densities calculated between two invocations of infoIfElapsed()
     const size_t logProgressChunkSize = 10000;
+
+    // number of interleaved batches of photon packets for estimating the noise of the radiation field in each cell
+    constexpr int numNoiseBatches = 8;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1390,12 +1394,14 @@ void MediumSystem::clearRadiationField(bool primary)
     {
         _rf1.setToZero();
         std::fill(_labs1.begin(), _labs1.end(), 0.);
+        std::fill(_rfb1.begin(), _rfb1.end(), 0.);
         _labsOutside1 = 0.;
     }
     else
     {
         _rf2c.setToZero();
         std::fill(_labs2c.begin(), _labs2c.end(), 0.);
+        std::fill(_rfb2c.begin(), _rfb2c.end(), 0.);
         _labsOutside2c = 0.;
     }
 }
@@ -1460,6 +1466,9 @@ void MediumSystem::storeRadiationField(bool primary, const PhotonPacket* pp)
     // the targets for the radiation field and the dust-absorbed luminosity
     CellTable& rf = primary ? _rf1 : _rf2c;
     vector<double>& labs = primary ? _labs1 : _labs2c;
+    vector<double>& rfb = primary ? _rfb1 : _rfb2c;
+    bool noise = !rfb.empty();
+    size_t batch = noise ? pp->historyIndex() % numNoiseBatches : 0;
     double LabsOutside = 0.;  // the part of the absorbed luminosity along the path outside the wavelength grid
 
     // the rebalance tallies for this path, which are active only for dust emission during a rebalanced iteration
@@ -1489,7 +1498,11 @@ void MediumSystem::storeRadiationField(bool primary, const PhotonPacket* pp)
                 // use this flavor of the lnmean function to avoid recalculating the logarithm of the extinction
                 double extMean = SpecialFunctions::lnmean(extEnd, extBeg, lnExtEnd, lnExtBeg);
                 double Lds = luminosity * extMean * segment.ds();
-                if (ell >= 0) LockFree::add(rf(m, ell), Lds);
+                if (ell >= 0)
+                {
+                    LockFree::add(rf(m, ell), Lds);
+                    if (noise) LockFree::add(rfb[static_cast<size_t>(m) * numNoiseBatches + batch], Lds);
+                }
                 if (dust.active())
                 {
                     double Labs = dust.opacity(m) * Lds;
@@ -1523,7 +1536,11 @@ void MediumSystem::storeRadiationField(bool primary, const PhotonPacket* pp)
                     // use this flavor of the lnmean function to avoid recalculating the logarithm of the extinction
                     double extMean = SpecialFunctions::lnmean(extEnd, extBeg, lnExtEnd, lnExtBeg);
                     double Lds = pp->perceivedLuminosity(lambda) * extMean * segment.ds();
-                    if (ell >= 0) LockFree::add(rf(m, ell), Lds);
+                    if (ell >= 0)
+                    {
+                        LockFree::add(rf(m, ell), Lds);
+                        if (noise) LockFree::add(rfb[static_cast<size_t>(m) * numNoiseBatches + batch], Lds);
+                    }
                     if (dust.active())
                     {
                         double Labs = dust.opacity(m) * Lds;
@@ -1565,6 +1582,7 @@ void MediumSystem::communicateRadiationField(bool primary)
     if (primary)
     {
         ProcessManager::sumToAll(_rf1.data());
+        if (_rfb1.size()) ProcessManager::sumToAll(_rfb1);
         if (_labs1.size())
         {
             ProcessManager::sumToAll(_labs1);
@@ -1575,6 +1593,11 @@ void MediumSystem::communicateRadiationField(bool primary)
     {
         ProcessManager::sumToAll(_rf2c.data());
         _rf2 = _rf2c;
+        if (_rfb2c.size())
+        {
+            ProcessManager::sumToAll(_rfb2c);
+            _rfb2 = _rfb2c;
+        }
         if (_labs2c.size())
         {
             ProcessManager::sumToAll(_labs2c);
@@ -1662,6 +1685,31 @@ Array MediumSystem::meanIntensity(int m) const
 
 ////////////////////////////////////////////////////////////////////
 
+double MediumSystem::radiationFieldNoise(int m) const
+{
+    if (_rfb1.empty()) return 0.;
+
+    // the sum of the primary and stable secondary radiation field for each batch, which are independent estimates of
+    // the radiation field of the cell; if a batch received no contributions, the estimate is unreliable
+    size_t first = static_cast<size_t>(m) * numNoiseBatches;
+    std::array<double, numNoiseBatches> batches;
+    double sum = 0.;
+    for (int b = 0; b != numNoiseBatches; ++b)
+    {
+        batches[b] = _rfb1[first + b] + (_rfb2.size() ? _rfb2[first + b] : 0.);
+        if (!(batches[b] > 0.)) return std::numeric_limits<double>::infinity();
+        sum += batches[b];
+    }
+
+    // the estimated variance of the sum of the batches
+    double mean = sum / numNoiseBatches;
+    double sumsq = 0.;
+    for (int b = 0; b != numNoiseBatches; ++b) sumsq += (batches[b] - mean) * (batches[b] - mean);
+    return sqrt(sumsq * numNoiseBatches / (numNoiseBatches - 1)) / sum;
+}
+
+////////////////////////////////////////////////////////////////////
+
 double MediumSystem::indicativeTemperature(int m, int h) const
 {
     // get the radiation field, if available
@@ -1679,11 +1727,12 @@ double MediumSystem::indicativeTemperature(int m, int h) const
 
 ////////////////////////////////////////////////////////////////////
 
-double MediumSystem::indicativeTemperature(int m, MaterialMix::MaterialType type) const
+double MediumSystem::indicativeTemperature(int m, MaterialMix::MaterialType type, double factor) const
 {
     // get the radiation field, if available
     Array Jv;
     if (_config->hasRadiationField()) Jv = meanIntensity(m);
+    if (factor != 1.) Jv *= factor;
 
     // obtain the temperature and weight for each component of the requested type
     double sumRhoT = 0.;
@@ -1709,9 +1758,9 @@ double MediumSystem::indicativeTemperature(int m, MaterialMix::MaterialType type
 
 ////////////////////////////////////////////////////////////////////
 
-double MediumSystem::indicativeDustTemperature(int m) const
+double MediumSystem::indicativeDustTemperature(int m, double factor) const
 {
-    return indicativeTemperature(m, MaterialMix::MaterialType::Dust);
+    return indicativeTemperature(m, MaterialMix::MaterialType::Dust, factor);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1991,7 +2040,8 @@ namespace
         CriterionCandidates,
         BlockedByLevel,
         BlockedByColumnDensity,
-        Field
+        Field,
+        FieldNoise
     };
 
     // the bit flags recording the outcome of the evaluation of a cell for a refinement criterion
@@ -2028,8 +2078,29 @@ void MediumSystem::setupDynamicRefinement()
 {
     // dynamic refinement requires a tree grid with refinement options in a simulation that iterates
     _tree = dynamic_cast<TreeSpatialGrid*>(_grid);
-    if (!_tree || !_tree->dynamicRefinementOptions()
-        || (!_config->hasPrimaryIterations() && !_config->hasSecondaryIterations()))
+    bool refine = _tree && _tree->dynamicRefinementOptions()
+                  && (_config->hasPrimaryIterations() || _config->hasSecondaryIterations());
+
+    // allocate the arrays for the noise of the radiation field, if a refinement criterion or a dynamic medium state
+    // recipe uses it, following the tables
+    if (_rf1.size())
+    {
+        bool usesNoise = false;
+        if (refine)
+            for (auto criterion : _tree->dynamicRefinementOptions()->criteria()) usesNoise |= criterion->usesNoise();
+        if (dynamicStateOptions())
+            for (auto recipe : dynamicStateOptions()->recipes()) usesNoise |= recipe->usesNoise();
+        if (usesNoise)
+        {
+            _rfb1.resize(static_cast<size_t>(_numCells) * numNoiseBatches);
+            if (_rf2.size())
+            {
+                _rfb2.resize(static_cast<size_t>(_numCells) * numNoiseBatches);
+                _rfb2c.resize(static_cast<size_t>(_numCells) * numNoiseBatches);
+            }
+        }
+    }
+    if (!refine)
     {
         _tree = nullptr;
         return;
@@ -2081,12 +2152,15 @@ void MediumSystem::setupDynamicRefinement()
         if (table->size()) table->reserveCells(maxCells);
     for (auto labs : {&_labs1, &_labs2, &_labs2c})
         if (labs->size()) labs->reserve(maxCells);
+    for (auto rfb : {&_rfb1, &_rfb2, &_rfb2c})
+        if (rfb->size()) rfb->reserve(static_cast<size_t>(maxCells) * numNoiseBatches);
     if (_mixPerCell) _mixv.reserve(static_cast<size_t>(maxCells) * _numMedia);
     _history->reserveCells(maxCells);
 
     // log the reserved memory, including the cell windows of the refinement criteria and conditions declared later
     size_t numFields = 0;
-    for (auto criterion : _refinement->criteria()) numFields += 1 + criterion->conditions().size();
+    for (auto criterion : _refinement->criteria())
+        numFields += 1 + (criterion->usesNoise() ? 1 : 0) + criterion->conditions().size();
     double perCell = bytesPerCell() + numFields * sizeof(double);
     log->info("Reserved memory for the per-cell data of up to " + std::to_string(maxCells)
               + " cells: " + StringUtils::toMemSizeString(perCell * maxCells) + " per process ("
@@ -2119,6 +2193,8 @@ double MediumSystem::bytesPerCell() const
     bytes += _rf1.bytesPerCell() + _rf2.bytesPerCell() + _rf2c.bytesPerCell();
     for (auto labs : {&_labs1, &_labs2, &_labs2c})
         if (labs->size()) bytes += sizeof(double);
+    for (auto rfb : {&_rfb1, &_rfb2, &_rfb2c})
+        if (rfb->size()) bytes += numNoiseBatches * sizeof(double);
     if (_mixPerCell) bytes += _numMedia * sizeof(const MaterialMix*);
     bytes += _history->allCellWindows().size() * sizeof(double);
     if (_tree) bytes += _tree->bytesPerAddedCell();
@@ -2139,13 +2215,19 @@ void MediumSystem::growCellData(const vector<int>& subdividedCells, const vector
     for (auto labs : {&_labs1, &_labs2, &_labs2c})
         if (labs->size())
             for (int parent : parentCells) labs->push_back((*labs)[parent]);
+    for (auto rfb : {&_rfb1, &_rfb2, &_rfb2c})
+        if (rfb->size())
+            for (int parent : parentCells)
+                for (int b = 0; b != numNoiseBatches; ++b)
+                    rfb->push_back((*rfb)[static_cast<size_t>(parent) * numNoiseBatches + b]);
     if (_mixPerCell)
         for (int parent : parentCells)
             for (int h = 0; h != _numMedia; ++h) _mixv.push_back(_mixv[parent * _numMedia + h]);
     _history->appendCells(parentCells);
 
     // set the volume of each child, which still holds the volume of its parent, and divide the radiation field, the
-    // dust-absorbed luminosities, and the extensive state variables in proportion to the volume of the children
+    // dust-absorbed luminosities, the radiation field batches, and the extensive state variables in proportion to the
+    // volume of the children
     auto resize = [this](int m) {
         double volume = _grid->volume(m);
         double oldVolume = _state.volume(m);
@@ -2154,6 +2236,10 @@ void MediumSystem::growCellData(const vector<int>& subdividedCells, const vector
             if (table->size()) table->scaleCell(m, fraction);
         for (auto labs : {&_labs1, &_labs2, &_labs2c})
             if (labs->size()) (*labs)[m] *= fraction;
+        for (auto rfb : {&_rfb1, &_rfb2, &_rfb2c})
+            if (rfb->size())
+                for (int b = 0; b != numNoiseBatches; ++b)
+                    (*rfb)[static_cast<size_t>(m) * numNoiseBatches + b] *= fraction;
         _state.resizeCell(m, volume);
     };
     for (int m : subdividedCells) resize(m);
@@ -2171,6 +2257,9 @@ void MediumSystem::growCellData(const vector<int>& subdividedCells, const vector
         if (table->size()) verify(table->numCells(), _numCells, "radiation field table");
     for (auto labs : {&_labs1, &_labs2, &_labs2c})
         if (labs->size()) verify(labs->size(), _numCells, "dust-absorbed luminosity array");
+    for (auto rfb : {&_rfb1, &_rfb2, &_rfb2c})
+        if (rfb->size())
+            verify(rfb->size(), static_cast<size_t>(_numCells) * numNoiseBatches, "radiation field batch array");
     if (_mixPerCell) verify(_mixv.size(), static_cast<size_t>(_numCells) * _numMedia, "material mix array");
     for (auto window : _history->allCellWindows()) verify(window->numCells(), _numCells, "cell window");
 }
@@ -2256,12 +2345,17 @@ bool MediumSystem::updateDynamicRefinement(double numPackets)
 
     // obtain the cell windows of the criteria and of their conditions, which share a single schedule
     vector<CellWindow*> fieldWindows;
+    vector<CellWindow*> noiseWindows(numCriteria, nullptr);
     vector<vector<std::pair<const RefinementCondition*, CellWindow*>>> conditionWindows(numCriteria);
     for (int c = 0; c != numCriteria; ++c)
     {
         auto criterion = criteria[c];
         fieldWindows.push_back(&_history->cellWindow(criterion, Field, _numCells, lifetime,
                                                      "window-averaged " + criterion->fieldDescription()));
+        if (criterion->usesNoise())
+            noiseWindows[c] =
+                &_history->cellWindow(criterion, FieldNoise, _numCells, lifetime,
+                                      "window-averaged squared noise of " + criterion->fieldDescription());
         for (auto condition : criterion->conditions())
             conditionWindows[c].emplace_back(condition,
                                              &_history->cellWindow(condition, Field, _numCells, lifetime,
@@ -2293,6 +2387,30 @@ bool MediumSystem::updateDynamicRefinement(double numPackets)
             else
             {
                 fieldWindows[c]->accumulate([criterion](int m) { return criterion->value(m); });
+            }
+            if (noiseWindows[c])
+            {
+                // calculate the squared noise in the same way
+                if (criterion->hasCostlyValue())
+                {
+                    Array noises(_numCells);
+                    parallel->call(_numCells, [criterion, &noises](size_t firstIndex, size_t numIndices) {
+                        for (size_t m = firstIndex; m != firstIndex + numIndices; ++m)
+                        {
+                            double noise = criterion->noise(m);
+                            noises[m] = noise * noise;
+                        }
+                    });
+                    ProcessManager::sumToAll(noises);
+                    noiseWindows[c]->accumulate([&noises](int m) { return noises[m]; });
+                }
+                else
+                {
+                    noiseWindows[c]->accumulate([criterion](int m) {
+                        double noise = criterion->noise(m);
+                        return noise * noise;
+                    });
+                }
             }
             for (auto& entry : conditionWindows[c])
             {
@@ -2348,8 +2466,8 @@ bool MediumSystem::updateDynamicRefinement(double numPackets)
                 if (!holds) continue;
 
                 // skip the cell if the criterion does not flag it
-                double excess =
-                    criterion->excess(m, *fieldWindows[c], criterion->needsNeighbors() ? neighbors : noNeighbors);
+                double excess = criterion->excess(m, *fieldWindows[c], noiseWindows[c],
+                                                  criterion->needsNeighbors() ? neighbors : noNeighbors);
                 if (!(excess > 0.)) continue;
 
                 // check the limits of the criterion; if none has been reached, the cell is a candidate
@@ -2421,10 +2539,16 @@ bool MediumSystem::updateDynamicRefinement(double numPackets)
     // decide whether to start a refinement round, and how many candidates to subdivide
     int numSelected = 0;
     string reason;
+    bool tooFew = false;
     if (numCandidates)
     {
         int maxRounds = options->maxRounds();
-        if (maxRounds && numRounds >= maxRounds)
+        if (numCandidates < options->minCandidateFraction() * _numCells)
+        {
+            reason = "they are fewer than the minimum fraction of the number of cells";
+            tooFew = true;
+        }
+        else if (maxRounds && numRounds >= maxRounds)
         {
             reason = "the maximum number of refinement rounds has been reached";
         }
@@ -2517,11 +2641,19 @@ bool MediumSystem::updateDynamicRefinement(double numPackets)
                   + " photon packets per cell in this iteration)");
     }
     if (numCandidates > numSelected)
-        log->warning("Dynamic grid refinement left " + std::to_string(numCandidates - numSelected)
-                     + " candidate cells unsplit because " + reason);
+    {
+        string message = "Dynamic grid refinement left " + std::to_string(numCandidates - numSelected)
+                         + " candidate cells unsplit because " + reason;
+        if (tooFew)
+            log->info(message);
+        else
+            log->warning(message);
+    }
 
     // reset the windows, so that a new window starts with the next iteration that is not left out
     for (auto window : fieldWindows) window->reset();
+    for (auto window : noiseWindows)
+        if (window) window->reset();
     for (auto& entries : conditionWindows)
         for (auto& entry : entries) entry.second->reset();
 

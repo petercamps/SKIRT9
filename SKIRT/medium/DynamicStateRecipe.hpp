@@ -117,6 +117,11 @@ public:
         aggregated across processes because the update() function can be called from separate
         parallel processes. */
     virtual bool endUpdate(int numCells, int numUpdated, int numNotConverged);
+
+    /** This function returns true if the recipe uses the noise of the radiation field in a cell
+        (see the MediumSystem::radiationFieldNoise() function), so that the medium system must
+        track it. The default implementation in this base class returns false. */
+    virtual bool usesNoise() const;
 };
 
 ////////////////////////////////////////////////////////////////////

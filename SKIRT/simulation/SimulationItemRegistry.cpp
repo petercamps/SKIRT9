@@ -240,6 +240,7 @@
 #include "QuarticSplineSmoothingKernel.hpp"
 #include "QuasarSED.hpp"
 #include "RadialVectorField.hpp"
+#include "RadiationFieldGradientCriterion.hpp"
 #include "RadiationFieldProbe.hpp"
 #include "RadiationFieldWavelengthGridProbe.hpp"
 #include "Random.hpp"
@@ -587,6 +588,7 @@ SimulationItemRegistry::SimulationItemRegistry(const string& version, const stri
     ItemRegistry::add<MediumStateGradientCriterion>();
     ItemRegistry::add<MediumStateValueCriterion>();
     ItemRegistry::add<DustTemperatureGradientCriterion>();
+    ItemRegistry::add<RadiationFieldGradientCriterion>();
     ItemRegistry::add<DustLuminosityCriterion>();
     ItemRegistry::add<TrivialBoxCriterion>();
     ItemRegistry::add<RefinementCondition>();

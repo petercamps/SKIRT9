@@ -12,7 +12,17 @@
 
 /** The IterationOptions class simply offers a number of options for configuring iterations during
     primary and/or secondary emission. These options are relevant only when the simulation has a
-    dynamic medium state and/or a dynamic secondary emission. */
+    dynamic medium state and/or a dynamic secondary emission.
+
+    The number of photon packets launched in each primary emission iteration is the number of
+    primary packets multiplied by \em primaryIterationPacketsMultiplier. If \em
+    primaryIterationInitialPacketsFraction is below one, the first iteration launches that fraction
+    of this number, and each next iteration \em primaryIterationPacketsRamp times as many, up to the
+    full number. If \em primaryIterationPacketsPerCell is nonzero, each iteration instead launches
+    that number of packets per spatial cell, bounded by the number for the first iteration and the
+    full number. This is meant for a grid with dynamic refinement, whose number of cells grows
+    during the iterations: the noise in the field of a refinement criterion depends on the number
+    of packets per cell. */
 class IterationOptions : public SimulationItem
 {
     ITEM_CONCRETE(IterationOptions, SimulationItem,
@@ -70,6 +80,15 @@ class IterationOptions : public SimulationItem
         ATTRIBUTE_DEFAULT_VALUE(primaryIterationPacketsRamp, "2")
         ATTRIBUTE_RELEVANT_IF(primaryIterationPacketsRamp, "IteratePrimary&primaryIterationInitialPacketsFraction")
         ATTRIBUTE_DISPLAYED_IF(primaryIterationPacketsRamp, "Level3")
+
+        PROPERTY_DOUBLE(primaryIterationPacketsPerCell,
+                        "the number of photon packets per spatial cell launched for each primary emission iteration "
+                        "(zero means no scaling with the number of cells)")
+        ATTRIBUTE_MIN_VALUE(primaryIterationPacketsPerCell, "[0")
+        ATTRIBUTE_MAX_VALUE(primaryIterationPacketsPerCell, "1e9]")
+        ATTRIBUTE_DEFAULT_VALUE(primaryIterationPacketsPerCell, "0")
+        ATTRIBUTE_RELEVANT_IF(primaryIterationPacketsPerCell, "IteratePrimary")
+        ATTRIBUTE_DISPLAYED_IF(primaryIterationPacketsPerCell, "Level3")
 
         PROPERTY_DOUBLE(secondaryIterationPacketsMultiplier,
                         "the multiplier on the number of photon packets launched for each secondary emission iteration")
