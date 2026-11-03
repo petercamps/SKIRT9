@@ -7,9 +7,9 @@
 
 ////////////////////////////////////////////////////////////////////
 
-bool DynamicStateRecipe::endUpdate(int /*numCells*/, int /*numUpdated*/, int numNotConverged)
+bool DynamicStateRecipe::endUpdate(int numCells, int /*numUpdated*/, int numNotConverged)
 {
-    return numNotConverged <= maxNotConvergedCells();
+    return numNotConverged <= maxFractionNotConvergedCells() * numCells;
 }
 
 ////////////////////////////////////////////////////////////////////

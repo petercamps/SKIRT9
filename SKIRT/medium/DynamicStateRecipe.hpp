@@ -68,9 +68,10 @@ class DynamicStateRecipe : public SimulationItem
 {
     ITEM_ABSTRACT(DynamicStateRecipe, SimulationItem, "a dynamic medium state recipe")
 
-        PROPERTY_INT(maxNotConvergedCells, "the number of spatial cells allowed to not converge")
-        ATTRIBUTE_MIN_VALUE(maxNotConvergedCells, "0")
-        ATTRIBUTE_DEFAULT_VALUE(maxNotConvergedCells, "0")
+        PROPERTY_DOUBLE(maxFractionNotConvergedCells, "the fraction of spatial cells allowed to not converge")
+        ATTRIBUTE_MIN_VALUE(maxFractionNotConvergedCells, "[0")
+        ATTRIBUTE_MAX_VALUE(maxFractionNotConvergedCells, "1]")
+        ATTRIBUTE_DEFAULT_VALUE(maxFractionNotConvergedCells, "0")
 
     ITEM_END()
 
@@ -110,9 +111,13 @@ public:
         cells updated during this update cycle, and the number of updated cells that have not yet
         converged.
 
-        The default implementation in this base class returns true if the actual number of
-        not-converged cells does not exceed the configured maximum number of not-converged cells,
-        and false otherwise. Subclasses may provide more complex implementations. In case a recipe
+        The default implementation in this base class returns true if the number of not-converged
+        cells does not exceed the configured maximum fraction of the number of cells in the
+        simulation, and false otherwise. Because the allowance is relative to the number of cells,
+        it grows with the grid when the grid is refined dynamically. The number of not-converged
+        cells counts the cells in which any recipe has not converged for any medium component, so
+        each recipe compares the same number with its own maximum fraction. Subclasses may provide
+        more complex implementations. In case a recipe
         needs to tracks additional information in the update() function, the tracked data must be
         aggregated across processes because the update() function can be called from separate
         parallel processes. */
