@@ -6,6 +6,7 @@
 #include "TemperatureWavelengthCellLibrary.hpp"
 #include "Configuration.hpp"
 #include "Log.hpp"
+#include "Medium.hpp"
 #include "MediumSystem.hpp"
 #include "Parallel.hpp"
 #include "ParallelFactory.hpp"
@@ -25,25 +26,34 @@ int TemperatureWavelengthCellLibrary::numEntries() const
 
 namespace
 {
-    double indicativeDustWavelength(int m, const MediumSystem* ms, const DisjointWavelengthGrid* wavelengthGrid)
+    // a dust medium component with its weight, i.e. its total mass in the simulation relative to that of all dust
+    struct DustComponent
     {
-        const Array& Jv = ms->meanIntensity(m);
-        double sumtop = 0.;
-        double sumbot = 0.;
-        int numWavelengths = wavelengthGrid->numBins();
-        for (int ell = 0; ell != numWavelengths; ++ell)
+        const MaterialMix* mix{nullptr};
+        double weight{0.};
+    };
+
+    // returns the dust medium components, weighted by their total mass in the simulation
+    vector<DustComponent> dustComponents(const MediumSystem* ms)
+    {
+        int numCells = ms->numCells();
+        vector<DustComponent> components;
+        double totalMass = 0.;
+        for (int h = 0; h != ms->numMedia(); ++h)
         {
-            double lambda = wavelengthGrid->wavelength(ell);
-            double dlambda = wavelengthGrid->effectiveWidth(ell);
-            double opacity = ms->opacityAbs(lambda, m, MaterialMix::MaterialType::Dust);
-            double product = opacity * Jv[ell] * dlambda;
-            sumtop += product * lambda;
-            sumbot += product;
+            if (ms->isDust(h))
+            {
+                double mass = 0.;
+                for (int m = 0; m != numCells; ++m) mass += ms->massDensity(m, h) * ms->volume(m);
+                components.push_back({ms->media()[h]->mix(), mass});
+                totalMass += mass;
+            }
         }
-        if (sumbot > 0.)
-            return sumtop / sumbot;
-        else
-            return 0.;
+
+        // normalize the weights to a sum of one; if the total mass is zero, give all components the same weight
+        for (auto& component : components)
+            component.weight = totalMass > 0. ? component.weight / totalMass : 1. / components.size();
+        return components;
     }
 }
 
@@ -56,6 +66,27 @@ vector<int> TemperatureWavelengthCellLibrary::mapping(const Array& bv) const
     auto ms = find<MediumSystem>();
     int numCells = ms->numCells();
 
+    // get the dust components, weighted by their total mass in the simulation
+    vector<DustComponent> components = dustComponents(ms);
+
+    // tabulate the mass-weighted absorption mass coefficient of the dust components times the bin width, and times
+    // the wavelength, on the radiation field wavelength grid
+    int numWavelengths = wavelengthGrid->numBins();
+    Array kappadlambdav(numWavelengths);
+    Array kappadlambdalambdav(numWavelengths);
+    for (int ell = 0; ell != numWavelengths; ++ell)
+    {
+        double lambda = wavelengthGrid->wavelength(ell);
+        double kappa = 0.;
+        for (const auto& component : components)
+        {
+            double mu = component.mix->mass();
+            if (mu > 0.) kappa += component.weight * component.mix->sectionAbs(lambda) / mu;
+        }
+        kappadlambdav[ell] = kappa * wavelengthGrid->effectiveWidth(ell);
+        kappadlambdalambdav[ell] = kappadlambdav[ell] * lambda;
+    }
+
     // calculate the indicative temperature and wavelength for all spatial cells in parallel, each cell on a single
     // process, and sum the results over the processes, so that they are identical on all processes
     Array Tv(numCells);
@@ -66,8 +97,15 @@ vector<int> TemperatureWavelengthCellLibrary::mapping(const Array& bv) const
             // ignore cells that won't be used by the caller
             if (bv[m])
             {
-                double T = ms->indicativeDustTemperature(m);
-                double lambda = indicativeDustWavelength(m, ms, wavelengthGrid);
+                // calculate both properties for the dust components in the radiation field of the cell; the material
+                // state is not needed: a dust mix does not use it, and a cell library cannot be combined with a
+                // fragmented dust mix, which does
+                const Array& Jv = ms->meanIntensity(m);
+                double T = 0.;
+                for (const auto& component : components)
+                    T += component.weight * component.mix->indicativeTemperature(nullptr, Jv);
+                double sumbot = (kappadlambdav * Jv).sum();
+                double lambda = sumbot > 0. ? (kappadlambdalambdav * Jv).sum() / sumbot : 0.;
 
                 // ignore cells with meaningless property values
                 if (T > 0. && lambda > 0.)
