@@ -213,9 +213,9 @@ void XmlReader::skip()
 
 void XmlReader::skipBOM()
 {
-    const char utf8_BOM1 = static_cast<char>(0xEFu);
-    const char utf8_BOM2 = static_cast<char>(0xBBu);
-    const char utf8_BOM3 = static_cast<char>(0xBFu);
+    constexpr char utf8_BOM1 = static_cast<char>(0xEFu);
+    constexpr char utf8_BOM2 = static_cast<char>(0xBBu);
+    constexpr char utf8_BOM3 = static_cast<char>(0xBFu);
 
     if (peek() != utf8_BOM1) return;
     skip();

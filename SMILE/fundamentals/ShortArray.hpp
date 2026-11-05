@@ -22,7 +22,7 @@
 class ShortArray
 {
 public:
-    const static int N = 8;
+    static constexpr int N = 8;
 
     // ================== Constructing and assigning ==================
 

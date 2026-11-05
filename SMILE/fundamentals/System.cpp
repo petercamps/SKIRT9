@@ -357,8 +357,8 @@ string System::timestamp(bool iso8601)
 
     // setup the output format and buffer
     const char* format = iso8601 ? "%Y-%m-%dT%H:%M:%S.xxx" : "%d/%m/%Y %H:%M:%S.xxx";
-    const size_t resultLength = 23;
-    const size_t milliOffset = 20;
+    constexpr size_t resultLength = 23;
+    constexpr size_t milliOffset = 20;
     char resultBuf[resultLength + 2];  // add 2 rather than 1 to avoid warning by GCC v8.1
 
     // get the current wall time
@@ -420,7 +420,7 @@ string System::prompt(const string& message)
 
 #ifdef _WIN64
     // Get user input and convert it from UTF-16 to UTF-8
-    const DWORD MAXLEN = 2000;
+    constexpr DWORD MAXLEN = 2000;
     WCHAR input[MAXLEN];
     DWORD numRead = 0;
     BOOL success = ReadConsoleW(GetStdHandle(STD_INPUT_HANDLE), input, MAXLEN, &numRead, 0);
@@ -765,7 +765,7 @@ vector<string> System::stacktrace()
 #    endif  // DEBUG
 #else
     // Get the strack trace as a list of C-style strings
-    const int max_depth = 100;
+    constexpr int max_depth = 100;
     void* stack_addrs[max_depth];
     int stack_depth = backtrace(stack_addrs, max_depth);
     char** stack_strings = backtrace_symbols(stack_addrs, stack_depth);

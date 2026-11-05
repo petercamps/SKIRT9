@@ -24,7 +24,7 @@ class ConvexPolygon
 
 public:
     /** The maximum number of points that can be held by a polygon object. */
-    constexpr static size_t maxPoints = 8;
+    static constexpr size_t maxPoints = 8;
 
     // ================== Constructing ==================
 

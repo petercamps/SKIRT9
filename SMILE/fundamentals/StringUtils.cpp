@@ -451,7 +451,7 @@ string StringUtils::toString(double value, char format, int precision, int width
 
 string StringUtils::toMemSizeString(size_t value)
 {
-    static const char prefixes[] = {'K', 'M', 'G', 'T'};
+    static constexpr char prefixes[] = {'K', 'M', 'G', 'T'};
     size_t factor = 1024;
     size_t index = 0;
     for (; index < 3; ++index)

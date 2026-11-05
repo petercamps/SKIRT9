@@ -172,7 +172,7 @@ private: \
     static void ii_loadEnumInfo_##enumtype() \
     { \
         enum enumtype##_private : int { __VA_ARGS__ }; \
-        const int enumIndices[] = { __VA_ARGS__ }; \
+        static constexpr int enumIndices[] = { __VA_ARGS__ }; \
         ItemRegistry::beginEnum(static_cast<int>(sizeof(enumIndices)/sizeof(int)));
 
 /** This macro declares one of the values of an enumeration type declared with the ENUM_DEF macro.
