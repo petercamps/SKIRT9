@@ -14,7 +14,7 @@ void NetzerAngularDistribution::setupSelfBefore()
     AxAngularDistribution::setupSelfBefore();
 
     // grid with values of the cumulative luminosity distribution
-    int n = 400;
+    constexpr int n = 400;
     NR::buildLinearGrid(_costhetav, -1., +1., n);
     _Xv.resize(n + 1);
     _Xv[0] = 0;

@@ -466,10 +466,10 @@ VoronoiMeshSnapshot::VoronoiMeshSnapshot(const SimulationItem* item, const Box& 
 namespace
 {
     // maximum number of Voronoi sites processed between two invocations of infoIfElapsed()
-    const int logProgressChunkSize = 1000;
+    constexpr int logProgressChunkSize = 1000;
 
     // maximum number of Voronoi grid construction iterations
-    const int maxConstructionIterations = 5;
+    constexpr int maxConstructionIterations = 5;
 
     // function to erase null pointers from a vector of pointers in one go; returns the new size
     template<class T> size_t eraseNullPointers(vector<T*>& v)
@@ -1157,8 +1157,8 @@ private:
             Vec pr = _grid->_cells[_mr]->position();
 
             // initialize the smallest nonnegative intersection distance and corresponding index
-            double sq = DBL_MAX;       // very large, but not infinity (so that infinite si values are discarded)
-            const int NO_INDEX = -99;  // meaningless cell index
+            double sq = DBL_MAX;           // very large, but not infinity (so that infinite si values are discarded)
+            constexpr int NO_INDEX = -99;  // meaningless cell index
             int mq = NO_INDEX;
 
             // loop over the list of neighbor indices

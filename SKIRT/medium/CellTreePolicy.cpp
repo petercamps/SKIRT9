@@ -50,7 +50,7 @@ namespace
     // returns true if the node is wider than the cell along any axis, allowing for rounding errors
     bool isCoarser(const Box& node, const Box& cell)
     {
-        const double factor = 1. + 1e-9;
+        constexpr double factor = 1. + 1e-9;
         return node.xwidth() > factor * cell.xwidth() || node.ywidth() > factor * cell.ywidth()
                || node.zwidth() > factor * cell.zwidth();
     }

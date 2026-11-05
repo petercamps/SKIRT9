@@ -265,7 +265,7 @@ void TetraMeshSpatialGrid::setupSelfBefore()
         case Policy::CentralPeak:
         {
             auto random = find<Random>();
-            const int a = 1000;  // steepness of the peak; the central 1/a portion is NOT covered
+            constexpr int a = 1000;  // steepness of the peak; the central 1/a portion is NOT covered
             const double rscale = extent().rmax().norm();
             _vertices.resize(_numSamples);
             _vertices[0] = Vec();

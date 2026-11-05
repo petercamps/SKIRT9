@@ -12,7 +12,7 @@
 namespace
 {
     // number of wavelength points in tabulated result per dispersion unit
-    const int numWavelengthsPerDispersionUnit = 100;
+    constexpr int numWavelengthsPerDispersionUnit = 100;
 
     // Gaussian centered on 0 with dispersion of 1, evaluated at x
     double unitGaussian(double x)
@@ -43,7 +43,7 @@ double SpinFlipSEDFamily::specificLuminosity(double wavelength, const Array& par
 {
     double L = parameters[0];
     double s = parameters[1];
-    double wavelengthCenter = Constants::lambdaSpinFlip();
+    constexpr double wavelengthCenter = Constants::lambdaSpinFlip();
     double wavelengthDispersion = s * wavelengthCenter / Constants::c();
     return L * unitGaussian((wavelength - wavelengthCenter) / wavelengthDispersion) / wavelengthDispersion;
 }
@@ -55,7 +55,7 @@ double SpinFlipSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, Range wavele
 {
     double L = parameters[0];
     double s = parameters[1];
-    double wavelengthCenter = Constants::lambdaSpinFlip();
+    constexpr double wavelengthCenter = Constants::lambdaSpinFlip();
     double wavelengthDispersion = s * wavelengthCenter / Constants::c();
 
     // build an appropriate grid

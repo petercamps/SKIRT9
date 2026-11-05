@@ -14,8 +14,8 @@
 namespace
 {
     // Error return values for the functions below, in addition to InputColumns::noIndex
-    const int ERROR_NO_EXPON = 999;
-    const size_t ERROR_AM_INDEX = 999998;
+    constexpr int ERROR_NO_EXPON = 999;
+    constexpr size_t ERROR_AM_INDEX = 999998;
 
     // This function returns the wavelength exponent needed to convert a per wavelength/frequency/energy
     // quantity to internal (per wavelength) style, given the input units, or the error value if the
@@ -23,14 +23,16 @@ namespace
     int waveExponentForSpecificQuantity(Units* unitSystem, const string& unitString)
     {
         // a list of known per wavelength / per frequency quantities and the corresponding exponents
-        static const vector<string> specificQuantities(
-            {"wavelengthmonluminosity", "wavelengthfluxdensity", "wavelengthsurfacebrightness", "neutralmonluminosity",
-             "neutralfluxdensity", "neutralsurfacebrightness", "frequencymonluminosity", "frequencyfluxdensity",
-             "frequencysurfacebrightness", "energymonluminosity", "energyfluxdensity", "energysurfacebrightness"});
-        static const vector<int> specificExponents({0, 0, 0, -1, -1, -1, -2, -2, -2, -3, -3, -3});
+        static constexpr const char* specificQuantities[] = {
+            "wavelengthmonluminosity", "wavelengthfluxdensity", "wavelengthsurfacebrightness",
+            "neutralmonluminosity",    "neutralfluxdensity",    "neutralsurfacebrightness",
+            "frequencymonluminosity",  "frequencyfluxdensity",  "frequencysurfacebrightness",
+            "energymonluminosity",     "energyfluxdensity",     "energysurfacebrightness"};
+        constexpr size_t numQuantities = sizeof(specificQuantities) / sizeof(specificQuantities[0]);
+        static constexpr int specificExponents[] = {0, 0, 0, -1, -1, -1, -2, -2, -2, -3, -3, -3};
 
         // loop over the list
-        for (size_t q = 0; q != specificQuantities.size(); ++q)
+        for (size_t q = 0; q != numQuantities; ++q)
         {
             // if this quantity supports the given unit, return the corresponding exponent
             if (unitSystem->has(specificQuantities[q], unitString)) return specificExponents[q];

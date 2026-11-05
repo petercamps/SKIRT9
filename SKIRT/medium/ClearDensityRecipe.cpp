@@ -23,7 +23,7 @@ UpdateStatus ClearDensityRecipe::update(MaterialState* state, const Array& Jv)
     if (state->numberDensity() > 0.)
     {
         // the local radiation field in the Milky Way (Mathis et al. 1983) integrated over all wavelengths
-        const double JtotMW = 1.7623e-06;
+        constexpr double JtotMW = 1.7623e-06;
         double U = (Jv * _dlambdav).sum() / JtotMW;
         if (U > fieldStrengthThreshold())
         {

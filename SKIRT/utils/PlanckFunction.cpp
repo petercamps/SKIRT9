@@ -12,9 +12,9 @@
 PlanckFunction::PlanckFunction(double T) : _T(T)
 {
     // precompute some front factors
-    double h = Constants::h();
-    double c = Constants::c();
-    double k = Constants::k();
+    constexpr double h = Constants::h();
+    constexpr double c = Constants::c();
+    constexpr double k = Constants::k();
     _f1 = h * c / (k * _T);
     _f2 = 2.0 * h * c * c;
 }

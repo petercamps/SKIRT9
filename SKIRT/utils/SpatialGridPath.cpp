@@ -11,7 +11,7 @@
 
 namespace
 {
-    const int INITIAL_CAPACITY = 1000;
+    constexpr int INITIAL_CAPACITY = 1000;
 }
 
 ////////////////////////////////////////////////////////////////////

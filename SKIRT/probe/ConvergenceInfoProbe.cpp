@@ -117,7 +117,7 @@ namespace
         double tauavg = tauV.sum() / numCells;
         double taumin = tauV.min();
         double taumax = tauV.max();
-        const int numBins = 500;
+        constexpr int numBins = 500;
         vector<int> countV(numBins + 1);
         for (double tau : tauV)
         {

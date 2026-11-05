@@ -16,7 +16,7 @@
 namespace
 {
     // transition wavelength from Compton to Thomson scattering
-    const double comptonWL = 9.999999e-9;  // 10 nm
+    constexpr double comptonWL = 9.999999e-9;  // 10 nm
 }
 
 ////////////////////////////////////////////////////////////////////

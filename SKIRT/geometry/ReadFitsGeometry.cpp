@@ -110,7 +110,7 @@ Position ReadFitsGeometry::generatePosition() const
 
 double ReadFitsGeometry::SigmaX() const
 {
-    const int NSAMPLES = 10000;
+    constexpr int NSAMPLES = 10000;
     double sum = 0;
 
     // Find the maximum and minimum possible x value
@@ -133,7 +133,7 @@ double ReadFitsGeometry::SigmaX() const
 
 double ReadFitsGeometry::SigmaY() const
 {
-    const int NSAMPLES = 10000;
+    constexpr int NSAMPLES = 10000;
     double sum = 0;
 
     // Find the maximum and minimum possible y value

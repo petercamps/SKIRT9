@@ -20,10 +20,10 @@ TimeLogger::TimeLogger(Log* log, string scope) : _log(log), _scope(scope), _star
 namespace
 {
     // local constants
-    const int64_t msecsInSecond = 1000;
-    const int64_t msecsInMinute = 60 * msecsInSecond;
-    const int64_t msecsInHour = 60 * msecsInMinute;
-    const int64_t msecsInDay = 24 * msecsInHour;
+    constexpr int64_t msecsInSecond = 1000;
+    constexpr int64_t msecsInMinute = 60 * msecsInSecond;
+    constexpr int64_t msecsInHour = 60 * msecsInMinute;
+    constexpr int64_t msecsInDay = 24 * msecsInHour;
 }
 
 ////////////////////////////////////////////////////////////////////

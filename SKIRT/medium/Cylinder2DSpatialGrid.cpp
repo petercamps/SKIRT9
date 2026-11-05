@@ -84,7 +84,7 @@ Position Cylinder2DSpatialGrid::centralPositionInCell(int m) const
     if (getCoords(m, Rmin, zmin, Rmax, zmax))
     {
         double R = 0.5 * (Rmin + Rmax);
-        double phi = 0.;
+        constexpr double phi = 0.;
         double z = 0.5 * (zmin + zmax);
         return Position(R, phi, z, Position::CoordinateSystem::CYLINDRICAL);
     }

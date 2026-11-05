@@ -103,7 +103,7 @@ Position Sphere2DSpatialGrid::centralPositionInCell(int m) const
     {
         double r = 0.5 * (rmin + rmax);
         double theta = 0.5 * (thetamin + thetamax);
-        double phi = 0.;
+        constexpr double phi = 0.;
         return Position(r, theta, phi, Position::CoordinateSystem::SPHERICAL);
     }
     return Position();

@@ -14,10 +14,10 @@
 namespace
 {
     // intrinsic half-range in scale units
-    const double intrinsicRange = 3.6;
+    constexpr double intrinsicRange = 3.6;
 
     // number of wavelength points in tabulated result per scale unit
-    const int numWavelengthsPerScaleUnit = 100;
+    constexpr int numWavelengthsPerScaleUnit = 100;
 
     // double-peaked spectrum centered on 0 with scale of 1, evaluated at x
     double unitSpectrum(double x)

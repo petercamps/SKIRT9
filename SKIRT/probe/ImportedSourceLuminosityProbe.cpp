@@ -27,7 +27,7 @@
 namespace
 {
     // maximum number of luminosity calculations between two invocations of infoIfElapsed()
-    const size_t logProgressChunkSize = 10000;
+    constexpr size_t logProgressChunkSize = 10000;
 }
 
 ////////////////////////////////////////////////////////////////////

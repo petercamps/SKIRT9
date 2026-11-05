@@ -25,22 +25,21 @@ namespace
 {
     // Minimum ionization parameter for emission: cells with logU <= this get T = _minTEmit
     // in updateTemperatureFromStab() and are also directly gated in emissionSpectrum().
-    static constexpr double _minLogUEmit = -6.50;
+    constexpr double _minLogUEmit = -6.50;
 
     // Temperature floor [K] applied to cells below the logU emission gate
-    static constexpr double _minTEmit = 300.0;
+    constexpr double _minTEmit = 300.0;
 
     // Log-space floor for logU and logR2..logR5: uninitialised cells sit here, and computed
     // values are clamped here. "At the floor" is detected with `value <= _logFloor`.
-    static constexpr double _logFloor = -99.0;
+    constexpr double _logFloor = -99.0;
 
     // Solar reference metallicity (GASS10).
-    static constexpr double _solarZ = 0.014;
+    constexpr double _solarZ = 0.014;
 
     // Solar abundances (GASS10) for Z-scaling of metal emission.
     // Order: C, N, O, Ne, Mg, Si, S, Fe.
-    static constexpr double _solarAbundances[8] = {2.69e-4, 6.76e-5, 4.90e-4, 8.51e-5,
-                                                   3.98e-5, 3.24e-5, 1.32e-5, 3.16e-5};
+    constexpr double _solarAbundances[8] = {2.69e-4, 6.76e-5, 4.90e-4, 8.51e-5, 3.98e-5, 3.24e-5, 1.32e-5, 3.16e-5};
 
     // Per-element gas-phase depletion factors following Gunasekera et al. (2023): the
     // Jenkins (2009) depletion pattern (Table 4) evaluated at F* = 0.5, with no depletion
@@ -48,7 +47,7 @@ namespace
     // buildPerCellAbundances so that the analytical ionization and line-emission step
     // uses the same gas-phase composition that Cloudy used when the temperature and
     // opacity tables were generated. Order matches _solarAbundances.
-    static constexpr double _gunasekeraDepletion[8] = {
+    constexpr double _gunasekeraDepletion[8] = {
         0.688023,  // C  : J09 F*=0.5
         0.778037,  // N  : J09 F*=0.5
         0.753442,  // O  : J09 F*=0.5
@@ -60,17 +59,17 @@ namespace
     };
 
     // Constants from CMACIONIZE (same values as in PhysicalDiffuseReemissionHandler)
-    static constexpr double helium19p8EvFreq = 4.788e15;
-    static constexpr double heliumTpcHIonizingFraction = 0.56;
-    static constexpr double heliumLyaOtsCoeff = 77.0;
+    constexpr double helium19p8EvFreq = 4.788e15;
+    constexpr double heliumTpcHIonizingFraction = 0.56;
+    constexpr double heliumLyaOtsCoeff = 77.0;
 
     // 4-bin energy structure boundaries (in Rydberg)
-    static constexpr double energyBin1Ryd = 1.0;
-    static constexpr double energyBin2Ryd = 1.8;
-    static constexpr double energyBin3Ryd = 2.58;
-    static constexpr double energyBin4Ryd = 3.52;
-    static constexpr double energyBin5Ryd = 4.0;
-    static constexpr double energyBin6Ryd = 6.0;
+    constexpr double energyBin1Ryd = 1.0;
+    constexpr double energyBin2Ryd = 1.8;
+    constexpr double energyBin3Ryd = 2.58;
+    constexpr double energyBin4Ryd = 3.52;
+    constexpr double energyBin5Ryd = 4.0;
+    constexpr double energyBin6Ryd = 6.0;
 
     // Define Rydberg energy (1 Rydberg = 13.6057 eV)
     constexpr double rydbergEnergyEv = 13.6057;
@@ -99,7 +98,7 @@ namespace
         int ionFracsIndex;
         const char* name;
     };
-    static constexpr IonFracDiagEntry ionFracDiagTable[] = {
+    constexpr IonFracDiagEntry ionFracDiagTable[] = {
         {1, "x_HII"},    // H+ fraction
         {13, "x_NII"},   // N+ fraction
         {20, "x_OI"},    // O0 fraction
@@ -108,7 +107,7 @@ namespace
         {63, "x_SII"},   // S+ fraction
         {-1, "n_e"},     // electron number density
     };
-    static constexpr int numIonFracDiags = sizeof(ionFracDiagTable) / sizeof(ionFracDiagTable[0]);
+    constexpr int numIonFracDiags = sizeof(ionFracDiagTable) / sizeof(ionFracDiagTable[0]);
 
     // Aggregate ion fraction table: ions tracked as n_HII-weighted global sums.
     // Marked for aggregation, so that the medium system records sum(x_ion * n_HII * V) across cells in the
@@ -119,12 +118,12 @@ namespace
         const char* name;       // the description of the state variable
         const char* shortName;  // the short name of the state variable
     };
-    static constexpr IonFracAggEntry ionFracAggTable[] = {
+    constexpr IonFracAggEntry ionFracAggTable[] = {
         {13, "nHII_weighted_x_NII", "nHII_x_NII"},
         {22, "nHII_weighted_x_OIII", "nHII_x_OIII"},
         {63, "nHII_weighted_x_SII", "nHII_x_SII"},
     };
-    static constexpr int numIonFracAggs = sizeof(ionFracAggTable) / sizeof(ionFracAggTable[0]);
+    constexpr int numIonFracAggs = sizeof(ionFracAggTable) / sizeof(ionFracAggTable[0]);
 
     // Density ceiling diagnostic (incremented in initializeSpecificState, logged in isSpecificStateConverged)
     std::atomic<int> densityCeilingCount{0};
@@ -142,16 +141,16 @@ namespace
     // Element-mass-per-H at solar pattern: m_X * n_X/n_H using GASS10 _solarAbundances values.
     // Atomic masses (u) for {C, N, O, Ne, Mg, Si, S, Fe}: {12.011, 14.007, 15.999, 20.180, 24.305, 28.085, 32.065, 55.845}.
     // C=12.011*2.69e-4, N=14.007*6.76e-5, ..., Fe=55.845*3.16e-5. Computed once in C++17 constexpr.
-    static constexpr double mCSol = 12.011 * 2.69e-4;
-    static constexpr double mNSol = 14.007 * 6.76e-5;
-    static constexpr double mOSol = 15.999 * 4.90e-4;
-    static constexpr double mNeSol = 20.180 * 8.51e-5;
-    static constexpr double mMgSol = 24.305 * 3.98e-5;
-    static constexpr double mSiSol = 28.085 * 3.24e-5;
-    static constexpr double mSSol = 32.065 * 1.32e-5;
-    static constexpr double mFeSol = 55.845 * 3.16e-5;
-    static constexpr double mTotSol = mCSol + mNSol + mOSol + mNeSol + mMgSol + mSiSol + mSSol + mFeSol;
-    static constexpr double mRestSol = mTotSol - mNSol - mCSol;
+    constexpr double mCSol = 12.011 * 2.69e-4;
+    constexpr double mNSol = 14.007 * 6.76e-5;
+    constexpr double mOSol = 15.999 * 4.90e-4;
+    constexpr double mNeSol = 20.180 * 8.51e-5;
+    constexpr double mMgSol = 24.305 * 3.98e-5;
+    constexpr double mSiSol = 28.085 * 3.24e-5;
+    constexpr double mSSol = 32.065 * 1.32e-5;
+    constexpr double mFeSol = 55.845 * 3.16e-5;
+    constexpr double mTotSol = mCSol + mNSol + mOSol + mNeSol + mMgSol + mSiSol + mSSol + mFeSol;
+    constexpr double mRestSol = mTotSol - mNSol - mCSol;
 
     // Gutkin+2016 mass-preserving compensation factor: scales all metals by g so that
     // total Z = solar*Zfrac*mTotSol is preserved when N and C are perturbed by 10^dN, 10^dC.
@@ -179,7 +178,7 @@ namespace
         HeliumTPC = 3,   // Helium two-photon continuum
         HeliumLyA = 4,   // Helium Lyman alpha
     };
-    static constexpr int numReemissionChannels = 5;
+    constexpr int numReemissionChannels = 5;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -391,8 +390,8 @@ void DiffuseIonizedGasMix::setupSelfBefore()
         const double binLowWl[5] = {_lambdaBin2, _lambdaBin3, _lambdaBin4, _lambdaBin5, _lambdaBin6};
         const double binHighWl[5] = {_lambdaBin1, _lambdaBin2, _lambdaBin3, _lambdaBin4, _lambdaBin5};
         const double boundaries[6] = {_lambdaBin1, _lambdaBin2, _lambdaBin3, _lambdaBin4, _lambdaBin5, _lambdaBin6};
-        const double boundariesRyd[6] = {energyBin1Ryd, energyBin2Ryd, energyBin3Ryd,
-                                         energyBin4Ryd, energyBin5Ryd, energyBin6Ryd};
+        static constexpr double boundariesRyd[6] = {energyBin1Ryd, energyBin2Ryd, energyBin3Ryd,
+                                                    energyBin4Ryd, energyBin5Ryd, energyBin6Ryd};
         for (int ell = 0; ell < rfWavelengthGrid->numBins(); ell++)
         {
             double lambda = rfWavelengthGrid->wavelength(ell);
@@ -716,7 +715,7 @@ void DiffuseIonizedGasMix::initializeSpecificState(MaterialState* state, const A
             // Diagnostic: track cells whose imported (n_N, n_C / n_H) imply dN, dC outside
             // the stab cross. Outside-cross cells get endpoint-clamped T/kappa silently.
             // Counts are logged once at the first convergence check (see isSpecificStateConverged).
-            const double eps = 1e-30;
+            constexpr double eps = 1e-30;
             const double Zfrac = Z_cell / _solarZ;
             const double n_C_imported = _metalAbundances[0](state);
             const double n_N_imported = _metalAbundances[1](state);
@@ -1469,7 +1468,7 @@ double DiffuseIonizedGasMix::calculateIonizationParameter(const Array& Jv, doubl
     double logU = log10(std::max(U, 1e-99));
 
     // Apply reasonable bounds
-    const double maxLogU = 5.0;  // Very high ionization
+    constexpr double maxLogU = 5.0;  // Very high ionization
     logU = std::max(_logFloor, std::min(logU, maxLogU));
 
     return logU;
@@ -1755,7 +1754,7 @@ double DiffuseIonizedGasMix::reemissionChannelWeights(const MaterialState* state
 double DiffuseIonizedGasMix::sampleHydrogenLymanContinuum(double temperature) const
 {
     // from temperature-dependent STAB table
-    const int hLymanSpectrumType = 0;
+    constexpr int hLymanSpectrumType = 0;
     return sampleFromTemperatureDependentSpectrum(hLymanSpectrumType, temperature, random());
 }
 
@@ -1764,7 +1763,7 @@ double DiffuseIonizedGasMix::sampleHydrogenLymanContinuum(double temperature) co
 double DiffuseIonizedGasMix::sampleHeliumLymanContinuum(double temperature) const
 {
     // from temperature-dependent STAB table
-    const int heLymanSpectrumType = 1;
+    constexpr int heLymanSpectrumType = 1;
     return sampleFromTemperatureDependentSpectrum(heLymanSpectrumType, temperature, random());
 }
 
@@ -1773,7 +1772,7 @@ double DiffuseIonizedGasMix::sampleHeliumLymanContinuum(double temperature) cons
 double DiffuseIonizedGasMix::sampleHeliumTwoPhotonContinuum(double temperature) const
 {
     // from temperature-dependent STAB table
-    const int heTwoPhotonSpectrumType = 2;
+    constexpr int heTwoPhotonSpectrumType = 2;
     return sampleFromTemperatureDependentSpectrum(heTwoPhotonSpectrumType, temperature, random());
 }
 
@@ -1798,7 +1797,7 @@ void DiffuseIonizedGasMix::calculate5BinRatioParameters(const Array& Jv, double&
     calculateBinAverages(Jv, binAverages);
 
     // Calculate energy content in each bin for validation
-    const double binWidths[5] = {
+    static constexpr double binWidths[5] = {
         energyBin2Ryd - energyBin1Ryd,  // Bin 1: 1.00 - 1.80 Ryd
         energyBin3Ryd - energyBin2Ryd,  // Bin 2: 1.80 - 2.58 Ryd
         energyBin4Ryd - energyBin3Ryd,  // Bin 3: 2.58 - 3.52 Ryd
@@ -1815,8 +1814,8 @@ void DiffuseIonizedGasMix::calculate5BinRatioParameters(const Array& Jv, double&
     }
 
     // Define threshold for significant energy fraction
-    const double minEnergyFraction = 1e-32;
-    const double minSignificantIntensity = 1e-99;
+    constexpr double minEnergyFraction = 1e-32;
+    constexpr double minSignificantIntensity = 1e-99;
 
     // Check if bins are significant
     bool isSignificantBin[5];
@@ -1983,7 +1982,7 @@ void DiffuseIonizedGasMix::initializeOpacityWavelengthGrid()
     else
     {
         // Fallback: create a simple wavelength grid in the relevant range
-        const int numPoints = 100;
+        constexpr int numPoints = 100;
         _opacityWavelengthGrid.resize(numPoints);
 
         // Log-space grid from _lambdaHigh to _lambdaLow
@@ -2135,7 +2134,7 @@ void DiffuseIonizedGasMix::precomputeOpacityArrays(MaterialState* state, const d
                         _standardOpacityTable(lambda, logU, logR2, logR3, logR4, logR5, Z, n_H, dChiD);
                     const double k_ctr =
                         _standardOpacityTable(lambda, logU, logR2, logR3, logR4, logR5, Z, n_H, centreDeltaId);
-                    const double eps = 1e-99;
+                    constexpr double eps = 1e-99;
                     const double logK_dN =
                         (1.0 - wN) * std::log10(std::max(k_dN_lo, eps)) + wN * std::log10(std::max(k_dN_hi, eps));
                     const double logK_dC =

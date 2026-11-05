@@ -11,7 +11,7 @@
 
 namespace
 {
-    const int _Nu = 400;
+    constexpr int _Nu = 400;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -20,7 +20,7 @@ void CubicSplineSmoothingKernel::setupSelfBefore()
 {
     SmoothingKernel::setupSelfBefore();
 
-    double du = 1.0 / _Nu;
+    constexpr double du = 1.0 / _Nu;
     _Xv.resize(_Nu + 1);
     for (int k = 0; k <= _Nu; k++)
     {

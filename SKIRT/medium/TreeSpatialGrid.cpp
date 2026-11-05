@@ -34,10 +34,10 @@ void TreeSpatialGrid::setupSelfBefore()
 namespace
 {
     // maximum number of nodes evaluated between two invocations of infoIfElapsed()
-    const size_t logEvalChunkSize = 10000;
+    constexpr size_t logEvalChunkSize = 10000;
 
     // maximum number of nodes subdivided between two invocations of infoIfElapsed()
-    const size_t logDivideChunkSize = 5000;
+    constexpr size_t logDivideChunkSize = 5000;
 }
 
 ////////////////////////////////////////////////////////////////////

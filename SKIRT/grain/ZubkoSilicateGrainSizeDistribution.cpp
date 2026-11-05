@@ -10,8 +10,8 @@
 namespace
 {
     // grain size range for silicate (in m)
-    const double amin_sil = 0.00035e-6;
-    const double amax_sil = 0.37e-6;
+    constexpr double amin_sil = 0.00035e-6;
+    constexpr double amax_sil = 0.37e-6;
 
     // parameterized Zubko grain size distribution
     double dnda(double a, double A, double c0, double b0, double a1, double b1, double m1, double a2, double b2,
@@ -26,21 +26,21 @@ namespace
     // grain size distribution for silicate
     double dnda_sil(double a)
     {
-        const double A = 1.471288e-7;
-        const double c0 = -8.47091;
-        const double b0 = -3.68708;
-        const double a1 = 7.64943e-3;  // in micron
-        const double b1 = 2.37316e-5;
-        const double m1 = 22.5489;
-        const double a2 = 1.0;  // not used
-        const double b2 = 0.0;  // not used
-        const double m2 = 0.0;  // not used
-        const double a3 = 0.480229;
-        const double b3 = 2961.28;
-        const double m3 = 12.1717;
-        const double a4 = 1.0;  // not used
-        const double b4 = 0.0;  // not used
-        const double m4 = 0.0;  // not used
+        constexpr double A = 1.471288e-7;
+        constexpr double c0 = -8.47091;
+        constexpr double b0 = -3.68708;
+        constexpr double a1 = 7.64943e-3;  // in micron
+        constexpr double b1 = 2.37316e-5;
+        constexpr double m1 = 22.5489;
+        constexpr double a2 = 1.0;  // not used
+        constexpr double b2 = 0.0;  // not used
+        constexpr double m2 = 0.0;  // not used
+        constexpr double a3 = 0.480229;
+        constexpr double b3 = 2961.28;
+        constexpr double m3 = 12.1717;
+        constexpr double a4 = 1.0;  // not used
+        constexpr double b4 = 0.0;  // not used
+        constexpr double m4 = 0.0;  // not used
         return dnda(a, A, c0, b0, a1, b1, m1, a2, b2, m2, a3, b3, m3, a4, b4, m4);
     }
 }

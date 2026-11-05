@@ -517,7 +517,7 @@ void Snapshot::parameters(Position bfr, Array& params) const
 namespace
 {
     // the number of samples used for integrating the surface densities
-    const int NSAMPLES = 10000;
+    constexpr int NSAMPLES = 10000;
 }
 
 ////////////////////////////////////////////////////////////////////

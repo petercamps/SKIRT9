@@ -18,7 +18,7 @@ namespace
     constexpr double B = 1.88060965502447027232;      // front factor column density N sqrt(2 pi) sigma
 
     // the number of equidistant points in the cumulative distribution grid
-    const int Nu = 400;
+    constexpr int Nu = 400;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -27,7 +27,7 @@ void ScaledGaussianSmoothingKernel::setupSelfBefore()
 {
     SmoothingKernel::setupSelfBefore();
 
-    double du = 1.0 / Nu;
+    constexpr double du = 1.0 / Nu;
     _Xv.resize(Nu + 1);
     _Xv[0] = 0.;
     for (int k = 1; k < Nu; k++)

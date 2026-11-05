@@ -13,7 +13,7 @@ void RedistributeGeometryDecorator::setupSelfAfter()
 {
     Geometry::setupSelfAfter();
 
-    int Nsamples = 10000;
+    constexpr int Nsamples = 10000;
     double sum = 0.;
     for (int k = 0; k < Nsamples; k++)
     {

@@ -16,12 +16,12 @@ SersicFunction::SersicFunction(double n)
         throw FATALERROR("The Sersic parameter should be between 0.5 and 10 (n = " + std::to_string(n) + ")");
     double b = 2.0 * n - 1.0 / 3.0 + 4.0 / 405.0 / n + 46.0 / 25515.0 / (n * n) + 131.0 / 1148175.0 / (n * n * n);
     double I0 = pow(b, 2.0 * n) / (M_PI * SpecialFunctions::gamma(2.0 * n + 1));
-    int Ns = 101;
+    constexpr int Ns = 101;
     _sv.resize(Ns);
     _Sv.resize(Ns);
     _Mv.resize(Ns);
-    double logsmin = -6.0;
-    double logsmax = 4.0;
+    constexpr double logsmin = -6.0;
+    constexpr double logsmax = 4.0;
     double dlogs = (logsmax - logsmin) / (Ns - 1.0);
     for (int i = 0; i < Ns; i++)
     {
@@ -30,8 +30,8 @@ SersicFunction::SersicFunction(double n)
         _sv[i] = s;
         double alpha = b * pow(s, 1.0 / n);
         double sum = 0.0;
-        int Nu = 10000;
-        double tmax = 100.0;
+        constexpr int Nu = 10000;
+        constexpr double tmax = 100.0;
         double umax = sqrt((tmax + 1.0) * (tmax - 1.0));
         double du = umax / Nu;
         for (int j = 0; j <= Nu; j++)

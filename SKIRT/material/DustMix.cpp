@@ -59,7 +59,7 @@ void DustMix::setupSelfAfter()
 
     // add a fine grid covering the wavelength range of the simulation in log space;
     // use integer multiples as logarithmic grid points so that the grid is stable for changing wavelength ranges
-    const double numWavelengthsPerDex = 1000;  // declared as double to avoid casting, but should be an integer
+    constexpr double numWavelengthsPerDex = 1000;  // declared as double to avoid casting, but should be an integer
     Range range = config->simulationWavelengthRange();
     int minLambdaSerial = std::floor(numWavelengthsPerDex * log10(range.min()));
     int maxLambdaSerial = std::ceil(numWavelengthsPerDex * log10(range.max()));
@@ -72,7 +72,7 @@ void DustMix::setupSelfAfter()
     NR::unique(wavelengths);
 
     // remove wavelengths beyond 10 cm, if any, because those dust cross sections should be assumed to be zero
-    const double dm = 0.1;
+    constexpr double dm = 0.1;
     bool radioCutoff = wavelengths.back() > dm;
     if (radioCutoff)
     {
@@ -256,7 +256,7 @@ size_t DustMix::initializeExtraProperties(const Array& /*lambdav*/)
 
 void DustMix::informAvailableWavelengthRange(Range available)
 {
-    const double fuzzy = 0.011;  // slightly more than 1% because Configuration class extends the range by 1%
+    constexpr double fuzzy = 0.011;  // slightly more than 1% because Configuration class extends the range by 1%
     if (!available.containsFuzzy(_required.min(), fuzzy) || !available.containsFuzzy(_required.max(), fuzzy))
     {
         auto units = find<Units>();

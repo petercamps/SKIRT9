@@ -20,7 +20,7 @@ void RingGeometry::setupSelfBefore()
     _A = 1.0 / (2.0 * M_PI * intz * intR);
 
     // setup the cumulative distribution for the radial distribution
-    int NR = 330;
+    constexpr int NR = 330;
     NR::buildLinearGrid(_Rv, max(0., _R0 - 8 * _w), _R0 + 8 * _w, NR - 1);
     _Xv.resize(NR);
     double sqrtpi = sqrt(M_PI);

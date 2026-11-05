@@ -18,8 +18,8 @@ void BrokenExpDiskGeometry::setupSelfBefore()
     // range between 0 and _Rb, and Nout points between _Rb and the outermost radius,
     // which we choose to be _Rb + 10*_hout.
 
-    int Ninn = 200;
-    int Nout = 400;
+    constexpr int Ninn = 200;
+    constexpr int Nout = 400;
     int N = Ninn + Nout;
     _Rv.resize(N + 1);
     _Xv.resize(N + 1);

@@ -15,13 +15,13 @@ namespace
 {
     // intrinsic half-range of a single line in dispersion units (see LyaGaussianSED for a
     // discussion of this limit: the Gaussian value at 9 dispersion units is negligible)
-    const double intrinsicRange = 9;
+    constexpr double intrinsicRange = 9;
 
     // number of wavelength points per dispersion unit in the private grid for a single line
-    const int numWavelengthsPerDispersionUnit = 100;
+    constexpr int numWavelengthsPerDispersionUnit = 100;
 
     // relative wavelength difference below which two grid points are considered coincident
-    const double mergeTolerance = 1e-6;
+    constexpr double mergeTolerance = 1e-6;
 
     // Gaussian centered on 0 with dispersion of 1, evaluated at x
     double unitGaussian(double x)
@@ -78,7 +78,7 @@ void GaussianLinesSED::getWavelengthsAndLuminosities(Array& lambdav, Array& pv) 
     {
         double lo = line.lambda - intrinsicRange * line.sigma;
         double hi = line.lambda + intrinsicRange * line.sigma;
-        int n = static_cast<int>(2 * intrinsicRange * numWavelengthsPerDispersionUnit);
+        constexpr int n = static_cast<int>(2 * intrinsicRange * numWavelengthsPerDispersionUnit);
         Array grid;
         NR::buildLinearGrid(grid, lo, hi, n);
         for (double x : grid) pooledv.push_back(x);

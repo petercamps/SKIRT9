@@ -10,7 +10,7 @@
 
 Direction::Direction(double theta, double phi)
 {
-    static const double eps = 1e-8;
+    constexpr double eps = 1e-8;
     if (theta < -eps || theta > M_PI + eps)
     {
         throw FATALERROR("Theta should be between 0 and pi.");

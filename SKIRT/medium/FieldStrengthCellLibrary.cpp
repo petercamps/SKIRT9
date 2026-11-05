@@ -27,7 +27,7 @@ vector<int> FieldStrengthCellLibrary::mapping(const Array& bv) const
     int numCells = ms->numCells();
 
     // the local radiation field in the Milky Way (Mathis et al. 1983) integrated over all wavelengths
-    double JtotMW = 1.7623e-06;
+    constexpr double JtotMW = 1.7623e-06;
 
     // calculate the field strengths for all spatial cells and track the minimum and maximum values
     double Umin = DBL_MAX;

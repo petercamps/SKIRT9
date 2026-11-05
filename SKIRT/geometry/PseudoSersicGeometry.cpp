@@ -20,9 +20,9 @@ void PseudoSersicGeometry::setupSelfBefore()
         pow(_bn, 2.0 * _n + 0.5) / (4.0 * M_PI * _n * SpecialFunctions::gamma(2.0 * _n + 0.5) * _reff * _reff * _reff);
 
     // grid with values of the cumulative mass
-    int N = 201;
-    double logsmin = -5.0;
-    double logsmax = 5.0;
+    constexpr int N = 201;
+    constexpr double logsmin = -5.0;
+    constexpr double logsmax = 5.0;
     double dlogs = (logsmax - logsmin) / (N - 1.0);
     _rv.resize(N);
     _Xv.resize(N);

@@ -32,8 +32,8 @@ namespace
         int ellC = max(ellB, wavelengthGrid->bin(0.134e-6));
         int ellD = max(ellC, wavelengthGrid->bin(0.250e-6));
 
-        const double Wv[] = {1e-14, 1e-13, 4e-13};
-        const double Tv[] = {7500, 4000, 3000};
+        static constexpr double Wv[] = {1e-14, 1e-13, 4e-13};
+        static constexpr double Tv[] = {7500, 4000, 3000};
 
         Array Jv(numWavelengths);
         for (int ell = ellA + 1; ell <= ellB; ell++)
@@ -129,8 +129,8 @@ void DustEmissivityProbe::probe()
 
         // write emissivities for a range of diluted black body input fields
         {
-            const int Tv[] = {3000, 6000, 9000, 12000, 15000, 18000};
-            const double Dv[] = {8.28e-12, 2.23e-13, 2.99e-14, 7.23e-15, 2.36e-15, 9.42e-16};
+            static constexpr int Tv[] = {3000, 6000, 9000, 12000, 15000, 18000};
+            static constexpr double Dv[] = {8.28e-12, 2.23e-13, 2.99e-14, 7.23e-15, 2.36e-15, 9.42e-16};
             for (int i = 0; i < 6; i++)
             {
                 writeEmissivitiesForField(

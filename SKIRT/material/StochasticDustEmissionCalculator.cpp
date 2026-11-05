@@ -139,7 +139,7 @@ public:
         dHv[NT - 1] = Hv[NT - 1] - Hv[NT - 2];
 
         // calculate the heating rates, barring the dependency on the radiation field
-        double hc = Constants::h() * Constants::c();
+        constexpr double hc = Constants::h() * Constants::c();
         for (int f = 1; f < NT; f++)
         {
             for (int i = 0; i < f; i++)
@@ -320,20 +320,20 @@ namespace
     // - a coarse grid for quickly determining the appropriate temperature range
     //   (with smaller bins in the lower temperature range, which sees action most often)
     // - a medium and a fine grid for performing the actual calculation (with equally-spaced bins)
-    const double Tuppermax = 3000;     // the largest temperature taken into account
-    const int NTA = 20;                // the number of grid points in the coarse grid
-    const double ratioA = 500.;        // the ratio between the largest and smallest bins in the coarse grid
-    const double widthB = 4.;          // the average width of bins in the medium grid, in K
-    const double ratioB = 1.;          // the ratio between the largest and smallest bins in the medium grid
-    const double widthC = 2.;          // the average width of bins in the fine grid, in K
-    const double ratioC = 3.;          // the ratio between the largest and smallest bins in the fine grid
-    const double deltaTmedium = 200.;  // the smallest temperature range for which the medium grid is used
+    constexpr double Tuppermax = 3000;     // the largest temperature taken into account
+    constexpr int NTA = 20;                // the number of grid points in the coarse grid
+    constexpr double ratioA = 500.;        // the ratio between the largest and smallest bins in the coarse grid
+    constexpr double widthB = 4.;          // the average width of bins in the medium grid, in K
+    constexpr double ratioB = 1.;          // the ratio between the largest and smallest bins in the medium grid
+    constexpr double widthC = 2.;          // the average width of bins in the fine grid, in K
+    constexpr double ratioC = 3.;          // the ratio between the largest and smallest bins in the fine grid
+    constexpr double deltaTmedium = 200.;  // the smallest temperature range for which the medium grid is used
 
     // considering the temperature range over which the probability is nonzero (or larger than a very small fraction);
     // we assume the population to be in equilibrium if one or both of the following conditions is true:
     // - the temperature range is smaller than a given delta-T (i.e. it resembles a delta function)
     // - the equilibrium temperature lies outside of the temperature range
-    const double deltaTeq = 10.;  // the cutoff width of the temperature range
+    constexpr double deltaTeq = 10.;  // the cutoff width of the temperature range
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -118,8 +118,8 @@ namespace
     // n_e = {1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8}
     inline double logT_SH95(int i)
     {
-        static const double v[pbNumT] = {2.69897000, 3.0,        3.47712125, 3.69897000, 3.87506126,
-                                         4.0,        4.09691001, 4.17609126, 4.30103000, 4.47712125};
+        static constexpr double v[pbNumT] = {2.69897000, 3.0,        3.47712125, 3.69897000, 3.87506126,
+                                             4.0,        4.09691001, 4.17609126, 4.30103000, 4.47712125};
         return v[i];
     }
 
@@ -356,7 +356,7 @@ namespace
     // log10(q_col) in cm^3/s, indexed as [ne_index][T_index], dimensions 19 x 21
 
     // [NII] 6548: 2s^2 2p^2 3P_1 -> 2s^2 2p^2 1D_2
-    static const double log_qcol_NII_6548[qcNumNe][qcNumT] = {
+    constexpr double log_qcol_NII_6548[qcNumNe][qcNumT] = {
         {-102.742, -61.072, -37.699, -24.610, -17.304, -13.243, -11.007, -9.798, -9.166, -8.857, -8.726,
          -8.699,   -8.742,  -8.820,  -8.919,  -9.028,  -9.145,  -9.265,  -9.387, -9.511, -9.635},
         {-102.623, -60.994, -37.651, -24.582, -17.288, -13.237, -11.007, -9.803, -9.174, -8.864, -8.732,
@@ -397,7 +397,7 @@ namespace
          -13.601,  -13.558, -13.534, -13.519, -13.509, -13.502, -13.497, -13.493, -13.490, -13.487}};
 
     // [NII] 6583: 2s^2 2p^2 3P_2 -> 2s^2 2p^2 1D_2
-    static const double log_qcol_NII_6583[qcNumNe][qcNumT] = {
+    constexpr double log_qcol_NII_6583[qcNumNe][qcNumT] = {
         {-102.271, -60.601, -37.228, -24.139, -16.833, -12.772, -10.536, -9.327, -8.695, -8.386, -8.255,
          -8.228,   -8.271,  -8.349,  -8.448,  -8.557,  -8.674,  -8.794,  -8.916, -9.040, -9.164},
         {-102.152, -60.523, -37.180, -24.111, -16.817, -12.766, -10.536, -9.332, -8.703, -8.393, -8.261,
@@ -438,7 +438,7 @@ namespace
          -13.130,  -13.087, -13.063, -13.048, -13.038, -13.031, -13.026, -13.022, -13.019, -13.016}};
 
     // [OI] 6300: 2s^2 2p^4 3P_2 -> 2s^2 2p^4 1D_2
-    static const double logQcolOI6300[qcNumNe][qcNumT] = {
+    constexpr double logQcolOI6300[qcNumNe][qcNumT] = {
         {-107.223, -63.955, -39.677, -26.080, -18.489, -14.274, -11.959, -10.643, -9.685, -9.124, -8.820,
          -8.640,   -8.588,  -8.663,  -8.760,  -8.869,  -8.985,  -9.105,  -9.227,  -9.350, -9.474},
         {-107.221, -63.953, -39.677, -26.080, -18.488, -14.274, -11.959, -10.643, -9.685, -9.124, -8.820,
@@ -479,7 +479,7 @@ namespace
          -12.830,  -12.781, -12.755, -12.741, -12.733, -12.729, -12.726, -12.724, -12.722, -12.720}};
 
     // [OI] 6364: 2s^2 2p^4 3P_1 -> 2s^2 2p^4 1D_2
-    static const double logQcolOI6364[qcNumNe][qcNumT] = {
+    constexpr double logQcolOI6364[qcNumNe][qcNumT] = {
         {-107.715, -64.446, -40.169, -26.572, -18.980, -14.766, -12.450, -11.134, -10.176, -9.615, -9.312,
          -9.132,   -9.079,  -9.154,  -9.251,  -9.360,  -9.476,  -9.596,  -9.718,  -9.841,  -9.966},
         {-107.713, -64.444, -40.168, -26.571, -18.980, -14.765, -12.450, -11.134, -10.176, -9.615, -9.312,
@@ -520,7 +520,7 @@ namespace
          -13.321,  -13.272, -13.246, -13.232, -13.224, -13.220, -13.217, -13.215, -13.213, -13.212}};
 
     // [OII] 3729 (2D 5/2): primary component
-    static const double log_qcol_OII_3729[qcNumNe][qcNumT] = {
+    constexpr double log_qcol_OII_3729[qcNumNe][qcNumT] = {
         {-174.314, -101.114, -60.002, -36.934, -24.012, -16.799, -12.798, -10.601, -9.411, -8.781, -8.467,
          -8.330,   -8.298,   -8.343,  -8.423,  -8.523,  -8.633,  -8.750,  -8.870,  -8.993, -9.116},
         {-174.357, -101.149, -60.030, -36.956, -24.030, -16.813, -12.809, -10.610, -9.417, -8.787, -8.472,
@@ -561,7 +561,7 @@ namespace
          -14.985,  -14.958,  -14.948, -14.944, -14.942, -14.941, -14.941, -14.940, -14.940, -14.939}};
 
     // [OII] 3726 (2D 3/2): doublet companion
-    static const double log_qcol_OII_3726[qcNumNe][qcNumT] = {
+    constexpr double log_qcol_OII_3726[qcNumNe][qcNumT] = {
         {-174.577, -101.330, -60.195, -37.114, -24.185, -16.971, -12.971, -10.774, -9.582, -8.950, -8.632,
          -8.493,   -8.459,   -8.504,  -8.583,  -8.683,  -8.793,  -8.910,  -9.031,  -9.153, -9.276},
         {-174.554, -101.311, -60.179, -37.101, -24.174, -16.961, -12.964, -10.769, -9.578, -8.947, -8.631,
@@ -602,7 +602,7 @@ namespace
          -14.526,  -14.499,  -14.489, -14.485, -14.483, -14.482, -14.481, -14.481, -14.480, -14.480}};
 
     // [OIII] 4363: 2s^2 2p^2 1D_2 -> 2s^2 2p^2 1S_0
-    static const double log_qcol_OIII_4363[qcNumNe][qcNumT] = {
+    constexpr double log_qcol_OIII_4363[qcNumNe][qcNumT] = {
         {-277.418, -159.471, -93.204, -55.995, -35.126, -23.449, -16.940, -13.315, -11.303, -10.208, -9.653,
          -9.404,   -9.319,   -9.326,  -9.385,  -9.472,  -9.576,  -9.690,  -9.808,  -9.929,  -10.052},
         {-277.312, -159.404, -93.166, -55.975, -35.116, -23.444, -16.937, -13.314, -11.302, -10.208, -9.652,
@@ -643,7 +643,7 @@ namespace
          -11.344,  -11.168,  -11.073, -11.022, -10.994, -10.980, -10.974, -10.973, -10.975, -10.980}};
 
     // [OIII] 4959: 2s^2 2p^2 3P_1 -> 2s^2 2p^2 1D_2
-    static const double log_qcol_OIII_4959[qcNumNe][qcNumT] = {
+    constexpr double log_qcol_OIII_4959[qcNumNe][qcNumT] = {
         {-133.908, -78.618, -47.581, -30.179, -20.455, -15.053, -12.074, -10.434, -9.536, -9.065, -8.854,
          -8.793,   -8.812,  -8.877,  -8.967,  -9.073,  -9.187,  -9.306,  -9.427,  -9.550, -9.674},
         {-133.803, -78.552, -47.543, -30.160, -20.445, -15.048, -12.072, -10.433, -9.535, -9.065, -8.853,
@@ -684,7 +684,7 @@ namespace
          -12.783,  -12.718, -12.684, -12.666, -12.656, -12.651, -12.648, -12.646, -12.644, -12.643}};
 
     // [OIII] 5007: 2s^2 2p^2 3P_2 -> 2s^2 2p^2 1D_2
-    static const double log_qcol_OIII_5007[qcNumNe][qcNumT] = {
+    constexpr double log_qcol_OIII_5007[qcNumNe][qcNumT] = {
         {-133.429, -78.140, -47.102, -29.700, -19.976, -14.574, -11.595, -9.955, -9.057, -8.586, -8.375,
          -8.315,   -8.333,  -8.398,  -8.488,  -8.594,  -8.708,  -8.827,  -8.948, -9.071, -9.195},
         {-133.324, -78.073, -47.064, -29.681, -19.966, -14.569, -11.593, -9.954, -9.056, -8.586, -8.374,
@@ -725,7 +725,7 @@ namespace
          -12.304,  -12.239, -12.205, -12.187, -12.177, -12.172, -12.169, -12.167, -12.165, -12.164}};
 
     // [SII] 6716: 3s^2 3p^3 4S0 -> 2D 5/2
-    static const double log_qcol_SII_6716[qcNumNe][qcNumT] = {
+    constexpr double log_qcol_SII_6716[qcNumNe][qcNumT] = {
         {-99.093, -58.508, -35.739, -22.989, -15.873, -11.926, -9.760, -8.595, -7.998, -7.721, -7.629,
          -7.658,  -7.779,  -7.859,  -7.958,  -8.069,  -8.186,  -8.306, -8.429, -8.552, -8.676},
         {-99.130, -58.537, -35.761, -23.006, -15.886, -11.936, -9.768, -8.601, -8.003, -7.725, -7.633,
@@ -766,7 +766,7 @@ namespace
          -14.082,  -14.074, -14.071, -14.071, -14.070, -14.070, -14.070, -14.070, -14.070, -14.070}};
 
     // [SII] 6731: 3s^2 3p^3 4S0 -> 2D 3/2
-    static const double log_qcol_SII_6731[qcNumNe][qcNumT] = {
+    constexpr double log_qcol_SII_6731[qcNumNe][qcNumT] = {
         {-99.043, -58.549, -35.834, -23.115, -16.018, -12.082, -9.922, -8.758, -8.157, -7.871, -7.771,
          -7.796,  -7.914,  -7.992,  -8.090,  -8.200,  -8.317,  -8.437, -8.560, -8.683, -8.807},
         {-99.032, -58.537, -35.823, -23.105, -16.010, -12.076, -9.917, -8.754, -8.154, -7.870, -7.771,
@@ -885,18 +885,14 @@ namespace
         int upper;
         int lower;
     };
-    const vector<LineFile>& recombLineFiles()
-    {
-        static const vector<LineFile> table = {
-            {GasLineEmission::Ha, 0, 3, 2},        {GasLineEmission::Hb, 0, 4, 2},
-            {GasLineEmission::Hg, 0, 5, 2},        {GasLineEmission::Hd, 0, 6, 2},
-            {GasLineEmission::HeBalmer, 0, 7, 2},  {GasLineEmission::Paa, 0, 4, 3},
-            {GasLineEmission::Pab, 0, 5, 3},       {GasLineEmission::Bra, 0, 5, 4},
-            {GasLineEmission::HeI5876, 1, -1, -1}, {GasLineEmission::HeI6678, 1, -1, -1},
-            {GasLineEmission::HeI7065, 1, -1, -1}, {GasLineEmission::HeI10830, 1, -1, -1},
-            {GasLineEmission::HeII1640, 2, 3, 2},  {GasLineEmission::HeII4686, 2, 4, 3}};
-        return table;
-    }
+    constexpr LineFile recombLineFiles[] = {
+        {GasLineEmission::Ha, 0, 3, 2},        {GasLineEmission::Hb, 0, 4, 2},
+        {GasLineEmission::Hg, 0, 5, 2},        {GasLineEmission::Hd, 0, 6, 2},
+        {GasLineEmission::HeBalmer, 0, 7, 2},  {GasLineEmission::Paa, 0, 4, 3},
+        {GasLineEmission::Pab, 0, 5, 3},       {GasLineEmission::Bra, 0, 5, 4},
+        {GasLineEmission::HeI5876, 1, -1, -1}, {GasLineEmission::HeI6678, 1, -1, -1},
+        {GasLineEmission::HeI7065, 1, -1, -1}, {GasLineEmission::HeI10830, 1, -1, -1},
+        {GasLineEmission::HeII1640, 2, 3, 2},  {GasLineEmission::HeII4686, 2, 4, 3}};
 
     // ============== Level populations (statistical equilibrium) ==============
 
@@ -977,7 +973,7 @@ namespace
         double mass;
     };
     constexpr double _protonMass = 1.67262192e-27;
-    const RecombSet _recombSets[] = {
+    constexpr RecombSet _recombSets[] = {
         {0, false, false, _protonMass}, {1, true, false, 4.0 * _protonMass}, {2, false, true, 4.0 * _protonMass}};
 }
 
@@ -1038,7 +1034,7 @@ void GasLineEmission::initializeRecombinationTables()
 
     // point each built-in recombination line at its cube line: H I and He II by quantum number,
     // He I by nearest wavelength (its source table carries no quantum numbers)
-    for (auto entry : recombLineFiles())
+    for (auto entry : recombLineFiles)
     {
         int found = -1;
         if (entry.upper > 0)
@@ -1144,7 +1140,7 @@ void GasLineEmission::initializeExtendedLineRegistry(const vector<SpeciesSpec>& 
 
     // (cube, line index) pairs already claimed by the built-in recombination lines
     std::set<std::pair<int, int>> claimedCubeLines;
-    for (auto entry : recombLineFiles())
+    for (auto entry : recombLineFiles)
         claimedCubeLines.insert(
             {_recombRegistry.table[entry.lineIdx].cubeId, _recombRegistry.table[entry.lineIdx].lineIdx});
 

@@ -36,7 +36,7 @@
 namespace
 {
     // maximum number of cell densities calculated between two invocations of infoIfElapsed()
-    const size_t logProgressChunkSize = 10000;
+    constexpr size_t logProgressChunkSize = 10000;
 
     // number of interleaved batches of photon packets for estimating the noise of the radiation field in each cell
     constexpr int numNoiseBatches = 8;

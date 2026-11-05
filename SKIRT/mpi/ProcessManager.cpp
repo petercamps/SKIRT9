@@ -26,7 +26,7 @@ namespace
     // Large messages will be broken up into pieces of the following size
     // (slightly under 2GB when data type is double)
     // because some MPI implementations dislike larger messages
-    const size_t maxMessageSize = 250 * 1000 * 1000;
+    constexpr size_t maxMessageSize = 250 * 1000 * 1000;
 }
 #endif
 

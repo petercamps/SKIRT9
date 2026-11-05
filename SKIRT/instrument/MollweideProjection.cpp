@@ -9,7 +9,7 @@
 
 void MollweideProjection::fromGlobeToRectangle(double longitude, double latitude, double& x, double& y) const
 {
-    const double eps = M_PI / 500;  // arbitrary accuracy choice
+    constexpr double eps = M_PI / 500;  // arbitrary accuracy choice
 
     double theta = latitude;
     if (theta > -M_PI_2 + eps && theta < M_PI_2 - eps)

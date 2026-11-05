@@ -14,7 +14,7 @@ ChunkMaker::ChunkMaker() {}
 void ChunkMaker::initialize(size_t maxIndex, int numThreads, int numProcs)
 {
     // Determine the chunk size
-    const size_t numChunksPerThread = 8;  // empirical multiplicator to achieve acceptable load balancing
+    constexpr size_t numChunksPerThread = 8;  // empirical multiplicator to achieve acceptable load balancing
     _chunkSize = max(static_cast<size_t>(1), maxIndex / (numThreads * numProcs * numChunksPerThread));
 
     // Initialize the other data members

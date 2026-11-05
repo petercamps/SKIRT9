@@ -12,7 +12,7 @@
 namespace
 {
     // number of wavelength points in tabulated result per dispersion unit
-    const int numWavelengthsPerDispersionUnit = 100;
+    constexpr int numWavelengthsPerDispersionUnit = 100;
 
     // double-peaked spectrum centered on 0 with scale of 1, evaluated at x
     double unitSpectrum(double x)
@@ -42,7 +42,7 @@ double LyaDoublePeakedSEDFamily::specificLuminosity(double wavelength, const Arr
 {
     double L = parameters[0];
     double s = parameters[1];
-    double wavelengthCenter = Constants::lambdaLya();
+    constexpr double wavelengthCenter = Constants::lambdaLya();
     double wavelengthDispersion = s * wavelengthCenter / Constants::c();
     return L * unitSpectrum((wavelength - wavelengthCenter) / wavelengthDispersion) / wavelengthDispersion;
 }
@@ -54,7 +54,7 @@ double LyaDoublePeakedSEDFamily::cdf(Array& lambdav, Array& pv, Array& Pv, Range
 {
     double L = parameters[0];
     double s = parameters[1];
-    double wavelengthCenter = Constants::lambdaLya();
+    constexpr double wavelengthCenter = Constants::lambdaLya();
     double wavelengthDispersion = s * wavelengthCenter / Constants::c();
 
     // build an appropriate grid

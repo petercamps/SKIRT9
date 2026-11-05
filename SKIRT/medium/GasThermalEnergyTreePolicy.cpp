@@ -15,7 +15,7 @@
 namespace
 {
     // the number of positions used to estimate the average temperature of a medium component
-    const int numTemperatureSamples = 100000;
+    constexpr int numTemperatureSamples = 100000;
 
     // returns the index of the temperature among the imported parameters of the specified medium, or -1 if the
     // medium does not import a temperature

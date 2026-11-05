@@ -203,7 +203,7 @@ void PhotoIonizationSolver::computePhotoionizationRates(const Array& Jv, double 
     // units: [W/m^3/sr] * [m] * [m] * [cm^2] / [J*m] = [1/s] * [cm^2/m^2]
     // need to convert cm^2 to m^2: factor 1e-4, or equivalently divide by 1e4
 
-    double hc_SI = Constants::h() * Constants::c();  // h*c in J*m
+    constexpr double hc_SI = Constants::h() * Constants::c();  // h*c in J*m
 
     for (int i = 0; i < _numBins; i++)
     {
@@ -235,7 +235,7 @@ double PhotoIonizationSolver::computeHeatingRate(const Array& Jv, const double i
     // = sum over ions of n_ion * integral{ 4pi * J_lambda * sigma(E) * (E - IP) / E * dlambda * lambda / (hc) }
     // same unit conversion as photoionization rates, but weighted by (E - IP) in erg
 
-    double hc_SI = Constants::h() * Constants::c();
+    constexpr double hc_SI = Constants::h() * Constants::c();
     double heating = 0.;
 
     // precompute number densities for each ion with XS
@@ -303,15 +303,15 @@ namespace
             int offset;
             int nstages;
         };
-        static const ElemDef elems[] = {{"Ne", 29, 9}, {"Mg", 38, 11}, {"Si", 49, 13}, {"Fe", 67, 17},
-                                        {"C", 5, 7},   {"N", 12, 8},   {"O", 20, 9},   {"S", 62, 5}};
+        static constexpr ElemDef elems[] = {{"Ne", 29, 9}, {"Mg", 38, 11}, {"Si", 49, 13}, {"Fe", 67, 17},
+                                            {"C", 5, 7},   {"N", 12, 8},   {"O", 20, 9},   {"S", 62, 5}};
         // Roman numerals
         struct RomanDef
         {
             const char* str;
             int val;
         };
-        static const RomanDef romans[] = {
+        static constexpr RomanDef romans[] = {
             {"XXVI", 26}, {"XXV", 25},   {"XXIV", 24}, {"XXIII", 23}, {"XXII", 22}, {"XXI", 21}, {"XX", 20},
             {"XIX", 19},  {"XVIII", 18}, {"XVII", 17}, {"XVI", 16},   {"XV", 15},   {"XIV", 14}, {"XIII", 13},
             {"XII", 12},  {"XI", 11},    {"X", 10},    {"IX", 9},     {"VIII", 8},  {"VII", 7},  {"VI", 6},

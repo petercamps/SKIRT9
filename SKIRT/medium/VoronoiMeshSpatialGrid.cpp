@@ -67,7 +67,7 @@ void VoronoiMeshSpatialGrid::setupSelfBefore()
         case Policy::CentralPeak:
         {
             auto random = find<Random>();
-            const int a = 1000;  // steepness of the peak; the central 1/a portion is NOT covered
+            constexpr int a = 1000;  // steepness of the peak; the central 1/a portion is NOT covered
             const double rscale = extent().rmax().norm();
             vector<Vec> rv(_numSites);
             for (int m = 1; m != _numSites;)  // skip first particle so that it remains (0,0,0)

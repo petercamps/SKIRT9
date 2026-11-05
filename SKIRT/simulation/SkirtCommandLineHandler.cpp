@@ -30,7 +30,7 @@
 namespace
 {
     // the allowed options list, in the format consumed by the CommandLineArguments constructor
-    static const char* allowedOptions = "-t* -s* -b -v -m -e -k -i* -o* -r -x";
+    constexpr const char* allowedOptions = "-t* -s* -b -v -m -e -k -i* -o* -r -x";
 }
 
 ////////////////////////////////////////////////////////////////////

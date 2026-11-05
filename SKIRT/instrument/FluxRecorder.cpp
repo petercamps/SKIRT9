@@ -59,7 +59,7 @@ namespace
     //  - include k=0, which tracks the number of detections
     //  - thus, the number of detector arrays for statistics is this number plus one
     //  - these detector arrays do not need calibration!
-    const int maxContributionPower = 4;
+    constexpr int maxContributionPower = 4;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -850,7 +850,7 @@ void FluxRecorder::calibrateAndWrite()
         {
             // the output files have single-precision floating point numbers with range of only about 10^+-38
             // --> scale the values to a range that has a maximum of 10^+-38 to minimize the number of underflows
-            const double WMAX = 1e38;
+            constexpr double WMAX = 1e38;
             // since every contribution is nonnegative, w[1].max() > 0 guarantees w[k].max() > 0 for all k
             bool anyContribution = _wifu[1].max() > 0;
             Array cs(maxContributionPower);
@@ -1024,7 +1024,7 @@ void FluxRecorder::calibrateAndWrite()
         {
             // the output files have single-precision floating point numbers with range of only about 10^+-38
             // --> scale the values to a range that has a maximum of 10^+-38 to minimize the number of underflows
-            const double WMAX = 1e38;
+            constexpr double WMAX = 1e38;
             // since every contribution is nonnegative, w[1].max() > 0 guarantees w[k].max() > 0 for all k
             bool anyContribution = _wstm[1].max() > 0;
             Array cs(maxContributionPower);

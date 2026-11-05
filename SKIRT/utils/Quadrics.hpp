@@ -18,7 +18,7 @@
 class Quadrics final
 {
     // small value
-    constexpr static double EPS = 1e-12;
+    static constexpr double EPS = 1e-12;
 
     //======================== Powers =======================
 

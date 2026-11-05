@@ -63,7 +63,7 @@ void StoredTableDictionary_Impl::open(const SimulationItem* item, string filenam
     // walk the sequence of ustar header blocks, each followed by that member's data rounded up to a
     // multiple of the block size; the archive ends at the first all-zero header block (or at the end
     // of the mapped region, if the terminating blocks are missing)
-    static const char zeroBlock[blockSize] = {};
+    static constexpr char zeroBlock[blockSize] = {};
     size_t offset = 0;
     while (offset + blockSize <= length)
     {

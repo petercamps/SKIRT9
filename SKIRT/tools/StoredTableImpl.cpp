@@ -23,7 +23,7 @@ namespace
         size_t sizeType;
         char stringType[8];
     };
-    const size_t itemSize = sizeof(StabItem);
+    constexpr size_t itemSize = sizeof(StabItem);
 
     static_assert((sizeof(size_t) == 8) & (sizeof(double) == 8) & (itemSize == 8),
                   "Cannot properly declare union for items in stored table format");

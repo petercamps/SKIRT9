@@ -24,7 +24,7 @@ void Source::setupSelfBefore()
 void Source::informAvailableWavelengthRange(Range available, const string& itemType)
 {
     auto configured = find<Configuration>()->sourceWavelengthRange();
-    const double fuzzy = 0.01;  // 1%
+    constexpr double fuzzy = 0.01;  // 1%
     if (!available.containsFuzzy(configured.min(), fuzzy) || !available.containsFuzzy(configured.max(), fuzzy))
     {
         auto units = find<Units>();

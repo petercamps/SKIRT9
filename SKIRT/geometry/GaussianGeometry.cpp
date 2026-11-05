@@ -16,9 +16,9 @@ void GaussianGeometry::setupSelfBefore()
     _rho0 = 1.0 / pow(sqrt(2.0 * M_PI) * _sigma, 3);
 
     // grid with values of the cumulative mass
-    int N = 401;
-    double logtmin = -4.0;
-    double logtmax = 4.0;
+    constexpr int N = 401;
+    constexpr double logtmin = -4.0;
+    constexpr double logtmax = 4.0;
     double dlogt = (logtmax - logtmin) / (N - 1.0);
     _rv.resize(N);
     _Xv.resize(N);

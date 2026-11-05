@@ -10,8 +10,8 @@
 namespace
 {
     // grain size range for PAH (in m)
-    const double amin_pah = 0.00035e-6;
-    const double amax_pah = 0.005e-6;
+    constexpr double amin_pah = 0.00035e-6;
+    constexpr double amax_pah = 0.005e-6;
 
     // parameterized Zubko grain size distribution
     double dnda(double a, double A, double c0, double b0, double a1, double b1, double m1, double a2, double b2,
@@ -26,21 +26,21 @@ namespace
     // grain size distribution for PAH
     double dnda_pah(double a)
     {
-        const double A = 2.227433e-7;
-        const double c0 = -8.02895;
-        const double b0 = -3.45764;
-        const double a1 = 1.0;  // in micron
-        const double b1 = 1183.96;
-        const double m1 = -8.20551;
-        const double a2 = 1.0;  // not used
-        const double b2 = 0.0;  // not used
-        const double m2 = 0.0;  // not used
-        const double a3 = -5.29496e-3;
-        const double b3 = 1.0e24;
-        const double m3 = 12.0146;
-        const double a4 = 1.0;  // not used
-        const double b4 = 0.0;  // not used
-        const double m4 = 0.0;  // not used
+        constexpr double A = 2.227433e-7;
+        constexpr double c0 = -8.02895;
+        constexpr double b0 = -3.45764;
+        constexpr double a1 = 1.0;  // in micron
+        constexpr double b1 = 1183.96;
+        constexpr double m1 = -8.20551;
+        constexpr double a2 = 1.0;  // not used
+        constexpr double b2 = 0.0;  // not used
+        constexpr double m2 = 0.0;  // not used
+        constexpr double a3 = -5.29496e-3;
+        constexpr double b3 = 1.0e24;
+        constexpr double m3 = 12.0146;
+        constexpr double a4 = 1.0;  // not used
+        constexpr double b4 = 0.0;  // not used
+        constexpr double m4 = 0.0;  // not used
         return dnda(a, A, c0, b0, a1, b1, m1, a2, b2, m2, a3, b3, m3, a4, b4, m4);
     }
 }

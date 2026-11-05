@@ -12,8 +12,8 @@
 
 namespace
 {
-    const int N = 5;  // the number of timers exposed to the user
-    int _level = -1;  // the current level == index in timer arrays
+    constexpr int N = 5;  // the number of timers exposed to the user
+    int _level = -1;      // the current level == index in timer arrays
 
     // these arrays have an element for each timer
     uint64_t _count[N] = {0};  // total number of calls to stop()
@@ -85,7 +85,7 @@ vector<string> StopWatch::report()
     if (_count[0])
     {
         // get the conversion factor from system ticks to seconds
-        const double conv = tick();
+        constexpr double conv = tick();
 
         // add a line per timer that was actually used,
         // and calculate the total and maximum number of start/stop sequences
@@ -106,7 +106,7 @@ vector<string> StopWatch::report()
         }
 
         // estimate the start/stop time using the first timer
-        const int K = 5000;  // number of start/stop sequences in the test
+        constexpr int K = 5000;  // number of start/stop sequences in the test
         _total[0] = 0;
         for (int k = 0; k < K; k++)
         {

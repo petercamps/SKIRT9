@@ -18,9 +18,9 @@ void EinastoGeometry::setupSelfBefore()
     _rhos = 1.0 / (4.0 * M_PI) / pow(_rs, 3) / _n / SpecialFunctions::gamma(3.0 * _n) / exp(_dn) * pow(_dn, 3.0 * _n);
 
     // grid with values of the cumulative mass
-    int N = 401;
-    double logsmin = -4.0;
-    double logsmax = 4.0;
+    constexpr int N = 401;
+    constexpr double logsmin = -4.0;
+    constexpr double logsmax = 4.0;
     double dlogs = (logsmax - logsmin) / (N - 1.0);
     _rv.resize(N);
     _Xv.resize(N);

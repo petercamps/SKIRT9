@@ -15,12 +15,12 @@
 namespace
 {
     // grain size ranges for each of the dust composition types (in m)
-    const double amin_gra = 0.001e-6;
-    const double amax_gra = 10.0e-6;
-    const double amin_sil = 0.001e-6;
-    const double amax_sil = 10.0e-6;
-    const double amin_pah = 0.0003548e-6;
-    const double amax_pah = 0.01e-6;
+    constexpr double amin_gra = 0.001e-6;
+    constexpr double amax_gra = 10.0e-6;
+    constexpr double amin_sil = 0.001e-6;
+    constexpr double amax_sil = 10.0e-6;
+    constexpr double amin_pah = 0.0003548e-6;
+    constexpr double amax_pah = 0.01e-6;
 
     // parameterized grain size distribution for graphite and silicate
     double dnda_grasil(double a, double C, double at, double ac, double alpha, double beta)
@@ -42,9 +42,9 @@ namespace
     // parameterized grain size distribution for pah (whether neutral or ionized)
     double dnda_pah(double a, double sigma, const double a0[2], const double bc[2])
     {
-        const double mC = 1.9944e-26;  // mass of C atom in kg
-        const double rho = 2.24e3;     // mass density of graphite in kg/m^3
-        const double amin = 3.5e-10;   // 3.5 Angstrom in m
+        constexpr double mC = 1.9944e-26;  // mass of C atom in kg
+        constexpr double rho = 2.24e3;     // mass density of graphite in kg/m^3
+        constexpr double amin = 3.5e-10;   // 3.5 Angstrom in m
         double B[2];
         for (int i = 0; i < 2; i++)
         {
@@ -69,29 +69,29 @@ namespace
     //   -> Table 3 p787 in Li & Draine 2001, ApJ, 554, 778
     double dnda_gra_mwy(double a)
     {
-        const double C = 9.99e-12;
-        const double at = 0.0107e-6;
-        const double ac = 0.428e-6;
-        const double alpha = -1.54;
-        const double beta = -0.165;
+        constexpr double C = 9.99e-12;
+        constexpr double at = 0.0107e-6;
+        constexpr double ac = 0.428e-6;
+        constexpr double alpha = -1.54;
+        constexpr double beta = -0.165;
         return dnda_grasil(a, C, at, ac, alpha, beta);
     }
 
     double dnda_sil_mwy(double a)
     {
-        const double C = 1.00e-13;
-        const double at = 0.164e-6;
-        const double ac = 0.1e-6;
-        const double alpha = -2.21;
-        const double beta = 0.300;
+        constexpr double C = 1.00e-13;
+        constexpr double at = 0.164e-6;
+        constexpr double ac = 0.1e-6;
+        constexpr double alpha = -2.21;
+        constexpr double beta = 0.300;
         return dnda_grasil(a, C, at, ac, alpha, beta);
     }
 
     double dnda_pah_mwy(double a)
     {
-        const double sigma = 0.4;
-        const double a0[2] = {3.5e-10, 30e-10};
-        const double bc[2] = {4.5e-5, 1.5e-5};
+        constexpr double sigma = 0.4;
+        static constexpr double a0[2] = {3.5e-10, 30e-10};
+        static constexpr double bc[2] = {4.5e-5, 1.5e-5};
         return dnda_pah(a, sigma, a0, bc);
     }
 
@@ -101,29 +101,29 @@ namespace
     //      Line 2 of Table 3: b_C = 1.0   <--> Table 1 for R_V = 3.1: b_C = 6
     double dnda_gra_lmc(double a)
     {
-        const double C = 3.51e-15;
-        const double at = 0.0980e-6;
-        const double ac = 0.641e-6;
-        const double alpha = -2.99;
-        const double beta = 2.46;
+        constexpr double C = 3.51e-15;
+        constexpr double at = 0.0980e-6;
+        constexpr double ac = 0.641e-6;
+        constexpr double alpha = -2.99;
+        constexpr double beta = 2.46;
         return dnda_grasil(a, C, at, ac, alpha, beta);
     }
 
     double dnda_sil_lmc(double a)  // Weingartner & Draine 2001, ApJ, 548, 296 -- Table 3 p305
     {
-        const double C = 1.78e-14;
-        const double at = 0.184e-6;
-        const double ac = 0.1e-6;
-        const double alpha = -2.49;
-        const double beta = 0.345;
+        constexpr double C = 1.78e-14;
+        constexpr double at = 0.184e-6;
+        constexpr double ac = 0.1e-6;
+        constexpr double alpha = -2.49;
+        constexpr double beta = 0.345;
         return dnda_grasil(a, C, at, ac, alpha, beta);
     }
 
     double dnda_pah_lmc(double a)  // Weingartner & Draine 2001, ApJ, 548, 296 -- Table 3 p305
     {
-        const double sigma = 0.4;                 // Milky Way value
-        const double a0[2] = {3.5e-10, 30e-10};   // Milky Way values
-        const double bc[2] = {0.75e-5, 0.25e-5};  // 1/6 of Milky Way values
+        constexpr double sigma = 0.4;                        // Milky Way value
+        static constexpr double a0[2] = {3.5e-10, 30e-10};   // Milky Way values
+        static constexpr double bc[2] = {0.75e-5, 0.25e-5};  // 1/6 of Milky Way values
         return dnda_pah(a, sigma, a0, bc);
     }
 
@@ -133,21 +133,21 @@ namespace
     //      Line 7 of Table 3: b_C = 0.0
     double dnda_gra_smc(double a)
     {
-        const double C = 8.36e-14;
-        const double at = 0.0190e-6;
-        const double ac = 0.522e-6;
-        const double alpha = -2.79;
-        const double beta = 1.12;
+        constexpr double C = 8.36e-14;
+        constexpr double at = 0.0190e-6;
+        constexpr double ac = 0.522e-6;
+        constexpr double alpha = -2.79;
+        constexpr double beta = 1.12;
         return dnda_grasil(a, C, at, ac, alpha, beta);
     }
 
     double dnda_sil_smc(double a)  // Weingartner & Draine 2001, ApJ, 548, 296 -- Table 3 p305
     {
-        const double C = 3.16e-14;
-        const double at = 0.216e-6;
-        const double ac = 0.1e-6;
-        const double alpha = -2.26;
-        const double beta = -3.46;
+        constexpr double C = 3.16e-14;
+        constexpr double at = 0.216e-6;
+        constexpr double ac = 0.1e-6;
+        constexpr double alpha = -2.26;
+        constexpr double beta = -3.46;
         return dnda_grasil(a, C, at, ac, alpha, beta);
     }
 }

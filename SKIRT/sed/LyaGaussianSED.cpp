@@ -14,10 +14,10 @@
 namespace
 {
     // intrinsic half-range in dispersion units
-    const double intrinsicRange = 9;
+    constexpr double intrinsicRange = 9;
 
     // number of wavelength points in tabulated result per dispersion unit
-    const int numWavelengthsPerDispersionUnit = 100;
+    constexpr int numWavelengthsPerDispersionUnit = 100;
 
     // Gaussian centered on 0 with dispersion of 1, evaluated at x
     double unitGaussian(double x)

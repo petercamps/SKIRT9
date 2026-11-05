@@ -380,7 +380,7 @@ void XRayIonicGasMix::setupSelfBefore()
         double Z = lineRes.Z;
         double N = lineRes.N;
         double E = wavelengthToFromEnergy(lineRes.lam);
-        double omega = 0.75;  // inner-shell ionisation of Li-like populates upper level of z with 3/4
+        constexpr double omega = 0.75;  // inner-shell ionisation of Li-like populates upper level of z with 3/4
 
         Array params = {Z, N, 1., 0., omega, E, 0.};
         fluoResources.emplace_back(params);

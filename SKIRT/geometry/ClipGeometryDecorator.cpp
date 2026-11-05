@@ -13,7 +13,7 @@ void ClipGeometryDecorator::setupSelfAfter()
     Geometry::setupSelfAfter();
 
     // estimate the original geometry's mass in the removed region
-    int Nsamples = 10000;
+    constexpr int Nsamples = 10000;
     int Ninside = 0;
     for (int k = 0; k < Nsamples; k++)
     {

@@ -218,7 +218,7 @@ double MultiGrainDustMix::getOpticalProperties(const Array& lambdav, const Array
                     int numTheta = thetav.size();
                     int numSizes = av.size();
 
-                    const size_t logProgressChunkSize = 50;
+                    constexpr size_t logProgressChunkSize = 50;
                     while (numIndices)
                     {
                         size_t currentChunkSize = min(logProgressChunkSize, numIndices);

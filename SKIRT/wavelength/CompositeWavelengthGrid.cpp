@@ -36,8 +36,8 @@ namespace
         vector<double> _characv = {0., 0.};
 
         // relative tolerances
-        constexpr static double TOLMIN = 1. - 1e-9;
-        constexpr static double TOLMAX = 1. + 1e-9;
+        static constexpr double TOLMIN = 1. - 1e-9;
+        static constexpr double TOLMAX = 1. + 1e-9;
 
         // return the characteristic wavelength for given border wavelengths
         double characteristic(double b1, double b2)

@@ -19,7 +19,7 @@ void ExpDiskGeometry::setupSelfBefore()
         throw FATALERROR("The radius of the central cavity should be smaller than the truncation radius");
 
     // calculate central density
-    double intphi = 2.0 * M_PI;
+    constexpr double intphi = 2.0 * M_PI;
     double intz = (_zmax > 0) ? -2.0 * _hz * expm1(-_zmax / _hz) : 2.0 * _hz;
     double tmin = (_Rmin > 0) ? exp(-_Rmin / _hR) * (1.0 + _Rmin / _hR) : 1.0;
     double tmax = (_Rmax > 0) ? exp(-_Rmax / _hR) * (1.0 + _Rmax / _hR) : 0.0;

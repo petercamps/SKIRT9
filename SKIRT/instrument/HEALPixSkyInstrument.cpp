@@ -75,9 +75,9 @@ void HEALPixSkyInstrument::setupSelfBefore()
     // x: theta in [0, pi]
     // y: phi in [0, 2*pi]
     double incx = 2. * M_PI / _Nx;
-    double ctrx = M_PI;
+    constexpr double ctrx = M_PI;
     double incy = M_PI / _Ny;
-    double ctry = M_PI / 2.;
+    constexpr double ctry = M_PI / 2.;
 
     // configure flux recorder
     instrumentFluxRecorder()->includeSurfaceBrightnessForLocal(_Nx, _Ny, omega, incx, incy, ctrx, ctry, "posangle");
