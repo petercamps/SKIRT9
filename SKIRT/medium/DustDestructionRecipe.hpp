@@ -41,7 +41,11 @@ class MediumSystem;
     fractions to the tolerance. This assumes that the fraction varies monotonically with the
     strength of the radiation field. A cell without any contributions to one of the noise batches
     has infinite noise, so that a change never counts against convergence. The medium system
-    tracks the noise if this property is nonzero, at the cost of eight values per spatial cell. */
+    tracks the noise if this property is nonzero, at the cost of eight values per spatial cell.
+
+    The recipe can also recalculate the dynamic density fraction of a fragment for a scaled
+    radiation field (see the scaledFieldStateVariable() function), so that a
+    MediumStateGradientCriterion on such a fraction can estimate its noise. */
 class DustDestructionRecipe : public DynamicStateRecipe
 {
     ITEM_ABSTRACT(DustDestructionRecipe, DynamicStateRecipe, "a dust destruction recipe")
@@ -83,6 +87,19 @@ public:
     /** This function returns true if the \em significance property is nonzero. */
     bool usesNoise() const override;
 
+    /** This function returns true if the custom state variable with index \em i of the medium
+        component with index \em h is the dynamic density fraction of a fragment of a fragmented
+        dust mix with dynamic densities, and false otherwise. */
+    bool offersScaledFieldStateVariable(int h, int i) const override;
+
+    /** This function returns the dynamic density fraction that the update() function would assign
+        to the fragment corresponding to the custom state variable with index \em i of the medium
+        component with index \em h in the spatial cell with index \f$m\f$, if the radiation field
+        of the cell were multiplied by the specified factor. If the cell or the fragment contains
+        no dust, the function returns the current fraction, which the update() function leaves
+        unchanged. */
+    double scaledFieldStateVariable(int m, int h, int i, double factor) const override;
+
     /** This function returns the non-destroyed density fraction for a grain population with the
         specified type (graphite or silicate), average grain radius, radiation field, and
         equilibrium temperature. It must be implemented by a subclass. */
@@ -91,6 +108,11 @@ public:
     //======================== Private helpers =======================
 
 private:
+    /** This function returns the density fraction of the specified fragment of the specified
+        fragmented dust mix for the specified radiation field multiplied by the specified factor.
+        */
+    double scaledFieldDensityFraction(const FragmentDustMixDecorator* fd, int f, const Array& Jv, double factor) const;
+
     /** This function returns the change of the density fraction of the specified fragment of the
         specified fragmented dust mix that the specified relative noise of the radiation field
         could cause, as described in the class header. */

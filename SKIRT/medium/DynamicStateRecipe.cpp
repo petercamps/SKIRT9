@@ -20,3 +20,17 @@ bool DynamicStateRecipe::usesNoise() const
 }
 
 ////////////////////////////////////////////////////////////////////
+
+bool DynamicStateRecipe::offersScaledFieldStateVariable(int /*h*/, int /*i*/) const
+{
+    return false;
+}
+
+////////////////////////////////////////////////////////////////////
+
+double DynamicStateRecipe::scaledFieldStateVariable(int /*m*/, int /*h*/, int /*i*/, double /*factor*/) const
+{
+    return 0.;
+}
+
+////////////////////////////////////////////////////////////////////

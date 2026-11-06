@@ -103,9 +103,10 @@ public:
         nothing. */
     virtual void prepareValues() const;
 
-    /** This function returns true if calculating the field value of a cell is expensive, so that
-        the medium system calculates the values for all cells in parallel before accumulating
-        them, and false otherwise. The default implementation returns false. */
+    /** This function returns true if calculating the field value of a cell, or its noise if
+        usesNoise() returns true, is expensive, so that the medium system calculates the values and
+        the noise for all cells in parallel before accumulating them, and false otherwise. The
+        default implementation returns false. */
     virtual bool hasCostlyValue() const;
 
     /** This function returns true if the test of the criterion uses an estimate of the noise of

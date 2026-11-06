@@ -127,6 +127,23 @@ public:
         (see the MediumSystem::radiationFieldNoise() function), so that the medium system must
         track it. The default implementation in this base class returns false. */
     virtual bool usesNoise() const;
+
+    /** This function returns true if the recipe sets the custom state variable with index \em i of
+        the medium component with index \em h, and can recalculate it for a scaled radiation field
+        (see the scaledFieldStateVariable() function), and false otherwise. A dynamic grid
+        refinement criterion on the variable uses this to estimate the noise of the variable. The
+        function is called during setup, after the media have been set up. The default
+        implementation in this base class returns false. */
+    virtual bool offersScaledFieldStateVariable(int h, int i) const;
+
+    /** This function returns the value that the recipe would assign to the custom state variable
+        with index \em i of the medium component with index \em h in the spatial cell with index
+        \f$m\f$ if the radiation field of the cell were multiplied by the specified factor. It may
+        be called only for a variable for which the offersScaledFieldStateVariable() function
+        returns true, and only after the update() function has been called for the current
+        iteration. The function may be called from multiple threads at the same time. The default
+        implementation in this base class returns zero. */
+    virtual double scaledFieldStateVariable(int m, int h, int i, double factor) const;
 };
 
 ////////////////////////////////////////////////////////////////////

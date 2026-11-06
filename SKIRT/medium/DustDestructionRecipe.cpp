@@ -19,6 +19,7 @@ void DustDestructionRecipe::beginUpdate(int /*numCells*/)
     _ms = find<MediumSystem>();
 
     // store a pointer for each medium component: either the corresponding fragmented dust mix or a null pointer
+    _fdv.clear();
     bool hasValidFragDecorator = false;
     bool hasInvalidFragDecorator = false;
     for (auto medium : find<MediumSystem>()->media())
@@ -104,6 +105,39 @@ bool DustDestructionRecipe::usesNoise() const
 
 ////////////////////////////////////////////////////////////////////
 
+bool DustDestructionRecipe::offersScaledFieldStateVariable(int h, int i) const
+{
+    // the dynamic density fractions of a fragmented dust mix follow its weight factors in its list of custom variables
+    auto fd = dynamic_cast<const FragmentDustMixDecorator*>(find<MediumSystem>(false)->media()[h]->mix());
+    if (!fd || !fd->hasDynamicDensities()) return false;
+    int numFrags = fd->numPopulations();
+    return i >= numFrags && i < 2 * numFrags;
+}
+
+////////////////////////////////////////////////////////////////////
+
+double DustDestructionRecipe::scaledFieldStateVariable(int m, int h, int i, double factor) const
+{
+    auto fd = _fdv[h];
+    int f = i - fd->numPopulations();
+
+    // a cell or fragment without dust keeps its fraction, as in the update() function
+    if (!(_ms->numberDensity(m, h) > 0.) || !(_ms->custom(m, h, f) > 0.)) return _ms->custom(m, h, i);
+    return scaledFieldDensityFraction(fd, f, _ms->meanIntensity(m), factor);
+}
+
+////////////////////////////////////////////////////////////////////
+
+double DustDestructionRecipe::scaledFieldDensityFraction(const FragmentDustMixDecorator* fd, int f, const Array& Jv,
+                                                         double factor) const
+{
+    Array Js = Jv * factor;
+    return densityFraction(fd->populationIsGraphite(f), fd->populationGrainRadius(f), Js,
+                           fd->populationTemperature(f, Js));
+}
+
+////////////////////////////////////////////////////////////////////
+
 double DustDestructionRecipe::noiseAllowance(const FragmentDustMixDecorator* fd, int f, const Array& Jv,
                                              double sigma) const
 {
@@ -111,13 +145,9 @@ double DustDestructionRecipe::noiseAllowance(const FragmentDustMixDecorator* fd,
     if (std::isinf(sigma)) return 1.;
 
     // calculate the fraction for the radiation field scaled down and up by the significance times the noise
-    bool graphite = fd->populationIsGraphite(f);
-    double a = fd->populationGrainRadius(f);
     double k = significance() * sigma;
-    Array Jlo = Jv * max(0., 1. - k);
-    Array Jhi = Jv * (1. + k);
-    double flo = densityFraction(graphite, a, Jlo, fd->populationTemperature(f, Jlo));
-    double fhi = densityFraction(graphite, a, Jhi, fd->populationTemperature(f, Jhi));
+    double flo = scaledFieldDensityFraction(fd, f, Jv, max(0., 1. - k));
+    double fhi = scaledFieldDensityFraction(fd, f, Jv, 1. + k);
     return abs(fhi - flo);
 }
 

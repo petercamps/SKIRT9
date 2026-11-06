@@ -8,6 +8,8 @@
 
 #include "GradientCriterion.hpp"
 #include "StateVariableSelection.hpp"
+class DynamicStateRecipe;
+class MediumSystem;
 
 ////////////////////////////////////////////////////////////////////
 
@@ -27,9 +29,21 @@
     recipes, which may update the state of any component, the criterion also takes part in the
     primary and merged loops.
 
-    The criterion has no estimate of the noise of the variable, so that it ignores the \em
-    significance property (see the GradientCriterion class): setup logs a warning if the property
-    is nonzero, and the medium system does not track the noise for this criterion.
+    The noise test of the \em significance property (see the GradientCriterion class) needs an
+    estimate of the noise of the variable. The criterion obtains it from the first dynamic medium
+    state recipe that sets the variable and can recalculate it for a scaled radiation field (see
+    the DynamicStateRecipe::offersScaledFieldStateVariable() function), such as a
+    DustDestructionRecipe for the dynamic density fraction \c fdyn_f of a fragmented dust mix. The
+    noise of the variable in a cell is then the difference between its values for the radiation
+    field of the cell multiplied by \f$1+k\sigma\f$ and by \f$1-k\sigma\f$, divided by \f$2k\f$,
+    where \f$k\f$ is the significance and \f$\sigma\f$ the relative noise of the radiation field
+    in the cell (see the MediumSystem::radiationFieldNoise() function). For a variable that varies
+    smoothly with the strength of the radiation field, this is the standard error of the variable;
+    for a variable that jumps, such as the density fraction at a sharp destruction front, it
+    accounts for a jump within \f$k\f$ standard errors of the radiation field, so that the
+    refinement of the front stops where its cells are too noisy to resolve it. If no recipe offers
+    the variable, the criterion ignores the \em significance property: setup logs a warning if the
+    property is nonzero, and the medium system does not track the noise for this criterion.
 
     The number density for the column density limit is the one stored in the medium state for the
     medium component that provides the variable. Its meaning depends on the material mix. For the
@@ -48,8 +62,9 @@ class MediumStateGradientCriterion : public GradientCriterion
     //============= Construction - Setup - Destruction =============
 
 protected:
-    /** This function selects the medium state variable, and logs a warning if the \em
-        significance property is nonzero. */
+    /** This function selects the medium state variable and, if the \em significance property is
+        nonzero, the dynamic medium state recipe that provides the noise of the variable, logging a
+        warning if there is none. */
     void setupSelfAfter() override;
 
     //======================== Other Functions =======================
@@ -66,9 +81,19 @@ public:
         variable in the spatial cell with index \f$m\f$. */
     double numberDensity(int m) const override;
 
-    /** This function returns false, because the criterion has no estimate of the noise of the
-        variable (see the class header). */
+    /** This function returns true if the \em significance property is nonzero and a dynamic medium
+        state recipe provides the noise of the variable, and false otherwise (see the class
+        header). */
     bool usesNoise() const override;
+
+    /** This function returns true if the criterion uses the noise of the variable, because the
+        recipe then recalculates the variable twice for each cell, and false otherwise. */
+    bool hasCostlyValue() const override;
+
+    /** This function returns an estimate of the standard error of the variable in the spatial cell
+        with index \f$m\f$, as described in the class header. A cell without any contributions to
+        one of the noise batches of the radiation field has infinite noise. */
+    double noise(int m) const override;
 
     /** This function returns a description of the variable. */
     string fieldDescription() const override;
@@ -77,6 +102,8 @@ public:
 
 private:
     StateVariableSelection _selection;
+    const MediumSystem* _ms{nullptr};
+    const DynamicStateRecipe* _recipe{nullptr};  // the recipe that provides the noise, or nullptr if none
 };
 
 ////////////////////////////////////////////////////////////////////

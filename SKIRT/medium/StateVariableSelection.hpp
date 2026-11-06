@@ -49,6 +49,14 @@ public:
         component that provides it. */
     string description() const;
 
+    /** This function returns the index of the medium component that provides the selected
+        variable. */
+    int mediumIndex() const { return _h; }
+
+    /** This function returns the custom index of the selected variable within the custom state
+        variables of the medium component that provides it. */
+    int customIndex() const { return _index; }
+
 private:
     const MediumSystem* _ms{nullptr};
     string _name;
