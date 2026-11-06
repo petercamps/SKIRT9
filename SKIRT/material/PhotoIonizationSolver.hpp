@@ -102,15 +102,12 @@ public:
 
     //======== Opacity interface =======
 
-    /** Returns the absorption opacity [cm^-1] at wavelength lambda [m] given the ion fractions
-        and hydrogen number density. */
-    double opacityAbs(double lambda, const double ionFracs[totalStages], double nH, double yHe,
-                      const double metalAbundances[8]) const;
-
-    /** Tabulates the cross sections used by opacityAbs() at the given fixed wavelength grid [m]. */
+    /** Tabulates the photoionization cross sections at the given fixed wavelength grid [m], for
+        use by opacityAbsAtGridPoint(). */
     void initializeOpacityGrid(const Array& lambdav);
 
-    /** Returns opacityAbs(lambdav[i], ...) for the grid passed to initializeOpacityGrid(). */
+    /** Returns the absorption opacity [cm^-1] at the wavelength with index i of the grid passed to
+        initializeOpacityGrid(), given the ion fractions and hydrogen number density. */
     double opacityAbsAtGridPoint(int i, const double ionFracs[totalStages], double nH, double yHe,
                                  const double metalAbundances[8]) const;
 
@@ -180,7 +177,7 @@ private:
     vector<double> _dlambda;       ///< wavelength bin widths [m]
     vector<double> _energy;        ///< photon energy per bin [eV]
     vector<double> _energyErg;     ///< photon energy per bin [erg]
-    vector<double> _opacitySigma;  ///< opacityAbs cross sections at the opacity grid [cm^2], point-major
+    vector<double> _opacitySigma;  ///< cross sections at the opacity grid [cm^2], point-major
     vector<double> _sigma;         ///< sigma(ion, _energy[i]) [cm^2], bin-major, fixed after initialize()
 
     //======== Effective stage counts (may be capped by maxIonizationEnergy) =======

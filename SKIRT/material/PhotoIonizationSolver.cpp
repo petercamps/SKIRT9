@@ -8,6 +8,7 @@
 #include "FatalError.hpp"
 #include "PhotoIonizationRates.hpp"
 #include "VernerCrossSections.hpp"
+#include <array>
 #include <cstring>
 
 //////////////////////////////////////////////////////////////////////
@@ -650,7 +651,7 @@ double PhotoIonizationSolver::solveIonizationBalance(double T, double ne, const 
     {
         double beta, alpha, xiHI, chiHII, xiHeI, chiHeII;
     };
-    Coefficients coefficients[VernerCrossSections::numIons] = {};
+    std::array<Coefficients, VernerCrossSections::numIons> coefficients{};
     for (int e = 2; e < nElements; e++)
     {
         int nxs = effNS[e] - 1;
@@ -913,7 +914,7 @@ void PhotoIonizationSolver::initializeOpacityGrid(const Array& lambdav)
     _opacitySigma.resize(n * VernerCrossSections::numIons);
     for (size_t i = 0; i < n; i++)
     {
-        // same photon energy expression as opacityAbs()
+        // photon energy [eV]
         double E_eV = Constants::h() * Constants::c() / (lambdav[i] * Constants::Qelectron());
         double* s = &_opacitySigma[i * VernerCrossSections::numIons];
         s[0] = VernerCrossSections::sigmaHI(E_eV);
@@ -948,36 +949,6 @@ double PhotoIonizationSolver::opacityAbsAtGridPoint(int i, const double ionFracs
         int voff = vernerOffset[e];
         int nxs = nIonsXS[e];
         for (int s = 0; s < nxs; s++) kappa += nElem * ionFracs[off + s] * sigma[voff + s];
-    }
-
-    return kappa;  // [cm^-1]
-}
-
-//////////////////////////////////////////////////////////////////////
-
-double PhotoIonizationSolver::opacityAbs(double lambda, const double ionFracs[totalStages], double nH, double yHe,
-                                         const double metalAbundances[8]) const
-{
-    double E_eV = Constants::h() * Constants::c() / (lambda * Constants::Qelectron());
-
-    double kappa = 0.;
-
-    // H
-    kappa += nH * ionFracs[0] * VernerCrossSections::sigmaHI(E_eV);
-
-    // He
-    double nHe = nH * yHe;
-    kappa += nHe * ionFracs[2] * VernerCrossSections::sigmaHeI(E_eV);
-    kappa += nHe * ionFracs[3] * VernerCrossSections::sigmaHeII(E_eV);
-
-    // metals
-    for (int e = 2; e < nElements; e++)
-    {
-        double nElem = nH * metalAbundances[e - 2];
-        int off = offset[e];
-        int voff = vernerOffset[e];
-        int nxs = nIonsXS[e];
-        for (int s = 0; s < nxs; s++) kappa += nElem * ionFracs[off + s] * VernerCrossSections::sigma(voff + s, E_eV);
     }
 
     return kappa;  // [cm^-1]

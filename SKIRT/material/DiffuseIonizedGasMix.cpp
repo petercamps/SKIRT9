@@ -2177,7 +2177,7 @@ void DiffuseIonizedGasMix::precomputeOpacityArrays(MaterialState* state, const d
         {
             if (lambda <= _lambdaLow && analyticalOpacityReady)
             {
-                // opacityAbs returns cm^-1; convert to m^-1
+                // opacityAbsAtGridPoint returns cm^-1; convert to m^-1
                 totalOpacity = _emissionSolver.opacityAbsAtGridPoint(i, solverIonFracs, nH_cgs_opacity, He_abundance,
                                                                      analyticalAbundances)
                                * 100.0;
