@@ -917,10 +917,7 @@ void PhotoIonizationSolver::initializeOpacityGrid(const Array& lambdav)
         // photon energy [eV]
         double E_eV = Constants::h() * Constants::c() / (lambdav[i] * Constants::Qelectron());
         double* s = &_opacitySigma[i * VernerCrossSections::numIons];
-        s[0] = VernerCrossSections::sigmaHI(E_eV);
-        s[1] = VernerCrossSections::sigmaHeI(E_eV);
-        s[2] = VernerCrossSections::sigmaHeII(E_eV);
-        for (int ion = 3; ion < VernerCrossSections::numIons; ion++) s[ion] = VernerCrossSections::sigma(ion, E_eV);
+        for (int ion = 0; ion < VernerCrossSections::numIons; ion++) s[ion] = VernerCrossSections::sigma(ion, E_eV);
     }
 }
 

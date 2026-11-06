@@ -1389,18 +1389,18 @@ void DiffuseIonizedGasMix::updateTemperatureFromStab(MaterialState* state) const
     auto stdTempSeparable = [&]() -> double {
         // each distinct delta_id slice is queried once and zero-weight terms are skipped
         const double logT_ctr = _standardTemperatureTable(Z, n_H, logU, logR2, logR3, logR4, logR5, centreDeltaId);
-        auto logTAt = [&](int id) {
+        auto logTAt = [this, Z, n_H, logU, logR2, logR3, logR4, logR5, centreDeltaId, logT_ctr](int id) {
             const double d = static_cast<double>(id);
             return d == centreDeltaId ? logT_ctr
                                       : _standardTemperatureTable(Z, n_H, logU, logR2, logR3, logR4, logR5, d);
         };
-        auto mix = [&](int lo, int hi, double w) {
+        auto interpolate = [&logTAt](int lo, int hi, double w) {
             const double a = logTAt(lo);
             if (w == 0.) return a;
             return (1.0 - w) * a + w * (hi == lo ? a : logTAt(hi));
         };
-        const double logT_dN = mix(dNlo, dNhi, wN);
-        const double logT_dC = mix(dClo, dChi, wC);
+        const double logT_dN = interpolate(dNlo, dNhi, wN);
+        const double logT_dC = interpolate(dClo, dChi, wC);
         return logT_dN + logT_dC - logT_ctr;
     };
 
@@ -2132,20 +2132,21 @@ void DiffuseIonizedGasMix::precomputeOpacityArrays(MaterialState* state, const d
                     constexpr double eps = 1e-99;
                     const double logK_ctr = std::log10(std::max(
                         _standardOpacityTable(lambda, logU, logR2, logR3, logR4, logR5, Z, n_H, centreDeltaId), eps));
-                    auto logK = [&](double id) {
+                    auto logK = [this, lambda, logU, logR2, logR3, logR4, logR5, Z, n_H, centreDeltaId, logK_ctr,
+                                 eps](double id) {
                         return id == centreDeltaId
                                    ? logK_ctr
                                    : std::log10(std::max(
                                          _standardOpacityTable(lambda, logU, logR2, logR3, logR4, logR5, Z, n_H, id),
                                          eps));
                     };
-                    auto mix = [&](double lo, double hi, double w) {
+                    auto interpolate = [&logK](double lo, double hi, double w) {
                         const double logLo = logK(lo);
                         if (w == 0.) return logLo;
                         return (1.0 - w) * logLo + w * (hi == lo ? logLo : logK(hi));
                     };
-                    const double logK_dN = mix(dNloD, dNhiD, wN);
-                    const double logK_dC = mix(dCloD, dChiD, wC);
+                    const double logK_dN = interpolate(dNloD, dNhiD, wN);
+                    const double logK_dC = interpolate(dCloD, dChiD, wC);
                     return std::pow(10.0, logK_dN + logK_dC - logK_ctr);
                 };
 
