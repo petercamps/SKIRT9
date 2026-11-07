@@ -18,11 +18,13 @@
     primary packets multiplied by \em primaryIterationPacketsMultiplier. If \em
     primaryIterationInitialPacketsFraction is below one, the first iteration launches that fraction
     of this number, and each next iteration \em primaryIterationPacketsRamp times as many, up to the
-    full number. If \em primaryIterationPacketsPerCell is nonzero, each iteration instead launches
-    that number of packets per spatial cell, bounded by the number for the first iteration and the
-    full number. This is meant for a grid with dynamic refinement, whose number of cells grows
-    during the iterations: the noise in the field of a refinement criterion depends on the number
-    of packets per cell. */
+    full number. Because the iterations with fewer packets are noisier, the primary emission loop
+    does not count as converged before the number of packets has reached the full number. If \em
+    primaryIterationPacketsPerCell is nonzero, each iteration instead launches that number of
+    packets per spatial cell, bounded by the number for the first iteration and the full number.
+    This is meant for a grid with dynamic refinement, whose number of cells grows during the
+    iterations: the noise in the field of a refinement criterion depends on the number of packets
+    per cell. */
 class IterationOptions : public SimulationItem
 {
     ITEM_CONCRETE(IterationOptions, SimulationItem,

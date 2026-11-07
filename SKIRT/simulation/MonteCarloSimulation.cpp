@@ -213,9 +213,10 @@ namespace
 
     // this function logs the convergence status and returns true if the loop should exit, false if it should continue
     // specifically, the loop exits
-    //   - if convergence is reached after the minimum number of iterations, or
+    //   - if convergence is reached after the minimum number of iterations, with the full number of photon packets
+    //     (as indicated by the fullPackets flag, which is false while a ramped packet count is still increasing), or
     //   - if the maximum number of iterations has completed, even if there is no convergence
-    bool logLoopConvergence(Log* log, bool converged, int iter, int minIters, int maxIters)
+    bool logLoopConvergence(Log* log, bool converged, int iter, int minIters, int maxIters, bool fullPackets = true)
     {
         // force at least the minimum number of iterations
         if (converged && iter < minIters)
@@ -223,6 +224,19 @@ namespace
             log->info("Convergence reached but continuing until " + std::to_string(minIters)
                       + " iterations have been performed");
             return false;
+        }
+        // force the full number of photon packets, because the iterations with fewer packets are noisier
+        if (converged && !fullPackets)
+        {
+            if (iter < maxIters)
+            {
+                log->info("Convergence reached but continuing until the number of photon packets"
+                          " has ramped up to the full number");
+                return false;
+            }
+            log->error("Convergence not yet reached after " + std::to_string(iter)
+                       + " iterations, because the number of photon packets has not ramped up to the full number");
+            return true;
         }
         // exit the loop if convergence has been reached after at least the minimum number of iterations
         if (converged && iter >= minIters)
@@ -398,9 +412,11 @@ void MonteCarloSimulation::runPrimaryEmissionIterations()
         _history->beginIteration();
 
         // compute the ramped packet count, or the count scaled with the number of cells, and record it in the
-        // iteration history
-        size_t Npp = perCell > 0. ? min(maxNpp, max(minNpp, perCell * mediumSystem()->numCells()))
-                                  : min(maxNpp, minNpp * std::pow(ramp, iter - 1));
+        // iteration history; a ramped count must reach the full number before the loop can converge
+        double rampedNpp = minNpp * std::pow(ramp, iter - 1);
+        bool fullPackets = perCell > 0. || rampedNpp >= maxNpp;
+        size_t Npp =
+            perCell > 0. ? min(maxNpp, max(minNpp, perCell * mediumSystem()->numCells())) : min(maxNpp, rampedNpp);
         _history
             ->scalarSeries(this, NumPrimaryPackets, 1, IterationHistory::Lifetime::Loop,
                            "number of primary photon packets")
@@ -445,7 +461,7 @@ void MonteCarloSimulation::runPrimaryEmissionIterations()
         probeSystem()->probePrimary(iter);
 
         // verify and log loop convergence
-        if (logLoopConvergence(log(), converged, iter, minIters, maxIters)) break;
+        if (logLoopConvergence(log(), converged, iter, minIters, maxIters, fullPackets)) break;
     }
 }
 
