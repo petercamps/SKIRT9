@@ -66,16 +66,16 @@ TextInFile::TextInFile(const SimulationItem* item, const string& filename, const
 {
     // get the full path for the resource or for the input file; an input file name that refers to a bundle in an
     // HDF5 file has no regular file candidate
-    string filepath = resource ? FilePaths::resource(filename) : item->find<FilePaths>()->input(filename).first;
-    if (filepath.empty())
+    _filepath = resource ? FilePaths::resource(filename) : item->find<FilePaths>()->input(filename).first;
+    if (_filepath.empty())
         throw FATALERROR("A column text file cannot be read from a bundle in an HDF5 file: " + filename);
 
     // open the file
-    _in = System::ifstream(filepath);
-    if (!_in) throw FATALERROR("Could not open the " + description + " text file " + filepath);
+    _in = System::ifstream(_filepath);
+    if (!_in) throw FATALERROR("Could not open the " + description + " text file " + _filepath);
 
     // log "reading file" message
-    if (!silent) _log->info(item->typeAndName() + " reads " + description + " from text file " + filepath + "...");
+    if (!silent) _log->info(item->typeAndName() + " reads " + description + " from text file " + _filepath + "...");
 
     // register the descriptions and units of the columns specified in any structured header lines
     int index;  // one-based column index obtained from file info
@@ -208,7 +208,13 @@ bool TextInFile::readNonLeaf(int& nx, int& ny, int& nz)
                 std::stringstream linestream(line);
                 linestream >> nx >> ny >> nz;
                 if (linestream.fail())
-                    throw FATALERROR("Nonleaf subdivision specifiers are missing or not formatted as integers");
+                    throw FATALERROR("Nonleaf subdivision specifiers in text file " + _filepath
+                                     + " are missing or not formatted as integers");
+
+                // a nonleaf node must have at least one child in each direction
+                if (nx < 1 || ny < 1 || nz < 1)
+                    throw FATALERROR("Nonleaf subdivision specifiers in text file " + _filepath
+                                     + " are not all positive");
 
                 return true;
             }

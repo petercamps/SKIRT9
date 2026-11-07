@@ -48,7 +48,8 @@
       node in the order in which these nodes occur, and with the attributes described for a text
       column file bundle in the ColumnInFile class.
 
-    When the bundle is opened, this class verifies that the nodes form a single, complete tree. */
+    When the bundle is opened, this class verifies that all subdivision counts are positive and
+    that the nodes form a single, complete tree. */
 class AdaptiveMeshInFile final : public ColumnInFile
 {
     //=============== Construction - Destruction  ==================

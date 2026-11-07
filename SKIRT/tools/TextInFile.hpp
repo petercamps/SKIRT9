@@ -215,12 +215,12 @@ public:
     /** This is a specialty function intended for use by the AdaptiveMeshSnapshot class when
         importing an adaptive mesh text column file. The function attempts to read a line
         containing a nonleaf node specification. Such a line starts with an exclamation mark, which
-        must be followed by three integers (one subdivision specifier for each dimension).
+        must be followed by three positive integers (one subdivision specifier for each dimension).
 
         If the next line (after skipping comments and empty lines) starts with an exclamation mark,
         the function processes it as a nonleaf node specification. If this is successful, the
         function stores the parsed specifiers in the arguments and returns true. If the line cannot
-        be parsed, a fatal error is thrown.
+        be parsed, or if one of the specifiers is not positive, a fatal error is thrown.
 
         If the next line (after skipping comments and empty lines) does not start with an
         exclamation mark, the contents of the function arguments is undefined and the function
@@ -297,6 +297,7 @@ private:
     Log* _log{nullptr};     // the logger
     std::ifstream _in;      // the text input stream
     InputColumns _columns;  // the physical columns in the file and the logical columns expected by the program
+    string _filepath;       // the path of the file, for use in error messages
 
     bool _hasTextOpen{false};  // true if the file is currently open
     bool _isResource{false};   // true if the file is a resource (as opposed to a user input file)
