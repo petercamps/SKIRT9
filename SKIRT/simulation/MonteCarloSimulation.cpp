@@ -416,7 +416,7 @@ void MonteCarloSimulation::runPrimaryEmissionIterations()
         double rampedNpp = minNpp * std::pow(ramp, iter - 1);
         bool fullPackets = perCell > 0. || rampedNpp >= maxNpp;
         size_t Npp =
-            perCell > 0. ? min(maxNpp, max(minNpp, perCell * mediumSystem()->numCells())) : min(maxNpp, rampedNpp);
+            perCell > 0. ? std::clamp(perCell * mediumSystem()->numCells(), minNpp, maxNpp) : min(maxNpp, rampedNpp);
         _history
             ->scalarSeries(this, NumPrimaryPackets, 1, IterationHistory::Lifetime::Loop,
                            "number of primary photon packets")

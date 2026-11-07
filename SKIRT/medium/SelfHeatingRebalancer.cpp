@@ -129,7 +129,7 @@ namespace
     // returns the specified value clamped to the range of the region factors
     double clampFactor(double f)
     {
-        return max(minFactor, min(maxFactor, f));
+        return std::clamp(f, minFactor, maxFactor);
     }
 }
 

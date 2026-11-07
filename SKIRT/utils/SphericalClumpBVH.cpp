@@ -83,7 +83,7 @@ int SphericalClumpBVH::buildRecursive(int begin, int end)
     double lo = cmin[axis], hi = cmax[axis];
     auto binIndexOf = [&](double v) {
         int b = static_cast<int>(NumBins * (v - lo) / (hi - lo));
-        return min(max(b, 0), NumBins - 1);
+        return std::clamp(b, 0, NumBins - 1);
     };
     for (int i = begin; i != end; ++i)
     {

@@ -37,7 +37,7 @@ namespace
                 case 2: center = box.center().y(); break;
                 case 3: center = box.center().z(); break;
             }
-            int bin = min(max(static_cast<int>((center - cmin) / binwidth), 0), nbins - 1);
+            int bin = std::clamp(static_cast<int>((center - cmin) / binwidth), 0, nbins - 1);
             bins[bin] += 1;
         }
 

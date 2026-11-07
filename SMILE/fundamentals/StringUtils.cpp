@@ -434,7 +434,7 @@ string StringUtils::toString(double value, char format, int precision, int width
     }
 
     // force precision within range
-    precision = min(max(precision, 0), 18);
+    precision = std::clamp(precision, 0, 18);
 
     // perform the conversion; given the guard above, 'f' format only ever sees a value with
     // at most 20 integer digits, so the buffer comfortably covers sign + 20 digits + '.' + the

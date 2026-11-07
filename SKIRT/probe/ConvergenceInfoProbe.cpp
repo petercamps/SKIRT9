@@ -123,7 +123,7 @@ namespace
         {
             // if all cells share the same optical depth, taumax==taumin; put them all in bin 0
             int index = taumax > taumin
-                            ? max(0, min(numBins, static_cast<int>((tau - taumin) / (taumax - taumin) * numBins)))
+                            ? std::clamp(static_cast<int>((tau - taumin) / (taumax - taumin) * numBins), 0, numBins)
                             : 0;
             countV[index]++;
         }

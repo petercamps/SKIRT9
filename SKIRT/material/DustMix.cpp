@@ -283,7 +283,7 @@ int DustMix::indexForLambda(double lambda) const
 int DustMix::indexForTheta(double theta) const
 {
     int t = 0.5 + theta / deltaTheta;
-    return max(0, min(t, maxTheta));
+    return std::clamp(t, 0, maxTheta);
 }
 
 ////////////////////////////////////////////////////////////////////

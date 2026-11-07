@@ -1201,7 +1201,7 @@ double DiffuseIonizedGasMix::getBlendingWeight(double logU) const
     if (logU > _transitionLogUMax - blendWidth && logU <= _transitionLogUMax + blendWidth)
     {
         double weight = ((_transitionLogUMax + blendWidth) - logU) / (2.0 * blendWidth);
-        return std::max(0.0, std::min(1.0, weight));
+        return std::clamp(weight, 0.0, 1.0);
     }
     if (logU <= _transitionLogUMax - blendWidth) return 1.0;
     return 0.0;
@@ -1473,7 +1473,7 @@ double DiffuseIonizedGasMix::calculateIonizationParameter(const Array& Jv, doubl
 
     // Apply reasonable bounds
     constexpr double maxLogU = 5.0;  // Very high ionization
-    logU = std::max(_logFloor, std::min(logU, maxLogU));
+    logU = std::clamp(logU, _logFloor, maxLogU);
 
     return logU;
 }
@@ -1502,7 +1502,7 @@ void DiffuseIonizedGasMix::interpolateReemissionSpectrum(int spectrumType, doubl
     // bracket the temperature for logarithmic interpolation, clamped to the table range
     const double* temperatures = _reemissionSpectraTable.axisData<1>();
     size_t numTemperatures = _reemissionSpectraTable.axisSize<1>();
-    double T = max(temperatures[0], min(temperature, temperatures[numTemperatures - 1]));
+    double T = std::clamp(temperature, temperatures[0], temperatures[numTemperatures - 1]);
     size_t right = std::lower_bound(temperatures, temperatures + numTemperatures, T) - temperatures;
     right = max(static_cast<size_t>(1), right);
     double w = (log(T) - log(temperatures[right - 1])) / (log(temperatures[right]) - log(temperatures[right - 1]));

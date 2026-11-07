@@ -138,8 +138,8 @@ Instrument::Detection AllSkyInstrument::locate(Position bfr) const
     projection()->fromSphereToRectangle(inc, azi, x, y);
 
     // convert viewport coordinates to pixel indices
-    int i = max(0, min(static_cast<int>((x + 1) * _Nx / 2.), _Nx - 1));
-    int j = max(0, min(static_cast<int>((y + 1) * _Ny / 2.), _Ny - 1));
+    int i = std::clamp(static_cast<int>((x + 1) * _Nx / 2.), 0, _Nx - 1);
+    int j = std::clamp(static_cast<int>((y + 1) * _Ny / 2.), 0, _Ny - 1);
 
     // detect the photon packet in the appropriate pixel of the data cube and at the appropriate distance
     detection.pixel = i + _Nx * j;

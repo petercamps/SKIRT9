@@ -78,7 +78,7 @@ namespace
             double lny = 0.5 * (log(a * x / (2. * M_PI)) + x * x);
             double L = lny > 0. ? lny + log1p(exp(-lny)) : log1p(exp(lny));
             double W = L * (1. - log1p(L) / (2. + L));
-            u0 = max(0., min(x - W / x, nextafter(x, 0.)));
+            u0 = std::clamp(x - W / x, 0., nextafter(x, 0.));
         }
 
         // the weights of the Lorentzian to the left and right of u0, and the probability for the left side

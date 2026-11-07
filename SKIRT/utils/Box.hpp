@@ -175,12 +175,14 @@ public:
     }
 
     /** This function calculates the cell indices for a given position, assuming that the box would
-        be partitioned in a given number of cells in each spatial direction. */
+        be partitioned in a given number of cells in each spatial direction. The numbers of cells
+        must be positive. A position outside the box yields the indices of the nearest border
+        cell. */
     inline void cellIndices(int& i, int& j, int& k, Vec r, int nx, int ny, int nz) const
     {
-        i = std::max(0, std::min(nx - 1, static_cast<int>(nx * (r.x() - _xmin) / (_xmax - _xmin))));
-        j = std::max(0, std::min(ny - 1, static_cast<int>(ny * (r.y() - _ymin) / (_ymax - _ymin))));
-        k = std::max(0, std::min(nz - 1, static_cast<int>(nz * (r.z() - _zmin) / (_zmax - _zmin))));
+        i = std::clamp(static_cast<int>(nx * (r.x() - _xmin) / (_xmax - _xmin)), 0, nx - 1);
+        j = std::clamp(static_cast<int>(ny * (r.y() - _ymin) / (_ymax - _ymin)), 0, ny - 1);
+        k = std::clamp(static_cast<int>(nz * (r.z() - _zmin) / (_zmax - _zmin)), 0, nz - 1);
     }
 
     /** This function returns true if the given box and this box have a non-zero intersection,

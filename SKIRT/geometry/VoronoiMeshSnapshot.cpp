@@ -545,7 +545,7 @@ void VoronoiMeshSnapshot::buildMesh(bool relax)
     if (numCells <= 0) return;
 
     // calculate number of blocks in each direction based on number of cells
-    _nb = max(3, min(250, static_cast<int>(cbrt(numCells))));
+    _nb = std::clamp(static_cast<int>(cbrt(numCells)), 3, 250);
     _nb2 = _nb * _nb;
     _nb3 = _nb * _nb * _nb;
 

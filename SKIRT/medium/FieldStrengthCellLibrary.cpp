@@ -68,7 +68,7 @@ vector<int> FieldStrengthCellLibrary::mapping(const Array& bv) const
             if (dlogU > 0.)
             {
                 double logU = log10(U);
-                nv[m] = max(0, min(_numFieldStrengths - 1, static_cast<int>((logU - logUmin) / dlogU)));
+                nv[m] = std::clamp(static_cast<int>((logU - logUmin) / dlogU), 0, _numFieldStrengths - 1);
             }
             else
                 nv[m] = 0;

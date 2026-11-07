@@ -158,7 +158,7 @@ void PhotoIonizationSolver::setMaxIonizationEnergy(double maxEV)
             if (VernerCrossSections::ionizationPotential(voff + s) <= maxEV) lastAllowed = s;
         }
         // stages 0..lastAllowed + the sink at lastAllowed+1; ensure at least 2
-        _nStagesEff[e] = std::max(2, std::min(lastAllowed + 2, nStages[e]));
+        _nStagesEff[e] = std::clamp(lastAllowed + 2, 2, nStages[e]);
     }
 }
 
