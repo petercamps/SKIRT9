@@ -11,7 +11,7 @@
 
 void AllSkyInstrument::setupSelfBefore()
 {
-    Instrument::setupSelfBefore();
+    PeelOffInstrument::setupSelfBefore();
 
     // verify consistency of vector properties
     Vec co(_Ox - _Cx, _Oy - _Cy, _Oz - _Cz);  // vector in direction from crosshair to observer
@@ -76,7 +76,7 @@ void AllSkyInstrument::setupSelfBefore()
 
 ////////////////////////////////////////////////////////////////////
 
-bool AllSkyInstrument::hasSameSightLine(const Instrument* other) const
+bool AllSkyInstrument::hasSameSightLine(const PeelOffInstrument* other) const
 {
     auto sky = dynamic_cast<const AllSkyInstrument*>(other);
     return sky && radius() == sky->radius() && observerX() == sky->observerX() && observerY() == sky->observerY()
@@ -120,7 +120,7 @@ Direction AllSkyInstrument::bfky(Position bfr) const
 
 ////////////////////////////////////////////////////////////////////
 
-Instrument::Detection AllSkyInstrument::locate(Position bfr) const
+PeelOffInstrument::Detection AllSkyInstrument::locate(Position bfr) const
 {
     // transform launch position from world to observer coordinates
     Position p(_transform.transform(bfr));

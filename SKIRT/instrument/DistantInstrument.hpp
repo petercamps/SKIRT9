@@ -6,7 +6,7 @@
 #ifndef DISTANTINSTRUMENT_HPP
 #define DISTANTINSTRUMENT_HPP
 
-#include "Instrument.hpp"
+#include "PeelOffInstrument.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -54,9 +54,9 @@
     wavelength grid to occur in either the rest-frame or the observer frame depending on the
     instrument's settings. A configuration might even include both type of instruments at the same
     time. */
-class DistantInstrument : public Instrument
+class DistantInstrument : public PeelOffInstrument
 {
-    ITEM_ABSTRACT(DistantInstrument, Instrument, "a distant instrument")
+    ITEM_ABSTRACT(DistantInstrument, PeelOffInstrument, "a distant instrument")
 
         PROPERTY_DOUBLE(distance, "the distance to the system")
         ATTRIBUTE_QUANTITY(distance, "distance")
@@ -98,7 +98,7 @@ public:
         same inclination and azimuth angles as the receiving instrument and, if any of the two
         instruments records polarization, the same roll angle. The distances do not matter because
         they affect only the calibration of the recorded fluxes. */
-    bool hasSameSightLine(const Instrument* other) const override;
+    bool hasSameSightLine(const PeelOffInstrument* other) const override;
 
     /** Returns the direction towards the observer, expressed in model coordinates. The provided
         photon packet's launching position is not used; it is considered to be very close to the

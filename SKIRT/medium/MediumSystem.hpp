@@ -588,8 +588,10 @@ public:
         reaches the specified interaction optical depth. The function then interpolates the
         scattering optical depth, the cumulative absorption optical depth, and the distance at the
         interaction point, stores these values in the photon packet, and returns true. If the
-        specified interaction optical depth is never reached within the path, the function returns
-        false.
+        specified interaction optical depth is never reached within the path, the function stores a
+        cell index of -1, the length of the path, and the absorption optical depth of the complete
+        path in the photon packet, and returns false. The photon packet then escapes from the model,
+        attenuated by that absorption optical depth.
 
         This function is intended for handling random-walk photon packet paths during a photon life
         cycle that does \em not use forced-scattering. In that case there is no need to calculate

@@ -21,7 +21,7 @@ namespace
 
 void PerspectiveInstrument::setupSelfBefore()
 {
-    Instrument::setupSelfBefore();
+    PeelOffInstrument::setupSelfBefore();
 
     // verify attribute values
     if (_Ux == 0 && _Uy == 0 && _Uz == 0) throw FATALERROR("Upwards direction cannot be null vector");
@@ -91,7 +91,7 @@ void PerspectiveInstrument::setupSelfBefore()
 
 ////////////////////////////////////////////////////////////////////
 
-bool PerspectiveInstrument::hasSameSightLine(const Instrument* other) const
+bool PerspectiveInstrument::hasSameSightLine(const PeelOffInstrument* other) const
 {
     auto perspective = dynamic_cast<const PerspectiveInstrument*>(other);
     return perspective && width() == perspective->width() && viewX() == perspective->viewX()
@@ -125,7 +125,7 @@ Direction PerspectiveInstrument::bfky(Position /*bfr*/) const
 
 ////////////////////////////////////////////////////////////////////
 
-Instrument::Detection PerspectiveInstrument::locate(Position bfr) const
+PeelOffInstrument::Detection PerspectiveInstrument::locate(Position bfr) const
 {
     // get the position
     double x, y, z;

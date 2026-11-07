@@ -1,0 +1,38 @@
+/*//////////////////////////////////////////////////////////////////
+////     The SKIRT project -- advanced radiative transfer       ////
+////       © Astronomical Observatory, Ghent University         ////
+///////////////////////////////////////////////////////////////// */
+
+#include "EscapeBinning.hpp"
+
+////////////////////////////////////////////////////////////////////
+
+void EscapeBinning::addBinTableColumns(ColumnOutFile& /*file*/) const {}
+
+////////////////////////////////////////////////////////////////////
+
+vector<double> EscapeBinning::binTableValues(int /*bin*/) const
+{
+    return vector<double>();
+}
+
+////////////////////////////////////////////////////////////////////
+
+EscapeBinning::FrameLayout EscapeBinning::frameLayout() const
+{
+    // a single row of pixels with the bin index as axis value
+    FrameLayout layout;
+    layout.numPixelsX = numBins();
+    layout.numPixelsY = 1;
+    layout.centerX = 0.5 * (layout.numPixelsX - 1);
+    return layout;
+}
+
+////////////////////////////////////////////////////////////////////
+
+int EscapeBinning::framePixel(int bin) const
+{
+    return bin;
+}
+
+////////////////////////////////////////////////////////////////////

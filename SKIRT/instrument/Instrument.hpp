@@ -6,8 +6,6 @@
 #ifndef INSTRUMENT_HPP
 #define INSTRUMENT_HPP
 
-#include "Direction.hpp"
-#include "Position.hpp"
 #include "SimulationItem.hpp"
 #include "WavelengthGrid.hpp"
 class FluxRecorder;
@@ -16,23 +14,17 @@ class PhotonPacket;
 ////////////////////////////////////////////////////////////////////
 
 /** Instrument is an abstract class representing instruments to collect the photon packets during a
-    Monte Carlo simulation. Subclasses implement instruments that can vary in type of projection
-    (e.g. parallel or perspective) and in what is recorded (e.g. SED or full integral field data
-    cube). This top-level abstract class offers a generic interface for receiving photon packets
-    from the simulation. It also includes facilities for configuring user properties that are
-    common to all instruments, such as which flux contributions need to be recorded. A wavelength
-    grid is established either by specifying a grid for this instrument specifically, or by
-    defaulting to the common grid specified for the instrument system.
+    Monte Carlo simulation. There are two kinds of instruments. Peel-off instruments (subclasses of
+    PeelOffInstrument) record a peel-off photon packet sent towards them at each emission and
+    scattering event. Escape instruments (EscapeInstrument) record the luminosity that escapes
+    from the model along the photon packet's own direction at each step. The simulation serves the
+    two kinds of instruments separately.
 
-    The simulation detects a peel-off photon packet in a number of steps, so that it can avoid
-    unnecessary work. Firstly, the instrument system groups instruments with the same sight line,
-    using the hasSameSightLine() function, so that a single peel-off photon packet can serve all
-    instruments in a group. For each instrument, the simulation then verifies that the instrument
-    records the peel-off photon packet's wavelength, using the recordsWavelength() function, and
-    obtains the pixel hit by the photon packet (if any), using the locate() function. Only if the
-    photon packet is actually detected by at least one instrument in the group, the simulation
-    calculates the extinction along the sight line and passes it to the detect() function of the
-    instruments concerned. */
+    This top-level abstract class offers the facilities that are common to all instruments: the
+    instrument name, the wavelength grid, the user properties that configure which flux
+    contributions need to be recorded, and the FluxRecorder instance that actually records the
+    detected photon packets. A wavelength grid is established either by specifying a grid for this
+    instrument specifically, or by defaulting to the default grid of the wavelength grid pool. */
 class Instrument : public SimulationItem
 {
     ITEM_ABSTRACT(Instrument, SimulationItem, "an instrument")
@@ -57,10 +49,6 @@ class Instrument : public SimulationItem
         ATTRIBUTE_RELEVANT_IF(numScatteringLevels, "recordComponents")
         ATTRIBUTE_DISPLAYED_IF(numScatteringLevels, "Level2")
 
-        PROPERTY_BOOL(recordPolarization, "record polarization (Stokes vector elements)")
-        ATTRIBUTE_DEFAULT_VALUE(recordPolarization, "false")
-        ATTRIBUTE_DISPLAYED_IF(recordPolarization, "Level2")
-
         PROPERTY_BOOL(recordStatistics, "record information for calculating statistical properties")
         ATTRIBUTE_DEFAULT_VALUE(recordStatistics, "false")
         ATTRIBUTE_DISPLAYED_IF(recordStatistics, "Level2")
@@ -78,9 +66,9 @@ protected:
 
         The function also creates and partially configures the FluxRecorder instance for this
         instrument, passing it the values of the user properties offered by this class and some
-        extra information on the simulation. The setupSelfBefore() function of each subclass is
-        expected to augment the configuration by calling the includeFluxDensity() and/or
-        includeSurfaceBrightness() functions. */
+        extra information on the simulation. The setup functions of each subclass are expected to
+        augment the configuration by calling the appropriate configuration functions of the flux
+        recorder. */
     void setupSelfBefore() override;
 
     /** This function finalizes the configuration of FluxRecorder instance for this instrument. */
@@ -88,6 +76,15 @@ protected:
 
     /** The destructor releases the FluxRecorder instance for this instrument. */
     ~Instrument();
+
+    /** This function configures the flux recorder of a distant instrument with the specified
+        distance, intended for use in the setup of subclasses. If the distance is nonzero, the
+        instrument is placed in the rest frame of the model at that (non-relativistic) distance. If
+        the distance is zero, the instrument is placed in an observer frame corresponding to the
+        redshift of the model, using the angular-diameter and luminosity distances derived from the
+        cosmology. If the distance and the model redshift are both zero, the function throws a fatal
+        error. */
+    void configureRecorderDistance(double distance);
 
     //======================== Other Functions =======================
 
@@ -104,29 +101,16 @@ public:
         are specified. */
     const WavelengthGrid* instrumentWavelengthGrid() const { return _instrumentWavelengthGrid; }
 
-    /** This function flushes any information buffered by the detect() function. It simply calls
-        the corresponding function of the FluxRecorder instance associated with this instrument. */
+    /** This function flushes any information buffered by the flux recorder during detection. It
+        simply calls the corresponding function of the FluxRecorder instance associated with this
+        instrument. */
     void flush();
 
     /** This function calibrates the instrument and outputs the recorded contents to a set of
-        files. It simply calls the corresponding function of the FluxRecorder instance associated
-        with this instrument. */
-    void write();
-
-    /** This structure describes where an instrument detects a photon packet, as determined by the
-        instrument's geometry and returned by the locate() function. */
-    struct Detection
-    {
-        /** The index of the pixel in the instrument frame where the photon packet is detected,
-            zero for instruments without spatial resolution, or -1 if the photon packet is not
-            detected. */
-        int pixel{-1};
-
-        /** The distance from the photon packet's launching position to the instrument, used to
-            calibrate the flux and to limit the path along which the extinction is calculated.
-            This distance is infinite for distant instruments. */
-        double distance{std::numeric_limits<double>::infinity()};
-    };
+        files. The implementation in this class calls the corresponding function of the
+        FluxRecorder instance associated with this instrument. Subclasses may override this function
+        to output additional information. */
+    virtual void write();
 
     /** This function returns true if the instrument records photon packets with the specified
         wavelength, i.e. if the wavelength (redshifted if applicable) falls within the range
@@ -135,48 +119,10 @@ public:
         it never returns false for a wavelength that is recorded. */
     bool recordsWavelength(double lambda) const;
 
-    /** This function records the detection of the specified photon packet by the instrument, at
-        the pixel and distance determined by the locate() function, and with the specified
-        extinction factor \f$\exp(-\tau)\f$ (i.e. 1 for a simulation without media). It simply
-        calls the corresponding function of the FluxRecorder instance associated with this
-        instrument. */
-    void detect(const PhotonPacket* pp, Detection detection, double extinction);
-
 protected:
     /** This function returns the FluxRecorder instance associated with this instrument. This
         function is intended for use in subclasses only. */
     FluxRecorder* instrumentFluxRecorder() { return _recorder; }
-
-    //=========== Functions to be implemented in subclass ===========
-
-public:
-    /** This function returns true if the specified instrument has the same sight line as the
-        receiving instrument. Two instruments have the same sight line if a peel-off photon packet
-        launched towards one of them, including the extinction calculated along its path, can be
-        used for the other one as well. In other words, for any launching position, both
-        instruments must have the same direction towards the observer (see bfkobs()) and, for local
-        instruments, the same distance to the observer. If any of the two instruments records
-        polarization, they must also have the same orientation of the instrument frame (see
-        bfky()). The InstrumentSystem calls this function during setup to group instruments with
-        the same sight line. The implementation must be provided in a subclass. */
-    virtual bool hasSameSightLine(const Instrument* other) const = 0;
-
-    /** This function returns the direction towards the observer, expressed in model coordinates,
-        given the photon packet's launching position. The implementation must be provided in a
-        subclass. */
-    virtual Direction bfkobs(Position bfr) const = 0;
-
-    /** This function returns the direction along the positive y-axis of the instrument frame,
-        expressed in model coordinates, given the photon packet's launching position. The
-        implementation must be provided in a subclass. */
-    virtual Direction bfky(Position bfr) const = 0;
-
-    /** This function determines where the instrument would detect a peel-off photon packet
-        launched towards it from the specified position. It returns the pixel index and distance
-        as described for the Detection structure, with a pixel index of -1 if the photon packet
-        would not be detected, e.g. because it projects outside of the instrument's aperture or
-        field of view. The implementation must be provided in a subclass. */
-    virtual Detection locate(Position bfr) const = 0;
 
     //======================== Data Members =======================
 

@@ -56,6 +56,13 @@ double SpatialGridPath::totalOpticalDepth() const
 
 ////////////////////////////////////////////////////////////////////
 
+double SpatialGridPath::totalExtinctionOpticalDepth() const
+{
+    return !_segments.empty() ? _segments.back().tauExt() : 0.;
+}
+
+////////////////////////////////////////////////////////////////////
+
 void SpatialGridPath::findInteractionPoint(double tauinteract)
 {
     // we can't handle an empty path

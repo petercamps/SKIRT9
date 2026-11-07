@@ -36,7 +36,12 @@ class WavelengthGrid;
     the source luminosity as a function of arrival time,
 
     - a spectral-time map (STM), the spatially integrated timelag response to a pulse in the source
-    luminosity as a function of both wavelength and arrival time.
+    luminosity as a function of both wavelength and arrival time,
+
+    - escape spectra, the flux density of the radiation escaping from the model for each wavelength
+    bin and for each escape bin, i.e. each part of the sky defined by an escape instrument; these
+    are written either as an %SED file per escape bin or as a data cube per flux component (see
+    below).
 
     For all of these output types, the class can record the individual contributions from primary
     and secondary sources, in each case splitting direct and scattered radiation. It can also store
@@ -51,15 +56,17 @@ class WavelengthGrid;
     results. Let \f$N\f$ denote the number of primary and secondary photon packets launched during
     the peel-off segments of the simulation. We define \f$w_i, i=1,\dots,N\f$ as the contribution
     of the \f$i\f$th photon packet to a particular bin (a wavelength bin for an %SED, a pixel in
-    one of the wavelength frames for an IFU, a time bin for an LC, or a wavelength/time bin for an
-    STM). The value of \f$w_i\f$ includes the contributions of all photon packets peeled-off and/or
-    scattered from the originally launched packet (called the \em history of that packet). Given
-    this definition, the class tracks and outputs the sums \f$\sum_i w_i^k\f$, with \f$k=0,\dots,4\f$
-    for each bin. These sums allow calculating second order statistical properties such as the
-    relative error \f$R\f$ and fourth order statistical properties such as the variance of the
-    variance VOV. For more information, see, e.g., the user manual for the MCNP code (A General
-    Monte Carlo N-Particle Transport Code, Version 5, April 24, 2003, Revised 2/1/2008, Los Alamos
-    National Laboratory, USA) or Camps and Baes 2018 (ApJ).
+    one of the wavelength frames for an IFU, a time bin for an LC, a wavelength/time bin for an
+    STM, or a wavelength bin of an escape bin for escape spectra). The value of \f$w_i\f$ includes
+    the contributions of all photon packets peeled-off and/or scattered from the originally
+    launched packet (called the \em history of that packet), or, for escape spectra, the escaping
+    contributions of all steps of the history. Given this definition, the class tracks and
+    outputs the sums \f$\sum_i w_i^k\f$, with \f$k=0,\dots,4\f$ for each bin. These sums allow
+    calculating second order statistical properties such as the relative error \f$R\f$ and fourth
+    order statistical properties such as the variance of the variance VOV. For more information,
+    see, e.g., the user manual for the MCNP code (A General Monte Carlo N-Particle Transport Code,
+    Version 5, April 24, 2003, Revised 2/1/2008, Los Alamos National Laboratory, USA) or Camps and
+    Baes 2018 (ApJ).
 
     All of these output possibilities are summarized in the table below. A separate IFU or STM
     output file is written for each line in the table; the first column in the table lists the
@@ -170,6 +177,25 @@ class WavelengthGrid;
     projections. In that case, the instrument should specify a representative value and advise the
     user to avoid situations where the actual solid angles deviate much from this value.
 
+    An escape instrument records the luminosity escaping from the model in each escape bin, i.e. a
+    part of the sky covering a fraction \f$f\f$ of the full sphere. Like a distant instrument, it
+    considers all photon packets to originate at the same distance from the observer, so that the
+    contributions are accumulated for each bin and calibrated on the aggregated result. The
+    calibration for the flux densities \f$F_\lambda\f$ in an escape bin is \f[ F_\lambda =
+    \frac{1}{\Delta\lambda} \, \frac{1}{4\pi d_\mathrm{m}^2\,f} \, L_\mathrm{bin}\f] which
+    is the average flux density received by observers at distance \f$d_\mathrm{m}\f$ in the
+    directions of the bin. For relativistic distances, the luminosity distance replaces
+    \f$d_\mathrm{m}\f$, as for a distant instrument.
+
+    Escape spectra are written in one of two styles. With the %SED file style, the recorder writes
+    a text column file <tt>prefix_instr_binN_sed.dat</tt> for each escape bin, where N is the bin
+    index padded with leading zeroes to the same number of digits for all bins, with the same
+    columns as the %SED file of a distant instrument, and, if statistics are requested, a file
+    <tt>prefix_instr_binN_sedstats.dat</tt>. With the data cube style, the recorder writes a FITS
+    file <tt>prefix_instr_XXX.fits</tt> for each flux component as listed in the first table above,
+    with the escape bins arranged in a frame as specified by the instrument and a frame for each
+    wavelength. These files contain flux densities rather than surface brightness values.
+
     Memory usage
     ------------
 
@@ -204,10 +230,15 @@ public:
     void setTimeGrid(const TimeGrid* timegrid);
 
     /** This function configures the user requirements for recording, respectively, flux
-        components, individual scattering level contributions, polarization, and information for
-        calculating statistics. See the documentation in the header of this class for more
+        components, individual scattering level contributions, and information for calculating
+        statistics. See the documentation in the header of this class for more information. */
+    void setUserFlags(bool recordComponents, int numScatteringLevels, bool recordStatistics);
+
+    /** This function configures the user requirement for recording polarization, i.e. the
+        elements of the Stokes vector. Polarization is not recorded unless this function is called
+        with a true argument. See the documentation in the header of this class for more
         information. */
-    void setUserFlags(bool recordComponents, int numScatteringLevels, bool recordPolarization, bool recordStatistics);
+    void setRecordPolarization(bool recordPolarization);
 
     /** This function sets the observer angles for a distant instrument associated with this flux
         recorder. These values are listed in the output files as a convenience to the user but are
@@ -259,6 +290,29 @@ public:
                                           double incrementY, double centerX, double centerY,
                                           string quantityXY = string());
 
+    /** This function enables recording of escape spectra for an escape instrument, i.e. the flux
+        densities of the radiation escaping from the model for each wavelength and for each of a
+        number of escape bins. The \em skyFractions vector specifies the fraction of the sky
+        covered by each bin, and thus also the number of bins; the \em descriptions vector, which
+        must have the same size, specifies a human-readable description of each bin for the
+        metadata in the output files. The pixel index \em l passed to the detect() function is the
+        index of the escape bin. By default, the recorder writes the spectrum of each escape bin to
+        a separate text column file; see includeDataCubesForEscapeBins() for the alternative. The
+        distance to the observer must be configured as for a distant instrument. */
+    void includeFluxDensityForEscapeBins(const vector<double>& skyFractions, const vector<string>& descriptions);
+
+    /** This function causes the recorder to write the escape spectra enabled by the
+        includeFluxDensityForEscapeBins() function as data cubes, i.e. a FITS file for each flux
+        component with an image frame for each wavelength, rather than as a text column file for
+        each escape bin. The escape bins are arranged in a frame with the specified number of
+        pixels in each direction; the \em pixelIndices vector specifies the index of the pixel in
+        the frame for each escape bin, with the index along the x-axis varying most rapidly. Pixels
+        that do not correspond to an escape bin remain zero. The remaining arguments are used only
+        for the metadata in the output file, as described for includeSurfaceBrightnessForLocal(). */
+    void includeDataCubesForEscapeBins(int numPixelsX, int numPixelsY, const vector<int>& pixelIndices,
+                                       double incrementX, double incrementY, double centerX, double centerY,
+                                       string quantityXY = string());
+
     /** This function completes the configuration of the recorder. It must be called after any of
         the configuration functions, and before the first invocation of the detect() function. */
     void finalizeConfiguration();
@@ -293,8 +347,15 @@ public:
         to the optical depth \f$\tau\f$ from the photon packet's last interaction site to the
         instrument, or 1 if the simulation has no media. The extinction is applied to the packet's
         contribution before detection. All other information is obtained directly or indirectly
-        from the photon packet. */
-    void detect(const PhotonPacket* pp, int l, double distance, double extinction);
+        from the photon packet.
+
+        If the \em includeTransparent flag is false, the function does not record the transparent
+        contribution of a photon packet that has not been scattered. An escape instrument uses this
+        option for a photon packet that escapes without forced scattering, because its transparent
+        contribution has already been recorded at launch. For an escape instrument, the function
+        does not record a contribution of zero in the statistics, so that the number of
+        contributions counts the photon packet histories that actually contribute to each bin. */
+    void detect(const PhotonPacket* pp, int l, double distance, double extinction, bool includeTransparent = true);
 
     /** This function processes and clears any information that may have been buffered by the
         detect() function in thread-local storage. It is not thread-safe. After parallel threads
@@ -386,6 +447,8 @@ private:
     bool _includeSurfaceBrightness{false};
     bool _includeLightCurve{false};
     bool _includeSpectralTimeMap{false};
+    bool _includeEscapeBins{false};
+    bool _writeEscapeDataCubes{false};
 
     // recorder configuration on observer angles, received from client during configuration
     double _inclination{0};
@@ -397,7 +460,12 @@ private:
     double _angularDiameterDistance{0};
     double _luminosityDistance{0};
 
-    // recorder configuration for IFUs, received from client during configuration
+    // recorder configuration for escape bins, received from client during configuration
+    vector<double> _escapeSkyFractions;
+    vector<string> _escapeDescriptions;
+    vector<int> _escapePixelIndices;  // used only for data cubes
+
+    // recorder configuration for IFUs and escape bin data cubes, received from client during configuration
     bool _local{false};
     int _numPixelsX{0};
     int _numPixelsY{0};
@@ -413,6 +481,7 @@ private:
     // cached info, initialized when configuration is finalized
     bool _recordTotalOnly{true};          // becomes false if recordComponents and hasMedium are both true
     size_t _numPixelsInFrame{0};          // number of pixels in a single IFU frame
+    int _numEscapeBins{0};                // number of escape bins
     int _numWavelengths{0};               // number of wavelengths in wavelength grid
     bool _disjointWavelengthGrid{false};  // true if the wavelength grid has nonoverlapping bins
     Range _wavelengthRange;               // overall wavelength range covered by the wavelength grid
@@ -423,18 +492,21 @@ private:
     vector<Array> _lc;
     vector<Array> _lcw;
     vector<Array> _stm;
+    vector<Array> _esc;
 
     // detector arrays for statistics that should not be calibrated, initialized when configuration is finalized
     vector<Array> _wsed;
     vector<Array> _wifu;
     vector<Array> _wlc;
     vector<Array> _wstm;
+    vector<Array> _wesc;
 
     // thread-local contribution lists, one per statistics detector array (see recordContribution())
     ThreadLocalMember<ContributionList> _wsedLists;
     ThreadLocalMember<ContributionList> _wifuLists;
     ThreadLocalMember<ContributionList> _wlcLists;
     ThreadLocalMember<ContributionList> _wstmLists;
+    ThreadLocalMember<ContributionList> _wescLists;
 };
 
 ////////////////////////////////////////////////////////////////////

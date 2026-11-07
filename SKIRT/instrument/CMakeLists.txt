@@ -4,10 +4,12 @@
 # //////////////////////////////////////////////////////////////////
 
 # ------------------------------------------------------------------
-# Builds a library with InstrumentSystem, the Instrument hierarchy,
-# the all-sky projection helpers used by AllSkyInstrument and
-# HEALPixSkyInstrument, the TimeGrid hierarchy used by TimeInstrument
-# and FluxRecorder, and FluxRecorder itself
+# Builds a library with InstrumentSystem, the Instrument hierarchy
+# (peel-off instruments derived from PeelOffInstrument, and
+# EscapeInstrument), the EscapeBinning hierarchy used by
+# EscapeInstrument, the all-sky projection helpers used by
+# AllSkyInstrument and HEALPixSkyInstrument, the TimeGrid hierarchy
+# used by TimeInstrument and FluxRecorder, and FluxRecorder itself
 # ------------------------------------------------------------------
 
 # set the target name

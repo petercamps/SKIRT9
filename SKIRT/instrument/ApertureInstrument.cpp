@@ -21,7 +21,7 @@ void ApertureInstrument::setupSelfBefore()
 
 ////////////////////////////////////////////////////////////////////
 
-Instrument::Detection ApertureInstrument::locate(Position bfr) const
+PeelOffInstrument::Detection ApertureInstrument::locate(Position bfr) const
 {
     Detection detection;
 

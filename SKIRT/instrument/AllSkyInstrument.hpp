@@ -8,7 +8,7 @@
 
 #include "AllSkyProjection.hpp"
 #include "HomogeneousTransform.hpp"
-#include "Instrument.hpp"
+#include "PeelOffInstrument.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -28,9 +28,9 @@
     instrument are provided in the header of the FluxRecorder class.
 
     This instrument does \em not support recording of spatially integrated flux densities. */
-class AllSkyInstrument : public Instrument
+class AllSkyInstrument : public PeelOffInstrument
 {
-    ITEM_CONCRETE(AllSkyInstrument, Instrument, "an all-sky instrument (for observing inside a model)")
+    ITEM_CONCRETE(AllSkyInstrument, PeelOffInstrument, "an all-sky instrument (for observing inside a model)")
         ATTRIBUTE_TYPE_DISPLAYED_IF(AllSkyInstrument, "Level2")
 
         PROPERTY_ITEM(projection, AllSkyProjection, "the projection used for mapping the sky to a rectangle")
@@ -94,7 +94,7 @@ public:
     /** This function returns true if the specified instrument is an AllSkyInstrument with the same
         configuration for the observer position and viewing direction as the receiving instrument.
         */
-    bool hasSameSightLine(const Instrument* other) const override;
+    bool hasSameSightLine(const PeelOffInstrument* other) const override;
 
     /** Returns the direction towards the observer from the given photon packet launching
         position, expressed in model coordinates. */

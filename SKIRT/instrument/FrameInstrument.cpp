@@ -33,7 +33,7 @@ void FrameInstrument::setupSelfBefore()
 
 ////////////////////////////////////////////////////////////////////
 
-Instrument::Detection FrameInstrument::locate(Position bfr) const
+PeelOffInstrument::Detection FrameInstrument::locate(Position bfr) const
 {
     // get the position
     double x, y, z;

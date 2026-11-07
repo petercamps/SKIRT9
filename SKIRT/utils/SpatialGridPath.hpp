@@ -163,6 +163,16 @@ public:
         have been set; if this is not the case, the behavior is undefined. */
     double totalOpticalDepth() const;
 
+    /** This function returns the extinction optical depth corresponding to the end of the last
+        path segment in the path, or zero if the path has no segments. If the client code has
+        stored the scattering and absorption optical depths separately, the function returns their
+        sum; otherwise it returns the stored extinction optical depth. The exponential of minus this
+        value is the fraction of the luminosity that escapes along the path without any interaction.
+
+        The function assumes that both the geometric and optical depth information for the path
+        have been set; if this is not the case, the behavior is undefined. */
+    double totalExtinctionOpticalDepth() const;
+
     /** This function determines the interaction point along the path corresponding to the
         specified interaction optical depth, and stores relevant information about it in data
         members for later retrieval through the interactionCellIndex(), interactionDistance() and

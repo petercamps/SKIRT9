@@ -4,37 +4,19 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "DistantInstrument.hpp"
-#include "Configuration.hpp"
-#include "FatalError.hpp"
 #include "FluxRecorder.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
 void DistantInstrument::setupSelfBefore()
 {
-    Instrument::setupSelfBefore();
+    PeelOffInstrument::setupSelfBefore();
 
     // pass the observer angles to the flux recorder
     instrumentFluxRecorder()->setObserverAngles(_inclination, _azimuth, _roll);
 
     // configure the flux recorder with the appropriate frame and distances
-    if (distance() > 0.)
-    {
-        instrumentFluxRecorder()->setRestFrameDistance(distance());
-    }
-    else
-    {
-        auto config = find<Configuration>();
-        if (config->redshift() > 0.)
-        {
-            instrumentFluxRecorder()->setObserverFrameRedshift(config->redshift(), config->angularDiameterDistance(),
-                                                               config->luminosityDistance());
-        }
-        else
-        {
-            throw FATALERROR("Instrument distance and model redshift are both zero");
-        }
-    }
+    configureRecorderDistance(distance());
 
     // calculate sine and cosine for our angles
     double costheta = cos(_inclination);
@@ -52,7 +34,7 @@ void DistantInstrument::setupSelfBefore()
 
 ////////////////////////////////////////////////////////////////////
 
-bool DistantInstrument::hasSameSightLine(const Instrument* other) const
+bool DistantInstrument::hasSameSightLine(const PeelOffInstrument* other) const
 {
     // the roll angle determines the orientation of the reference frame for the polarization state; it
     // does not affect the intensity and thus matters only if any of the instruments records polarization

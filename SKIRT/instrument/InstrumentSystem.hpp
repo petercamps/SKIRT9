@@ -6,7 +6,8 @@
 #ifndef INSTRUMENTSYSTEM_HPP
 #define INSTRUMENTSYSTEM_HPP
 
-#include "Instrument.hpp"
+#include "PeelOffInstrument.hpp"
+class EscapeInstrument;
 
 //////////////////////////////////////////////////////////////////////
 
@@ -15,11 +16,15 @@
     that does not specify its own wavelength grid uses the default wavelength grid of the
     WavelengthGridPool.
 
-    During setup, the instrument system arranges the instruments in groups with the same sight line
-    (see Instrument::hasSameSightLine()), regardless of their order in the configuration. The
-    simulation launches a single peel-off photon packet for each group, which then serves all
-    instruments in the group, so that the peel-off photon packet and the extinction along its path
-    are calculated only once. */
+    During setup, the instrument system separates the peel-off instruments (subclasses of
+    PeelOffInstrument) from the escape instruments (EscapeInstrument), because the simulation
+    serves the two kinds of instruments differently. It arranges the peel-off instruments in groups
+    with the same sight line (see PeelOffInstrument::hasSameSightLine()), regardless of their order
+    in the configuration. The simulation launches a single peel-off photon packet for each group,
+    which then serves all instruments in the group, so that the peel-off photon packet and the
+    extinction along its path are calculated only once. The escape instruments record the
+    luminosity escaping from the model at each step of a photon packet, as passed to them by the
+    simulation. */
 class InstrumentSystem : public SimulationItem
 {
     ITEM_CONCRETE(InstrumentSystem, SimulationItem, "an instrument system")
@@ -33,10 +38,12 @@ class InstrumentSystem : public SimulationItem
     //============= Construction - Setup - Destruction =============
 
 protected:
-    /** This function arranges the instruments in groups with the same sight line. Each instrument
-        joins the first group whose first instrument has the same sight line, or otherwise starts a
-        new group. As a result, the groups are ordered by the position of their first instrument in
-        the configuration, and the instruments in each group retain their configuration order. */
+    /** This function separates the peel-off instruments from the escape instruments, and arranges
+        the peel-off instruments in groups with the same sight line. Each peel-off instrument joins
+        the first group whose first instrument has the same sight line, or otherwise starts a new
+        group. As a result, the groups are ordered by the position of their first instrument in the
+        configuration, and the instruments in each group, as well as the escape instruments, retain
+        their configuration order. */
     void setupSelfAfter() override;
 
     //======================== Other Functions =======================
@@ -50,16 +57,23 @@ public:
         files. It calls the write() function for each of the instruments. */
     void write();
 
-    /** This function returns the groups of instruments with the same sight line, as determined
-        during setup. Each group contains at least one instrument, and each instrument in the
-        instrument system belongs to exactly one group. */
-    const vector<vector<Instrument*>>& sightLineGroups() const { return _sightLineGroups; }
+    /** This function returns the groups of peel-off instruments with the same sight line, as
+        determined during setup. Each group contains at least one instrument, and each peel-off
+        instrument in the instrument system belongs to exactly one group. */
+    const vector<vector<PeelOffInstrument*>>& peelOffGroups() const { return _peelOffGroups; }
+
+    /** This function returns the escape instruments in the instrument system, in configuration
+        order, as determined during setup. */
+    const vector<EscapeInstrument*>& escapeInstruments() const { return _escapeInstruments; }
 
     //======================== Data Members ========================
 
 private:
-    // the groups of instruments with the same sight line, initialized during setup
-    vector<vector<Instrument*>> _sightLineGroups;
+    // the groups of peel-off instruments with the same sight line, initialized during setup
+    vector<vector<PeelOffInstrument*>> _peelOffGroups;
+
+    // the escape instruments, initialized during setup
+    vector<EscapeInstrument*> _escapeInstruments;
 };
 
 ////////////////////////////////////////////////////////////////////

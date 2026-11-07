@@ -4,6 +4,8 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "InstrumentSystem.hpp"
+#include "EscapeInstrument.hpp"
+#include "FatalError.hpp"
 #include "Log.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -12,24 +14,36 @@ void InstrumentSystem::setupSelfAfter()
 {
     SimulationItem::setupSelfAfter();
 
-    // arrange the instruments in groups with the same sight line
+    // separate the escape instruments and arrange the peel-off instruments in groups with the same sight line
+    size_t numPeelOff = 0;
     for (Instrument* instrument : _instruments)
     {
-        auto group = std::find_if(_sightLineGroups.begin(), _sightLineGroups.end(),
-                                  [instrument](const vector<Instrument*>& candidate) {
-                                      return instrument->hasSameSightLine(candidate.front());
-                                  });
-        if (group != _sightLineGroups.end())
-            group->push_back(instrument);
+        if (auto escape = dynamic_cast<EscapeInstrument*>(instrument))
+        {
+            _escapeInstruments.push_back(escape);
+        }
+        else if (auto peelOff = dynamic_cast<PeelOffInstrument*>(instrument))
+        {
+            numPeelOff++;
+            auto group = std::find_if(_peelOffGroups.begin(), _peelOffGroups.end(),
+                                      [peelOff](const vector<PeelOffInstrument*>& candidate) {
+                                          return peelOff->hasSameSightLine(candidate.front());
+                                      });
+            if (group != _peelOffGroups.end())
+                group->push_back(peelOff);
+            else
+                _peelOffGroups.push_back({peelOff});
+        }
         else
-            _sightLineGroups.push_back({instrument});
+        {
+            throw FATALERROR("Instrument is neither a peel-off instrument nor an escape instrument");
+        }
     }
 
-    // log the number of groups if this differs from the number of instruments
-    if (_sightLineGroups.size() < _instruments.size())
-        find<Log>()->info("The " + std::to_string(_instruments.size())
-                          + " instruments share peel-off photon packets along "
-                          + std::to_string(_sightLineGroups.size()) + " sight lines");
+    // log the number of groups if this differs from the number of peel-off instruments
+    if (_peelOffGroups.size() < numPeelOff)
+        find<Log>()->info("The " + std::to_string(numPeelOff) + " instruments share peel-off photon packets along "
+                          + std::to_string(_peelOffGroups.size()) + " sight lines");
 }
 
 ////////////////////////////////////////////////////////////////////

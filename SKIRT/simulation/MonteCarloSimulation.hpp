@@ -529,16 +529,40 @@ private:
         peel-off photon packets are created and launched towards each instrument, if so requested,
         the actual scattering event is simulated, and the loop repeats itself.
 
+        If peel-off photon packets are requested and the instrument system holds any escape
+        instruments, the function also records the luminosity escaping from the model, as
+        described for the detectEscape() function.
+
         The first two arguments of this function specify the range of photon packet history indices
         to be handled. The \em primary flag is true to launch from primary sources, false for
         secondary sources. The \em peel flag indicates whether peeloff photon packets should be
-        sent towards the instruments. The \em store flag indicates whether the contribution to the
-        radiation field should be stored. */
+        sent towards the instruments, and whether the escaping luminosity should be recorded by the
+        escape instruments. The \em store flag indicates whether the contribution to the radiation
+        field should be stored. */
     void performLifeCycle(size_t firstIndex, size_t numIndices, bool primary, bool peel, bool store);
+
+    /** This function has the escape instruments in the instrument system record the luminosity of
+        the specified photon packet that escapes from the model along its propagation direction,
+        i.e. the packet's luminosity multiplied by the specified escape fraction (see
+        EscapeInstrument::detectEscape()). If the \em includeTransparent flag is false, the
+        instruments do not record the transparent contribution of a photon packet that has not been
+        scattered.
+
+        The photon life cycle calls this function as follows. With forced scattering, it calls the
+        function at each step, after calculating the optical depths of the complete path and before
+        adjusting the packet's weight, with the escape fraction \f$\exp(-\tau)\f$ for the extinction
+        optical depth \f$\tau\f$ of the complete path (the sum of the scattering and absorption
+        optical depths with explicit absorption). Without forced scattering, it calls the function
+        at launch with an escape fraction of zero, which records the transparent contribution only,
+        and again when the interaction point lies beyond the model boundary, excluding the
+        transparent contribution, with an escape fraction of one, or, with explicit absorption, the
+        attenuation by the absorption optical depth of the remaining path. In a simulation without
+        media, it calls the function at launch with an escape fraction of one. */
+    void detectEscape(const PhotonPacket* pp, double escapeFraction, bool includeTransparent);
 
     /** This function implements the peel-off of a photon packet after an emission event. This
         means that we create a peel-off photon packet for every group of instruments with the same
-        sight line (see InstrumentSystem::sightLineGroups()), which is forced to propagate in the
+        sight line (see InstrumentSystem::peelOffGroups()), which is forced to propagate in the
         direction of the observer instead of in the propagation direction determined randomly by
         the emission process. Each peel-off photon packet is subsequently fed into the instruments
         of its target group for detection (see detectPeelOff()). Because the instrument geometry
@@ -559,7 +583,7 @@ private:
         provides a placeholder peel off photon packet for use by the function; and the third
         argument provides scratch space for the detection information of the instruments in a
         group, with at least as many elements as there are instruments. */
-    void peelOffEmission(const PhotonPacket* pp, PhotonPacket* ppp, vector<Instrument::Detection>& detections);
+    void peelOffEmission(const PhotonPacket* pp, PhotonPacket* ppp, vector<PeelOffInstrument::Detection>& detections);
 
     /** This function determines the next scattering location of a photon packet in a photon life
         cycle with forced scattering and simulates its propagation to that position. The function
@@ -682,7 +706,7 @@ private:
     /** This function simulates the peel-off of a photon packet before a scattering event. This
         means that, just before a scattering event, we create one or more peel-off photon packets
         for every group of instruments with the same sight line (see
-        InstrumentSystem::sightLineGroups()), which are forced to propagate in the direction of the
+        InstrumentSystem::peelOffGroups()), which are forced to propagate in the direction of the
         observer instead of in the propagation direction determined randomly by the scattering
         process. Each peel-off photon packet is subsequently fed into the instruments of its target
         group for detection (see detectPeelOff()). Because the instrument geometry depends only on
@@ -709,17 +733,17 @@ private:
         scattered; the second argument provides a placeholder peel off photon packet for use by the
         function; and the third argument provides scratch space for the detection information of
         the instruments in a group, with at least as many elements as there are instruments. */
-    void peelOffScattering(PhotonPacket* pp, PhotonPacket* ppp, vector<Instrument::Detection>& detections);
+    void peelOffScattering(PhotonPacket* pp, PhotonPacket* ppp, vector<PeelOffInstrument::Detection>& detections);
 
     /** This function has the specified peel-off photon packet detected by the instruments in the
         specified group, which all have the same sight line, given the detection information
-        determined for each of these instruments, in the same order, by the Instrument::locate()
-        function. For each instrument that detects the photon packet's launch position, the
-        function verifies that the instrument also records the photon packet's wavelength. Only if
-        at least one instrument in the group actually detects the photon packet, the function
-        calculates the extinction factor along the sight line, which is then shared by all
-        instruments in the group. */
-    void detectPeelOff(const vector<Instrument*>& group, const vector<Instrument::Detection>& detections,
+        determined for each of these instruments, in the same order, by the
+        PeelOffInstrument::locate() function. For each instrument that detects the photon packet's
+        launch position, the function verifies that the instrument also records the photon packet's
+        wavelength. Only if at least one instrument in the group actually detects the photon
+        packet, the function calculates the extinction factor along the sight line, which is then
+        shared by all instruments in the group. */
+    void detectPeelOff(const vector<PeelOffInstrument*>& group, const vector<PeelOffInstrument::Detection>& detections,
                        const PhotonPacket* ppp);
 
     //======================== Data Members ========================

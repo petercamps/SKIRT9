@@ -91,13 +91,18 @@ void FluxRecorder::setTimeGrid(const TimeGrid* timegrid)
 
 ////////////////////////////////////////////////////////////////////
 
-void FluxRecorder::setUserFlags(bool recordComponents, int numScatteringLevels, bool recordPolarization,
-                                bool recordStatistics)
+void FluxRecorder::setUserFlags(bool recordComponents, int numScatteringLevels, bool recordStatistics)
 {
     _recordComponents = recordComponents;
     _numScatteringLevels = numScatteringLevels;
-    _recordPolarization = recordPolarization;
     _recordStatistics = recordStatistics;
+}
+
+////////////////////////////////////////////////////////////////////
+
+void FluxRecorder::setRecordPolarization(bool recordPolarization)
+{
+    _recordPolarization = recordPolarization;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -182,15 +187,44 @@ void FluxRecorder::includeSpectralTimeMap()
 
 ////////////////////////////////////////////////////////////////////
 
+void FluxRecorder::includeFluxDensityForEscapeBins(const vector<double>& skyFractions,
+                                                   const vector<string>& descriptions)
+{
+    _includeEscapeBins = true;
+    _escapeSkyFractions = skyFractions;
+    _escapeDescriptions = descriptions;
+}
+
+////////////////////////////////////////////////////////////////////
+
+void FluxRecorder::includeDataCubesForEscapeBins(int numPixelsX, int numPixelsY, const vector<int>& pixelIndices,
+                                                 double incrementX, double incrementY, double centerX, double centerY,
+                                                 string quantityXY)
+{
+    _writeEscapeDataCubes = true;
+    _numPixelsX = numPixelsX;
+    _numPixelsY = numPixelsY;
+    _escapePixelIndices = pixelIndices;
+    _incrementX = incrementX;
+    _incrementY = incrementY;
+    _centerX = centerX;
+    _centerY = centerY;
+    _quantityXY = quantityXY;
+}
+
+////////////////////////////////////////////////////////////////////
+
 void FluxRecorder::finalizeConfiguration()
 {
     // get array lengths
     _numWavelengths = _lambdagrid->numBins();
     _numPixelsInFrame = _numPixelsX * _numPixelsY;  // convert to size_t before calculating lenIFU
+    _numEscapeBins = _escapeSkyFractions.size();
     size_t lenSED = _includeFluxDensity ? _numWavelengths : 0;
     size_t lenIFU = _includeSurfaceBrightness ? _numPixelsInFrame * _numWavelengths : 0;
     size_t lenLC = _includeLightCurve ? _timegrid->numBins() : 0;
     size_t lenSTM = _includeSpectralTimeMap ? _numWavelengths * _timegrid->numBins() : 0;
+    size_t lenESC = _includeEscapeBins ? static_cast<size_t>(_numEscapeBins) * _numWavelengths : 0;
 
     // determine the overall wavelength range covered by the wavelength grid, and whether its bins are nonoverlapping
     _wavelengthRange = _lambdagrid->wavelengthRange();
@@ -205,6 +239,7 @@ void FluxRecorder::finalizeConfiguration()
     _lc.resize(PrimaryScatteredLevel + _numScatteringLevels);
     _lcw.resize(PrimaryScatteredLevel + _numScatteringLevels);
     _stm.resize(PrimaryScatteredLevel + _numScatteringLevels);
+    _esc.resize(PrimaryScatteredLevel + _numScatteringLevels);
 
     // local function to resize flux detector arrays according to the configuration
     // params: vector of flux arrays; desired length of each array; include individual contributions for polarization
@@ -277,6 +312,7 @@ void FluxRecorder::finalizeConfiguration()
     resize(_lc, lenLC, true);
     resize(_lcw, lenLC, true);
     resize(_stm, lenSTM, false);
+    resize(_esc, lenESC, false);
 
     // allocate and resize the statistics detector arrays
     if (_recordStatistics)
@@ -285,10 +321,12 @@ void FluxRecorder::finalizeConfiguration()
         _wifu.resize(maxContributionPower + 1);
         _wlc.resize(maxContributionPower + 1);
         _wstm.resize(maxContributionPower + 1);
+        _wesc.resize(maxContributionPower + 1);
         for (auto& array : _wsed) array.resize(lenSED);
         for (auto& array : _wifu) array.resize(lenIFU);
         for (auto& array : _wlc) array.resize(lenLC);
         for (auto& array : _wstm) array.resize(lenSTM);
+        for (auto& array : _wesc) array.resize(lenESC);
     }
 
     // calculate and log allocated memory size
@@ -298,10 +336,12 @@ void FluxRecorder::finalizeConfiguration()
     for (const auto& array : _lc) allocatedSize += array.size();
     for (const auto& array : _lcw) allocatedSize += array.size();
     for (const auto& array : _stm) allocatedSize += array.size();
+    for (const auto& array : _esc) allocatedSize += array.size();
     for (const auto& array : _wsed) allocatedSize += array.size();
     for (const auto& array : _wifu) allocatedSize += array.size();
     for (const auto& array : _wlc) allocatedSize += array.size();
     for (const auto& array : _wstm) allocatedSize += array.size();
+    for (const auto& array : _wesc) allocatedSize += array.size();
     _parentItem->find<Log>()->info(_parentItem->typeAndName() + " allocated "
                                    + StringUtils::toMemSizeString(allocatedSize * sizeof(double)) + " of memory");
 }
@@ -315,13 +355,13 @@ bool FluxRecorder::recordsWavelength(double lambda) const
 
 ////////////////////////////////////////////////////////////////////
 
-void FluxRecorder::detect(const PhotonPacket* pp, int l, double distance, double extinction)
+void FluxRecorder::detect(const PhotonPacket* pp, int l, double distance, double extinction, bool includeTransparent)
 {
     // get the photon packet's redshifted wavelength
     double wavelength = pp->wavelength() * (1. + _redshift);
 
     // local function to perform recording for a given wavelength bin
-    auto recordForBin = [this, pp, l, distance, extinction, wavelength](int ell) {
+    auto recordForBin = [this, pp, l, distance, extinction, includeTransparent, wavelength](int ell) {
         // get the luminosity contribution from the photon packet,
         // taking into account the transmission for the detector bin at this wavelength
         double L = pp->luminosity() * _lambdagrid->transmission(ell, wavelength);
@@ -335,7 +375,8 @@ void FluxRecorder::detect(const PhotonPacket* pp, int l, double distance, double
         // local function to record the contribution in the flux detector arrays according to the configuration
         // params: vector of flux arrays; index in array, transparant luminosity, extincted luminosity,
         //         include individual contributions for polarization
-        auto record = [this, pp](vector<Array>& arrays, size_t index, double L, double Lext, bool polarcomp) {
+        auto record = [this, pp, includeTransparent](vector<Array>& arrays, size_t index, double L, double Lext,
+                                                     bool polarcomp) {
             int numScatt = pp->numScatt();
 
             if (_recordTotalOnly)
@@ -348,7 +389,7 @@ void FluxRecorder::detect(const PhotonPacket* pp, int l, double distance, double
                 {
                     if (numScatt == 0)
                     {
-                        LockFree::add(arrays[Transparent][index], L);
+                        if (includeTransparent) LockFree::add(arrays[Transparent][index], L);
                         LockFree::add(arrays[PrimaryDirect][index], Lext);
                     }
                     else
@@ -362,7 +403,7 @@ void FluxRecorder::detect(const PhotonPacket* pp, int l, double distance, double
                 {
                     if (numScatt == 0)
                     {
-                        LockFree::add(arrays[SecondaryTransparent][index], L);
+                        if (includeTransparent) LockFree::add(arrays[SecondaryTransparent][index], L);
                         LockFree::add(arrays[SecondaryDirect][index], Lext);
                     }
                     else
@@ -383,9 +424,12 @@ void FluxRecorder::detect(const PhotonPacket* pp, int l, double distance, double
                     {
                         if (numScatt == 0)
                         {
-                            LockFree::add(arrays[TransparentQ][index], L * pp->stokesQ());
-                            LockFree::add(arrays[TransparentU][index], L * pp->stokesU());
-                            LockFree::add(arrays[TransparentV][index], L * pp->stokesV());
+                            if (includeTransparent)
+                            {
+                                LockFree::add(arrays[TransparentQ][index], L * pp->stokesQ());
+                                LockFree::add(arrays[TransparentU][index], L * pp->stokesU());
+                                LockFree::add(arrays[TransparentV][index], L * pp->stokesV());
+                            }
                             LockFree::add(arrays[PrimaryDirectQ][index], Lext * pp->stokesQ());
                             LockFree::add(arrays[PrimaryDirectU][index], Lext * pp->stokesU());
                             LockFree::add(arrays[PrimaryDirectV][index], Lext * pp->stokesV());
@@ -404,9 +448,12 @@ void FluxRecorder::detect(const PhotonPacket* pp, int l, double distance, double
                             LockFree::add(arrays[SecondaryDirectQ][index], Lext * pp->stokesQ());
                             LockFree::add(arrays[SecondaryDirectU][index], Lext * pp->stokesU());
                             LockFree::add(arrays[SecondaryDirectV][index], Lext * pp->stokesV());
-                            LockFree::add(arrays[SecondaryTransparentQ][index], L * pp->stokesQ());
-                            LockFree::add(arrays[SecondaryTransparentU][index], L * pp->stokesU());
-                            LockFree::add(arrays[SecondaryTransparentV][index], L * pp->stokesV());
+                            if (includeTransparent)
+                            {
+                                LockFree::add(arrays[SecondaryTransparentQ][index], L * pp->stokesQ());
+                                LockFree::add(arrays[SecondaryTransparentU][index], L * pp->stokesU());
+                                LockFree::add(arrays[SecondaryTransparentV][index], L * pp->stokesV());
+                            }
                         }
                         else
                         {
@@ -432,6 +479,14 @@ void FluxRecorder::detect(const PhotonPacket* pp, int l, double distance, double
             size_t index = l + ell * _numPixelsInFrame;
             record(_ifu, index, L, Lext, false);
             if (_recordStatistics) recordContribution(_wifuLists, _wifu, pp->historyIndex(), index, Lext);
+        }
+
+        // record in escape bin arrays, leaving out zero contributions from the statistics
+        if (_includeEscapeBins)
+        {
+            size_t index = l + ell * static_cast<size_t>(_numEscapeBins);
+            record(_esc, index, L, Lext, false);
+            if (_recordStatistics && Lext != 0.) recordContribution(_wescLists, _wesc, pp->historyIndex(), index, Lext);
         }
 
         // if this is a time instrument
@@ -500,6 +555,11 @@ void FluxRecorder::flush()
         flushContributionList(contributionList, _wstm);
         contributionList->reset();
     }
+    for (ContributionList* contributionList : _wescLists.all())
+    {
+        flushContributionList(contributionList, _wesc);
+        contributionList->reset();
+    }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -512,10 +572,12 @@ void FluxRecorder::calibrateAndWrite()
     for (auto& array : _lc) ProcessManager::sumToRoot(array);
     for (auto& array : _lcw) ProcessManager::sumToRoot(array);
     for (auto& array : _stm) ProcessManager::sumToRoot(array);
+    for (auto& array : _esc) ProcessManager::sumToRoot(array);
     for (auto& array : _wsed) ProcessManager::sumToRoot(array);
     for (auto& array : _wifu) ProcessManager::sumToRoot(array);
     for (auto& array : _wlc) ProcessManager::sumToRoot(array);
     for (auto& array : _wstm) ProcessManager::sumToRoot(array);
+    for (auto& array : _wesc) ProcessManager::sumToRoot(array);
 
     // calibrate and write only in the root process
     if (!ProcessManager::isRoot()) return;
@@ -652,8 +714,25 @@ void FluxRecorder::calibrateAndWrite()
             }
     };
 
+    // local function to construct the description of the distance or redshift for text column output files
+    auto distanceInfo = [this, units]() {
+        string info;
+        if (_redshift)
+        {
+            info += ", redshift " + StringUtils::toString(_redshift);
+            info += ", luminosity distance " + StringUtils::toString(units->odistance(_luminosityDistance)) + " "
+                    + units->udistance();
+        }
+        else
+        {
+            info +=
+                ", distance " + StringUtils::toString(units->odistance(_luminosityDistance)) + " " + units->udistance();
+        }
+        return info;
+    };
+
     // local function to construct the description of the contents of text column output files
-    auto header = [this, units](string name) {
+    auto header = [this, units, distanceInfo](string name) {
         string header = name + " at ";
         header += "inclination " + StringUtils::toString(units->oposangle(_inclination)) + " " + units->uposangle();
         header += ", azimuth " + StringUtils::toString(units->oposangle(_azimuth)) + " " + units->uposangle();
@@ -661,18 +740,63 @@ void FluxRecorder::calibrateAndWrite()
         {
             header += ", roll " + StringUtils::toString(units->oposangle(_roll)) + " " + units->uposangle();
         }
-        if (_redshift)
+        header += distanceInfo();
+        return header;
+    };
+
+    // local function to construct the description of the contents of text column output files for an escape bin
+    auto escapeHeader = [this, distanceInfo](string name, int b) {
+        return name + " of escape bin " + std::to_string(b) + ": " + _escapeDescriptions[b] + ", sky fraction "
+               + StringUtils::toString(_escapeSkyFractions[b]) + distanceInfo();
+    };
+
+    // local function to determine the axes metadata for frames as provided by the instrument,
+    // converted to output units if a quantity has been specified
+    auto providedAxes = [this, units](double& incx, double& incy, double& cx, double& cy, string& unitsxy) {
+        if (_quantityXY.empty())
         {
-            header += ", redshift " + StringUtils::toString(_redshift);
-            header += ", luminosity distance " + StringUtils::toString(units->odistance(_luminosityDistance)) + " "
-                      + units->udistance();
+            incx = _incrementX;
+            incy = _incrementY;
+            cx = _centerX;
+            cy = _centerY;
+            unitsxy = "1";
         }
         else
         {
-            header +=
-                ", distance " + StringUtils::toString(units->odistance(_luminosityDistance)) + " " + units->udistance();
+            incx = units->out(_quantityXY, _incrementX);
+            incy = units->out(_quantityXY, _incrementY);
+            cx = units->out(_quantityXY, _centerX);
+            cy = units->out(_quantityXY, _centerY);
+            unitsxy = units->unit(_quantityXY);
         }
-        return header;
+    };
+
+    // local function to write data cubes with statistics, rescaled to the range of single-precision numbers
+    // params: vector of statistics arrays (which are modified), frame size and axes metadata, wavelength grid
+    auto writeStatisticsCubes = [this, units](vector<Array>& w, int nx, int ny, double incx, double incy, double cx,
+                                              double cy, const string& unitsxy, const Array& wavegrid) {
+        // the output files have single-precision floating point numbers with range of only about 10^+-38
+        // --> scale the values to a range that has a maximum of 10^+-38 to minimize the number of underflows
+        constexpr double WMAX = 1e38;
+        // since every contribution is nonnegative, w[1].max() > 0 guarantees w[k].max() > 0 for all k
+        bool anyContribution = w[1].max() > 0;
+        Array cs(maxContributionPower);
+        for (int k = 1; k <= maxContributionPower; ++k)
+        {
+            // inverse of WMAX == c**k w[k].max(); if there were no contributions, no rescaling is needed
+            cs[k - 1] = anyContribution ? pow(WMAX / w[k].max(), 1. / k) : 1.;
+        }
+        double c = cs.min();
+        double cn = 1.;
+        for (int k = 0; k <= maxContributionPower; ++k)
+        {
+            string filename = _instrumentName + "_stats" + std::to_string(k);
+            string description = "sum of contributions to the power of " + std::to_string(k);
+            w[k] *= cn;
+            FITSInOutFile::write(_parentItem, description, filename, w[k], "", nx, ny, incx, incy, cx, cy, unitsxy,
+                                 wavegrid, units->uwavelength());
+            cn *= c;
+        }
     };
 
     // local function that returns unique pointer to new observer info record for distant instruments
@@ -803,22 +927,7 @@ void FluxRecorder::calibrateAndWrite()
         if (_local)
         {
             // for local instruments, use the metadata provided by the instrument
-            if (_quantityXY.empty())
-            {
-                incx = _incrementX;
-                incy = _incrementY;
-                cx = _centerX;
-                cy = _centerY;
-                unitsxy = "1";
-            }
-            else
-            {
-                incx = units->out(_quantityXY, _incrementX);
-                incy = units->out(_quantityXY, _incrementY);
-                cx = units->out(_quantityXY, _centerX);
-                cy = units->out(_quantityXY, _centerY);
-                unitsxy = units->unit(_quantityXY);
-            }
+            providedAxes(incx, incy, cx, cy, unitsxy);
         }
         else
         {
@@ -847,29 +956,167 @@ void FluxRecorder::calibrateAndWrite()
 
         // output statistics to additional files
         if (_recordStatistics)
+            writeStatisticsCubes(_wifu, _numPixelsX, _numPixelsY, incx, incy, cx, cy, unitsxy, wavegrid);
+    }
+
+    // ---------------------- escape bins: flux density ----------------------
+
+    // write escape spectra to a text file per escape bin or to a FITS file per flux component
+    if (_includeEscapeBins)
+    {
+        // convert from recorded quantities to output quantities and from internal units to user-selected output units,
+        // taking into account the sky fraction of each bin
+        // (for performance reasons, determine the units scaling factor only once for each wavelength)
+        size_t numBins = _numEscapeBins;
+        for (int ell = 0; ell != _numWavelengths; ++ell)
         {
-            // the output files have single-precision floating point numbers with range of only about 10^+-38
-            // --> scale the values to a range that has a maximum of 10^+-38 to minimize the number of underflows
-            constexpr double WMAX = 1e38;
-            // since every contribution is nonnegative, w[1].max() > 0 guarantees w[k].max() > 0 for all k
-            bool anyContribution = _wifu[1].max() > 0;
-            Array cs(maxContributionPower);
-            for (int k = 1; k <= maxContributionPower; ++k)
+            double factor = 1. / fourpid2 / _lambdagrid->effectiveWidth(ell)
+                            * units->ofluxdensity(_lambdagrid->wavelength(ell), 1.);
+            for (size_t b = 0; b != numBins; ++b)
             {
-                // inverse of WMAX == c**k w[k].max(); if there were no contributions, no rescaling is needed
-                cs[k - 1] = anyContribution ? pow(WMAX / _wifu[k].max(), 1. / k) : 1.;
+                double binFactor = factor / _escapeSkyFractions[b];
+                for (auto& array : _esc)
+                    if (array.size()) array[b + ell * numBins] *= binFactor;
             }
-            double c = cs.min();
-            double cn = 1.;
-            for (int k = 0; k <= maxContributionPower; ++k)
+        }
+
+        if (!_writeEscapeDataCubes)
+        {
+            // pad the bin indices in the file names to the number of digits of the largest index
+            int numDigits = std::to_string(numBins - 1).size();
+
+            // local function to extract the values for a given bin from the recorded arrays (which may be empty)
+            auto extract = [this, numBins](const vector<Array>& arrays, size_t b) {
+                vector<Array> result(arrays.size());
+                for (size_t q = 0; q != arrays.size(); ++q)
+                {
+                    if (arrays[q].size())
+                    {
+                        result[q].resize(_numWavelengths);
+                        for (int ell = 0; ell != _numWavelengths; ++ell) result[q][ell] = arrays[q][b + ell * numBins];
+                    }
+                }
+                return result;
+            };
+
+            for (size_t b = 0; b != numBins; ++b)
             {
-                string filename = _instrumentName + "_stats" + std::to_string(k);
-                string description = "sum of contributions to the power of " + std::to_string(k);
-                _wifu[k] *= cn;
-                FITSInOutFile::write(_parentItem, description, filename, _wifu[k], "", _numPixelsX, _numPixelsY, incx,
-                                     incy, cx, cy, unitsxy, wavegrid, units->uwavelength());
-                cn *= c;
+                // build a list of column names and corresponding pointers to the arrays for this bin
+                vector<Array> binArrays = extract(_esc, b);
+                vector<string> sedNames;
+                vector<Array*> sedArrays;
+                buildCols(binArrays, sedNames, sedArrays);
+
+                // open the file and add the column headers
+                string binName =
+                    _instrumentName + "_bin" + StringUtils::toString(static_cast<double>(b), 'd', 0, numDigits, '0');
+                ColumnOutFile sedFile(_parentItem, binName + "_sed", "SED");
+                sedFile.setLongDescription(escapeHeader("SED", static_cast<int>(b)));
+                sedFile.addColumn("wavelength; " + units->swavelength(), units->uwavelength());
+                for (const string& name : sedNames)
+                {
+                    sedFile.addColumn(name + "; " + units->sfluxdensity(), units->ufluxdensity());
+                }
+
+                // write the column data
+                for (int ell : Indices(_numWavelengths, units->rwavelength()))
+                {
+                    vector<double> values({units->owavelength(_lambdagrid->wavelength(ell))});
+                    for (const Array* array : sedArrays) values.push_back(array->size() ? (*array)[ell] : 0.);
+                    sedFile.writeRow(values);
+                }
+                sedFile.close();
+
+                // output statistics to a seperate file
+                if (_recordStatistics)
+                {
+                    vector<Array> binStats = extract(_wesc, b);
+
+                    // open the file and add the column headers
+                    ColumnOutFile statFile(_parentItem, binName + "_sedstats", "SED statistics");
+                    statFile.setLongDescription(escapeHeader("SED statistics", static_cast<int>(b)));
+                    statFile.addColumn("wavelength; " + units->swavelength(), units->uwavelength());
+                    for (int k = 0; k <= maxContributionPower; ++k)
+                    {
+                        statFile.addColumn("Sum[w_i**" + std::to_string(k) + "]");
+                    }
+                    statFile.addComment("--> w_i is luminosity contribution (in W) from i_th launched photon");
+
+                    // write the column data
+                    for (int ell : Indices(_numWavelengths, units->rwavelength()))
+                    {
+                        vector<double> values({units->owavelength(_lambdagrid->wavelength(ell))});
+                        for (int k = 0; k <= maxContributionPower; ++k) values.push_back(binStats[k][ell]);
+                        statFile.writeRow(values);
+                    }
+                    statFile.close();
+                }
             }
+        }
+        else
+        {
+            // local function to arrange the values for all bins in a frame for each wavelength
+            size_t numPixelsInFrame = static_cast<size_t>(_numPixelsX) * _numPixelsY;
+            auto arrange = [this, numBins, numPixelsInFrame](const vector<Array>& arrays) {
+                vector<Array> result(arrays.size());
+                for (size_t q = 0; q != arrays.size(); ++q)
+                {
+                    if (arrays[q].size())
+                    {
+                        result[q].resize(numPixelsInFrame * _numWavelengths);
+                        for (int ell = 0; ell != _numWavelengths; ++ell)
+                            for (size_t b = 0; b != numBins; ++b)
+                                result[q][_escapePixelIndices[b] + ell * numPixelsInFrame] =
+                                    arrays[q][b + ell * numBins];
+                    }
+                }
+                return result;
+            };
+            vector<Array> cubes = arrange(_esc);
+            vector<Array> statCubes = arrange(_wesc);
+
+            // copy the wavelength grid in output units
+            Array wavegrid(_numWavelengths);
+            for (int ell = 0; ell != _numWavelengths; ++ell)
+                wavegrid[ell] = units->owavelength(_lambdagrid->wavelength(ell));
+
+            // reverse the ordering of the wavelength grid and frames if necessary
+            if (units->rwavelength())
+            {
+                NR::reverse(wavegrid);
+                for (auto& array : cubes)
+                    if (array.size()) NR::reverse(array, numPixelsInFrame);
+                for (auto& array : statCubes)
+                    if (array.size()) NR::reverse(array, numPixelsInFrame);
+            }
+
+            // build a list of file names and corresponding pointers to the data cubes (which may be empty)
+            vector<string> cubeNames;
+            vector<Array*> cubeArrays;
+            buildFiles(cubes, cubeNames, cubeArrays);
+
+            // determine spatial axes values and units, as provided by the instrument
+            double incx, incy, cx, cy;
+            string unitsxy;
+            providedAxes(incx, incy, cx, cy, unitsxy);
+
+            // output the files (ignoring empty arrays)
+            int numFiles = cubeNames.size();
+            for (int q = 0; q != numFiles; ++q)
+            {
+                if (cubeArrays[q]->size())
+                {
+                    string filename = _instrumentName + "_" + cubeNames[q];
+                    string description = cubeNames[q] + " flux";
+                    FITSInOutFile::write(_parentItem, description, filename, *(cubeArrays[q]), units->ufluxdensity(),
+                                         _numPixelsX, _numPixelsY, incx, incy, cx, cy, unitsxy, wavegrid,
+                                         units->uwavelength());
+                }
+            }
+
+            // output statistics to additional files
+            if (_recordStatistics)
+                writeStatisticsCubes(statCubes, _numPixelsX, _numPixelsY, incx, incy, cx, cy, unitsxy, wavegrid);
         }
     }
 

@@ -1208,7 +1208,11 @@ bool MediumSystem::setInteractionPointUsingScatteringAndAbsorption(PhotonPacket*
             // calculate the cumulative optical depths and distance at the end of this segment
             double ds = generator->ds();
             int m = generator->m();
-            if (m >= 0) tauSca += sectionSca * _state.numberDensity(m, 0) * generator->ds();
+            if (m >= 0)
+            {
+                tauSca += sectionSca * _state.numberDensity(m, 0) * generator->ds();
+                tauAbs += sectionAbs * _state.numberDensity(m, 0) * ds;
+            }
             s += ds;
 
             // if the interaction point is inside this segment, store it in the photon packet
@@ -1295,7 +1299,8 @@ bool MediumSystem::setInteractionPointUsingScatteringAndAbsorption(PhotonPacket*
         }
     }
 
-    // the interaction point is outside of the path
+    // the interaction point is outside of the path; store the absorption optical depth of the complete path
+    pp->setInteractionPoint(-1, s, tauAbs);
     return false;
 }
 

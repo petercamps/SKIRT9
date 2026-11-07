@@ -12,7 +12,7 @@
 
 void HEALPixSkyInstrument::setupSelfBefore()
 {
-    Instrument::setupSelfBefore();
+    PeelOffInstrument::setupSelfBefore();
 
     // verify consistency of vector properties
     Vec co(_Ox - _Cx, _Oy - _Cy, _Oz - _Cz);  // vector in direction from crosshair to observer
@@ -22,12 +22,12 @@ void HEALPixSkyInstrument::setupSelfBefore()
     if (Vec::cross(co, up).norm() < 1e-20)
         throw FATALERROR("Upwards direction cannot be parallel to viewing direction");
 
-    // compute the side length of the subdivision within a single HEALPix base pixel
-    _Nside = 1 << _order;
+    // create the HEALPix tessellation
+    _tessellation = HEALPixTessellation(_order);
 
-    // we map the 12 * _Nside^2 HEALPix pixels to an almost square image with 16 * _Nside * (_Nside-1) pixels
-    _Nx = 4 * _Nside;
-    _Ny = 4 * _Nside - 1;
+    // we map the 12 * Nside^2 HEALPix pixels to an almost square image with 4 * Nside * (4 * Nside - 1) pixels
+    _Nx = _tessellation.maxPixelsInRing();
+    _Ny = _tessellation.numRings();
 
     // setup the transformation from world to observer coordinates
 
@@ -69,7 +69,7 @@ void HEALPixSkyInstrument::setupSelfBefore()
 
     // determine the solid angle corresponding to each pixel
     // each HEALPix pixel has the same spherical area:  4 pi/(12 Nside^2)
-    double omega = M_PI / (3 * _Nside * _Nside);
+    double omega = _tessellation.pixelSolidAngle();
 
     // determine the (approximate) scale and center of the output map axes
     // x: theta in [0, pi]
@@ -85,7 +85,7 @@ void HEALPixSkyInstrument::setupSelfBefore()
 
 ////////////////////////////////////////////////////////////////////
 
-bool HEALPixSkyInstrument::hasSameSightLine(const Instrument* other) const
+bool HEALPixSkyInstrument::hasSameSightLine(const PeelOffInstrument* other) const
 {
     auto sky = dynamic_cast<const HEALPixSkyInstrument*>(other);
     return sky && radius() == sky->radius() && observerX() == sky->observerX() && observerY() == sky->observerY()
@@ -129,7 +129,7 @@ Direction HEALPixSkyInstrument::bfky(Position bfr) const
 
 ////////////////////////////////////////////////////////////////////
 
-Instrument::Detection HEALPixSkyInstrument::locate(Position bfr) const
+PeelOffInstrument::Detection HEALPixSkyInstrument::locate(Position bfr) const
 {
     // transform launch position from world to observer coordinates
     Position p(_transform.transform(bfr));
@@ -147,57 +147,8 @@ Instrument::Detection HEALPixSkyInstrument::locate(Position bfr) const
     // we center the output image on the crosshair direction by offsetting phi
     phi += M_PI;
 
-    // the code below was mostly copied from healpix_base.cc in the official HEALPix repository
-    // it corresponds to the loc2pix function using the RING scheme
-    // unlike the loc2pix function, we do not compute a full RING pixel index, but restrict
-    // ourselves to a computation of the ring index and pixel-in-ring index, which we respectively
-    // use as vertical and horizontal pixel index
-    double z = cos(theta);
-    double za = abs(z);
-    double tt = fmod(2. * phi / M_PI, 4.);
-
-    // i: pixel-in-ring index (horizontal pixel index)
-    // j: ring index (vertical pixel index)
-    int i, j;
-    // first figure out if we are in the equatorial or polar region
-    if (za <= 2. / 3.)
-    {
-        // equatorial region: all rings have 4*_Nside pixels
-        double t1 = _Nside * (0.5 + tt);
-        double t2 = 0.75 * _Nside * z;
-        int jp = static_cast<int>(floor(t1 - t2));
-        int jm = static_cast<int>(floor(t1 + t2));
-
-        // we first compute the ring index as the offset in the equatorial region (j in [1, 2*_Nside+1])
-        j = _Nside + 1 + jp - jm;
-        int kshift = 1 - (j & 1);
-        int temp = jp + jm + kshift + 1 + 7 * _Nside;
-        i = (_order > 0) ? ((temp >> 1) & (4 * _Nside - 1)) : ((temp >> 1) % (4 * _Nside));
-        // we now add the correct offset to the ring index to account for the rings in the north polar region
-        j += _Nside - 2;
-    }
-    else
-    {
-        // polar region: the number of pixels per ring depends on how far the ring is from the pole
-        double tp = tt - static_cast<int>(tt);
-        double tmp = (za < 0.99) ? (_Nside * sqrt(3. * (1. - za))) : (_Nside * sin(theta) / sqrt((1. + za) / 3.));
-
-        int jp = static_cast<int>(tp * tmp);
-        int jm = static_cast<int>((1. - tp) * tmp);
-
-        // we first compute the ring index as an offset from the pole (j in [1, _Nside-1])
-        j = jp + jm + 1;
-        i = static_cast<int>(tt * j);
-        // we now convert the ring index to the actual ring index, and distinguish between north and south pole
-        if (z < 0)
-        {
-            j = 4 * _Nside - j - 1;
-        }
-        else
-        {
-            --j;
-        }
-    }
+    // determine the ring index (vertical pixel index) and the pixel-in-ring index (horizontal pixel index)
+    auto [i, j] = _tessellation.locate(theta, phi);
 
     // detect the photon packet in the appropriate pixel of the data cube and at the appropriate distance
     detection.pixel = i + _Nx * j;

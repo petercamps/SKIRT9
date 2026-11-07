@@ -7,8 +7,9 @@
 #define HEALPIXSKYINSTRUMENT_HPP
 
 #include "AllSkyProjection.hpp"
+#include "HEALPixTessellation.hpp"
 #include "HomogeneousTransform.hpp"
-#include "Instrument.hpp"
+#include "PeelOffInstrument.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -19,7 +20,8 @@
 
     This class is based on the official HEALPix algorithm by Górski, K. M. et al. (2005)
     (https://ui.adsabs.harvard.edu/abs/2005ApJ...622..759G/abstract), as available from
-    https://healpix.sourceforge.io, but only uses the relevant part of the algorithm.
+    https://healpix.sourceforge.io, but only uses the relevant part of the algorithm, which is
+    implemented in the HEALPixTessellation helper class.
 
     In short, the HEALPix tessellation starts from a base tessellation of the sphere into 12
     quadrilaterals. 4 quadrilaterals are formed by subdividing the equator into 4 equal segments,
@@ -76,9 +78,9 @@
     FluxRecorder class.
 
     This instrument does \em not support recording of spatially integrated flux densities. */
-class HEALPixSkyInstrument : public Instrument
+class HEALPixSkyInstrument : public PeelOffInstrument
 {
-    ITEM_CONCRETE(HEALPixSkyInstrument, Instrument,
+    ITEM_CONCRETE(HEALPixSkyInstrument, PeelOffInstrument,
                   "a HEALPix all-sky instrument (for Planck-like observations inside a model)")
         ATTRIBUTE_TYPE_DISPLAYED_IF(HEALPixSkyInstrument, "Level2")
 
@@ -140,7 +142,7 @@ public:
     /** This function returns true if the specified instrument is a HEALPixSkyInstrument with the
         same configuration for the observer position and viewing direction as the receiving
         instrument. */
-    bool hasSameSightLine(const Instrument* other) const override;
+    bool hasSameSightLine(const PeelOffInstrument* other) const override;
 
     /** Returns the direction towards the observer from the given photon packet launching
         position, expressed in model coordinates. */
@@ -173,10 +175,10 @@ private:
     const double& _Uz{_upZ};
 
     // data members derived from the published attributes during setup
-    int _Nx{0};                       // number of pixels in the x direction
-    int _Ny{0};                       // number of pixels in the y direction
-    int _Nside{0};                    // number of pixels in one direction of a HEALPix base pixel
-    HomogeneousTransform _transform;  // transform from world to observer coordinates
+    int _Nx{0};                         // number of pixels in the x direction
+    int _Ny{0};                         // number of pixels in the y direction
+    HEALPixTessellation _tessellation;  // the HEALPix tessellation of the given order
+    HomogeneousTransform _transform;    // transform from world to observer coordinates
 };
 
 ////////////////////////////////////////////////////////////////////

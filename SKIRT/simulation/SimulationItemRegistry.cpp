@@ -16,6 +16,7 @@
 #include "AdaptiveMeshSpatialGrid.hpp"
 #include "AdaptiveMeshTreePolicy.hpp"
 #include "AllCellsLibrary.hpp"
+#include "AllDirectionsEscapeBinning.hpp"
 #include "AllSkyInstrument.hpp"
 #include "AllSkyProjectionForm.hpp"
 #include "AnnulusGeometry.hpp"
@@ -90,6 +91,8 @@
 #include "DynamicRefinementOptions.hpp"
 #include "EinastoGeometry.hpp"
 #include "ElectronMix.hpp"
+#include "EscapeBinning.hpp"
+#include "EscapeInstrument.hpp"
 #include "ExpDiskGeometry.hpp"
 #include "ExtragalacticUnits.hpp"
 #include "FSPSSED.hpp"
@@ -119,6 +122,7 @@
 #include "GradientCriterion.hpp"
 #include "GrainPopulation.hpp"
 #include "GridWavelengthDistribution.hpp"
+#include "HEALPixEscapeBinning.hpp"
 #include "HEALPixSkyInstrument.hpp"
 #include "HammerAitoffProjection.hpp"
 #include "HirashitaLogNormalGrainSizeDistribution.hpp"
@@ -137,6 +141,7 @@
 #include "ImportedSourceLuminosityProbe.hpp"
 #include "ImportedSourceMetallicityProbe.hpp"
 #include "ImportedSourceVelocityProbe.hpp"
+#include "InclinationEscapeBinning.hpp"
 #include "InstrumentSystem.hpp"
 #include "InstrumentTimeGridProbe.hpp"
 #include "InstrumentWavelengthGridProbe.hpp"
@@ -227,6 +232,7 @@
 #include "ParticleGeometry.hpp"
 #include "ParticleMedium.hpp"
 #include "ParticleSource.hpp"
+#include "PeelOffInstrument.hpp"
 #include "PerCellForm.hpp"
 #include "PerspectiveInstrument.hpp"
 #include "PlanarCutsForm.hpp"
@@ -768,6 +774,7 @@ SimulationItemRegistry::SimulationItemRegistry(const string& version, const stri
     // instrument system and instruments
     ItemRegistry::add<InstrumentSystem>();
     ItemRegistry::add<Instrument>();
+    ItemRegistry::add<PeelOffInstrument>();
     ItemRegistry::add<DistantInstrument>();
     ItemRegistry::add<ApertureInstrument>();
     ItemRegistry::add<SEDInstrument>();
@@ -778,6 +785,13 @@ SimulationItemRegistry::SimulationItemRegistry(const string& version, const stri
     ItemRegistry::add<TimeInstrument>();
     ItemRegistry::add<LightCurveInstrument>();
     ItemRegistry::add<SpectralTimeMapInstrument>();
+    ItemRegistry::add<EscapeInstrument>();
+
+    // escape binnings
+    ItemRegistry::add<EscapeBinning>();
+    ItemRegistry::add<AllDirectionsEscapeBinning>();
+    ItemRegistry::add<InclinationEscapeBinning>();
+    ItemRegistry::add<HEALPixEscapeBinning>();
 
     // all-sky projections
     ItemRegistry::add<AllSkyProjection>();

@@ -5,6 +5,7 @@
 
 #include "Instrument.hpp"
 #include "Configuration.hpp"
+#include "FatalError.hpp"
 #include "FluxRecorder.hpp"
 
 ////////////////////////////////////////////////////////////////////
@@ -25,7 +26,7 @@ void Instrument::setupSelfBefore()
     _recorder = new FluxRecorder(this);
     _recorder->setSimulationInfo(instrumentName(), hasMedium, hasMediumEmission);
     _recorder->setWavelengthGrid(instrumentWavelengthGrid());
-    _recorder->setUserFlags(_recordComponents, _numScatteringLevels, _recordPolarization, _recordStatistics);
+    _recorder->setUserFlags(_recordComponents, _numScatteringLevels, _recordStatistics);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -43,6 +44,29 @@ void Instrument::setupSelfAfter()
 Instrument::~Instrument()
 {
     delete _recorder;
+}
+
+////////////////////////////////////////////////////////////////////
+
+void Instrument::configureRecorderDistance(double distance)
+{
+    if (distance > 0.)
+    {
+        _recorder->setRestFrameDistance(distance);
+    }
+    else
+    {
+        auto config = find<Configuration>();
+        if (config->redshift() > 0.)
+        {
+            _recorder->setObserverFrameRedshift(config->redshift(), config->angularDiameterDistance(),
+                                                config->luminosityDistance());
+        }
+        else
+        {
+            throw FATALERROR("Instrument distance and model redshift are both zero");
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -71,13 +95,6 @@ void Instrument::write()
 bool Instrument::recordsWavelength(double lambda) const
 {
     return _recorder->recordsWavelength(lambda);
-}
-
-////////////////////////////////////////////////////////////////////
-
-void Instrument::detect(const PhotonPacket* pp, Detection detection, double extinction)
-{
-    _recorder->detect(pp, detection.pixel, detection.distance, extinction);
 }
 
 ////////////////////////////////////////////////////////////////////

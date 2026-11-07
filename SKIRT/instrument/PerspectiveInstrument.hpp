@@ -7,7 +7,7 @@
 #define PERSPECTIVEINSTRUMENT_HPP
 
 #include "HomogeneousTransform.hpp"
-#include "Instrument.hpp"
+#include "PeelOffInstrument.hpp"
 
 ////////////////////////////////////////////////////////////////////
 
@@ -20,9 +20,9 @@
 
     The perspective instrument is intended mostly for making movies. Each movie frame is generated
     by a separate perspective instrument with the appropriate parameters. */
-class PerspectiveInstrument : public Instrument
+class PerspectiveInstrument : public PeelOffInstrument
 {
-    ITEM_CONCRETE(PerspectiveInstrument, Instrument, "a perspective instrument (mostly for making movies)")
+    ITEM_CONCRETE(PerspectiveInstrument, PeelOffInstrument, "a perspective instrument (mostly for making movies)")
         ATTRIBUTE_TYPE_DISPLAYED_IF(PerspectiveInstrument, "Level2")
 
         PROPERTY_INT(numPixelsX, "the number of viewport pixels in the horizontal direction")
@@ -86,7 +86,7 @@ public:
     /** This function returns true if the specified instrument is a PerspectiveInstrument with the
         same configuration for the observer position and viewing direction as the receiving
         instrument. */
-    bool hasSameSightLine(const Instrument* other) const override;
+    bool hasSameSightLine(const PeelOffInstrument* other) const override;
 
     /** Returns the direction towards the eye from the given photon packet launching position. */
     Direction bfkobs(Position bfr) const override;

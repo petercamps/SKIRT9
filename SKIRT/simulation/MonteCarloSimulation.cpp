@@ -4,6 +4,7 @@
 ///////////////////////////////////////////////////////////////// */
 
 #include "MonteCarloSimulation.hpp"
+#include "EscapeInstrument.hpp"
 #include "Log.hpp"
 #include "Parallel.hpp"
 #include "ParallelFactory.hpp"
@@ -708,7 +709,10 @@ void MonteCarloSimulation::performLifeCycle(size_t firstIndex, size_t numIndices
     PhotonPacket pp, ppp;
 
     // scratch space for the detection information of the instruments in a sight-line group during peel-off
-    vector<Instrument::Detection> detections(peel ? _instrumentSystem->instruments().size() : 0);
+    vector<PeelOffInstrument::Detection> detections(peel ? _instrumentSystem->instruments().size() : 0);
+
+    // serve the escape instruments, if any, during the peel-off segments
+    bool escape = peel && !_instrumentSystem->escapeInstruments().empty();
 
     // loop over the history indices, with interruptions for progress logging
     while (numIndices)
@@ -725,6 +729,16 @@ void MonteCarloSimulation::performLifeCycle(size_t firstIndex, size_t numIndices
             {
                 if (peel) peelOffEmission(&pp, &ppp, detections);
 
+                // without media, the packet escapes unattenuated; without forced scattering,
+                // record the transparent contribution now because it cannot be recorded at escape
+                if (escape)
+                {
+                    if (!_config->hasMedium())
+                        detectEscape(&pp, 1., true);
+                    else if (!_config->forceScattering())
+                        detectEscape(&pp, 0., true);
+                }
+
                 // trace the packet through the media, if any
                 if (_config->hasMedium())
                 {
@@ -740,6 +754,9 @@ void MonteCarloSimulation::performLifeCycle(size_t firstIndex, size_t numIndices
                                 mediumSystem()->setScatteringAndAbsorptionOpticalDepths(&pp);
                             else
                                 mediumSystem()->setExtinctionOpticalDepths(&pp);
+
+                            // record the luminosity escaping along the complete path before the weight is adjusted
+                            if (escape) detectEscape(&pp, exp(-pp.totalExtinctionOpticalDepth()), true);
 
                             // advance the packet
                             if (store) mediumSystem()->storeRadiationField(primary, &pp);
@@ -761,8 +778,17 @@ void MonteCarloSimulation::performLifeCycle(size_t firstIndex, size_t numIndices
                         while (true)
                         {
                             // advance the packet (without storing the radiation field)
-                            // if the interaction point is outside of the path, terminate the packet
-                            if (!simulateNonForcedPropagation(&pp)) break;
+                            // if the interaction point is outside of the path, record its escape and terminate it
+                            if (!simulateNonForcedPropagation(&pp))
+                            {
+                                if (escape)
+                                {
+                                    double escapeFraction =
+                                        _config->explicitAbsorption() ? exp(-pp.interactionOpticalDepth()) : 1.;
+                                    detectEscape(&pp, escapeFraction, false);
+                                }
+                                break;
+                            }
 
                             // if the packet's weight drops to zero, terminate it
                             if (pp.luminosity() <= 0) break;
@@ -790,7 +816,8 @@ namespace
     // determines where each instrument in the specified group would detect a peel-off photon packet launched
     // from the specified position, stores the results in the specified array (in the order of the instruments
     // in the group), and returns true if at least one of the instruments would detect the photon packet
-    bool locateForGroup(const vector<Instrument*>& group, Position bfr, vector<Instrument::Detection>& detections)
+    bool locateForGroup(const vector<PeelOffInstrument*>& group, Position bfr,
+                        vector<PeelOffInstrument::Detection>& detections)
     {
         bool detected = false;
         int numInstruments = group.size();
@@ -806,16 +833,16 @@ namespace
 ////////////////////////////////////////////////////////////////////
 
 void MonteCarloSimulation::peelOffEmission(const PhotonPacket* pp, PhotonPacket* ppp,
-                                           vector<Instrument::Detection>& detections)
+                                           vector<PeelOffInstrument::Detection>& detections)
 {
     Position bfr = pp->position();
-    for (const auto& group : _instrumentSystem->sightLineGroups())
+    for (const auto& group : _instrumentSystem->peelOffGroups())
     {
         // skip the group if none of its instruments would detect a peel-off photon packet from this position
         if (!locateForGroup(group, bfr, detections)) continue;
 
         // launch the peel-off photon packet along the sight line of the group
-        const Instrument* instrument = group.front();
+        const PeelOffInstrument* instrument = group.front();
         const Direction bfkobs = instrument->bfkobs(bfr);
         ppp->launchEmissionPeelOff(pp, bfkobs);
 
@@ -828,6 +855,14 @@ void MonteCarloSimulation::peelOffEmission(const PhotonPacket* pp, PhotonPacket*
         // have the peel-off photon packet detected by the instruments in the group
         detectPeelOff(group, detections, ppp);
     }
+}
+
+////////////////////////////////////////////////////////////////////
+
+void MonteCarloSimulation::detectEscape(const PhotonPacket* pp, double escapeFraction, bool includeTransparent)
+{
+    for (EscapeInstrument* instrument : _instrumentSystem->escapeInstruments())
+        instrument->detectEscape(pp, escapeFraction, includeTransparent);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -921,7 +956,7 @@ bool MonteCarloSimulation::simulateNonForcedPropagation(PhotonPacket* pp)
 ////////////////////////////////////////////////////////////////////
 
 void MonteCarloSimulation::peelOffScattering(PhotonPacket* pp, PhotonPacket* ppp,
-                                             vector<Instrument::Detection>& detections)
+                                             vector<PeelOffInstrument::Detection>& detections)
 {
     // determine the perceived wavelength at the scattering location
     double lambda = mediumSystem()->perceivedWavelengthForScattering(pp);
@@ -933,13 +968,13 @@ void MonteCarloSimulation::peelOffScattering(PhotonPacket* pp, PhotonPacket* ppp
 
     // now do the actual peel-off for each group of instruments with the same sight line
     Position bfr = pp->position();
-    for (const auto& group : _instrumentSystem->sightLineGroups())
+    for (const auto& group : _instrumentSystem->peelOffGroups())
     {
         // skip the group if none of its instruments would detect a peel-off photon packet from this position
         if (!locateForGroup(group, bfr, detections)) continue;
 
         // get the direction towards the instruments and (for polarization only) their Y-axis orientation
-        const Instrument* instr = group.front();
+        const PeelOffInstrument* instr = group.front();
         Direction bfkobs = instr->bfkobs(bfr);
         Direction bfky = _config->hasPolarization() ? instr->bfky(bfr) : Direction();
 
@@ -974,8 +1009,9 @@ void MonteCarloSimulation::peelOffScattering(PhotonPacket* pp, PhotonPacket* ppp
 
 ////////////////////////////////////////////////////////////////////
 
-void MonteCarloSimulation::detectPeelOff(const vector<Instrument*>& group,
-                                         const vector<Instrument::Detection>& detections, const PhotonPacket* ppp)
+void MonteCarloSimulation::detectPeelOff(const vector<PeelOffInstrument*>& group,
+                                         const vector<PeelOffInstrument::Detection>& detections,
+                                         const PhotonPacket* ppp)
 {
     // the extinction factor along the sight line, calculated only when needed (a negative value means not yet)
     double extinction = -1.;
@@ -984,8 +1020,8 @@ void MonteCarloSimulation::detectPeelOff(const vector<Instrument*>& group,
     for (int i = 0; i != numInstruments; ++i)
     {
         // skip the instrument if it does not record the photon packet's position or wavelength
-        Instrument* instrument = group[i];
-        Instrument::Detection detection = detections[i];
+        PeelOffInstrument* instrument = group[i];
+        PeelOffInstrument::Detection detection = detections[i];
         if (detection.pixel < 0 || !instrument->recordsWavelength(ppp->wavelength())) continue;
 
         // calculate the extinction factor if this has not yet been done for this sight line;
