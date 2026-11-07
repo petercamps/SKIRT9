@@ -745,58 +745,27 @@ void FluxRecorder::calibrateAndWrite()
     };
 
     // local function to construct the description of the contents of text column output files for an escape bin
-    auto escapeHeader = [this, distanceInfo](string name, int b) {
+    auto escapeHeader = [this, distanceInfo](string name, size_t b) {
         return name + " of escape bin " + std::to_string(b) + ": " + _escapeDescriptions[b] + ", sky fraction "
                + StringUtils::toString(_escapeSkyFractions[b]) + distanceInfo();
     };
 
-    // local function to determine the axes metadata for frames as provided by the instrument,
-    // converted to output units if a quantity has been specified
-    auto providedAxes = [this, units](double& incx, double& incy, double& cx, double& cy, string& unitsxy) {
-        if (_quantityXY.empty())
-        {
-            incx = _incrementX;
-            incy = _incrementY;
-            cx = _centerX;
-            cy = _centerY;
-            unitsxy = "1";
-        }
-        else
-        {
-            incx = units->out(_quantityXY, _incrementX);
-            incy = units->out(_quantityXY, _incrementY);
-            cx = units->out(_quantityXY, _centerX);
-            cy = units->out(_quantityXY, _centerY);
-            unitsxy = units->unit(_quantityXY);
-        }
+    // axes metadata for the frames of a data cube, in output units
+    struct FrameAxes
+    {
+        double incx{0.};
+        double incy{0.};
+        double cx{0.};
+        double cy{0.};
+        string unitsxy;
     };
 
-    // local function to write data cubes with statistics, rescaled to the range of single-precision numbers
-    // params: vector of statistics arrays (which are modified), frame size and axes metadata, wavelength grid
-    auto writeStatisticsCubes = [this, units](vector<Array>& w, int nx, int ny, double incx, double incy, double cx,
-                                              double cy, const string& unitsxy, const Array& wavegrid) {
-        // the output files have single-precision floating point numbers with range of only about 10^+-38
-        // --> scale the values to a range that has a maximum of 10^+-38 to minimize the number of underflows
-        constexpr double WMAX = 1e38;
-        // since every contribution is nonnegative, w[1].max() > 0 guarantees w[k].max() > 0 for all k
-        bool anyContribution = w[1].max() > 0;
-        Array cs(maxContributionPower);
-        for (int k = 1; k <= maxContributionPower; ++k)
-        {
-            // inverse of WMAX == c**k w[k].max(); if there were no contributions, no rescaling is needed
-            cs[k - 1] = anyContribution ? pow(WMAX / w[k].max(), 1. / k) : 1.;
-        }
-        double c = cs.min();
-        double cn = 1.;
-        for (int k = 0; k <= maxContributionPower; ++k)
-        {
-            string filename = _instrumentName + "_stats" + std::to_string(k);
-            string description = "sum of contributions to the power of " + std::to_string(k);
-            w[k] *= cn;
-            FITSInOutFile::write(_parentItem, description, filename, w[k], "", nx, ny, incx, incy, cx, cy, unitsxy,
-                                 wavegrid, units->uwavelength());
-            cn *= c;
-        }
+    // local function to return the axes metadata for frames as provided by the instrument,
+    // converted to output units if a quantity has been specified
+    auto providedAxes = [this, units]() -> FrameAxes {
+        if (_quantityXY.empty()) return {_incrementX, _incrementY, _centerX, _centerY, "1"};
+        return {units->out(_quantityXY, _incrementX), units->out(_quantityXY, _incrementY),
+                units->out(_quantityXY, _centerX), units->out(_quantityXY, _centerY), units->unit(_quantityXY)};
     };
 
     // local function that returns unique pointer to new observer info record for distant instruments
@@ -818,6 +787,131 @@ void FluxRecorder::calibrateAndWrite()
         return obsInfo;
     };
 
+    // local function to write a spectrum for each flux component to a text file with multiple columns,
+    // and the statistics to a separate text file if requested (an empty description adds no description line)
+    // params: vector of recorded arrays and vector of statistics arrays for a single spectrum,
+    //         file name prefix, descriptions of the contents of the spectrum and statistics files
+    auto writeSED = [this, units, buildCols](vector<Array>& arrays, const vector<Array>& w, const string& prefix,
+                                             const string& description, const string& statsDescription) {
+        // build a list of column names and corresponding pointers to the arrays (which may be empty)
+        vector<string> colNames;
+        vector<Array*> arrayPtrs;
+        buildCols(arrays, colNames, arrayPtrs);
+
+        // open the file and add the column headers
+        ColumnOutFile sedFile(_parentItem, prefix + "_sed", "SED");
+        sedFile.setLongDescription(description);
+        sedFile.addColumn("wavelength; " + units->swavelength(), units->uwavelength());
+        for (const string& name : colNames)
+        {
+            sedFile.addColumn(name + "; " + units->sfluxdensity(), units->ufluxdensity());
+        }
+
+        // write the column data
+        for (int ell : Indices(_numWavelengths, units->rwavelength()))
+        {
+            vector<double> values({units->owavelength(_lambdagrid->wavelength(ell))});
+            for (const Array* array : arrayPtrs) values.push_back(array->size() ? (*array)[ell] : 0.);
+            sedFile.writeRow(values);
+        }
+        sedFile.close();
+
+        // output statistics to a separate file
+        if (_recordStatistics)
+        {
+            // open the file and add the column headers
+            ColumnOutFile statFile(_parentItem, prefix + "_sedstats", "SED statistics");
+            statFile.setLongDescription(statsDescription);
+            statFile.addColumn("wavelength; " + units->swavelength(), units->uwavelength());
+            for (int k = 0; k <= maxContributionPower; ++k)
+            {
+                statFile.addColumn("Sum[w_i**" + std::to_string(k) + "]");
+            }
+            statFile.addComment("--> w_i is luminosity contribution (in W) from i_th launched photon");
+
+            // write the column data
+            for (int ell : Indices(_numWavelengths, units->rwavelength()))
+            {
+                vector<double> values({units->owavelength(_lambdagrid->wavelength(ell))});
+                for (int k = 0; k <= maxContributionPower; ++k) values.push_back(w[k][ell]);
+                statFile.writeRow(values);
+            }
+            statFile.close();
+        }
+    };
+
+    // local function to write a data cube for each flux component to a FITS file, and the statistics to
+    // additional FITS files if requested, after reversing the wavelength order of the frames if necessary
+    // params: vector of recorded arrays and vector of statistics arrays (both are modified), axes metadata,
+    //         units of the recorded quantity, observer info (or null pointer)
+    auto writeCubes = [this, units, buildFiles](vector<Array>& arrays, vector<Array>& w, const FrameAxes& axes,
+                                                const string& dataUnits, const FITSInOut::ObserverInfo* info) {
+        // copy the wavelength grid in output units
+        Array wavegrid(_numWavelengths);
+        for (int ell = 0; ell != _numWavelengths; ++ell)
+            wavegrid[ell] = units->owavelength(_lambdagrid->wavelength(ell));
+
+        // reverse the ordering of the wavelength grid and frames if necessary
+        if (units->rwavelength())
+        {
+            NR::reverse(wavegrid);
+
+            // flux frames
+            for (auto& array : arrays)
+                if (array.size()) NR::reverse(array, _numPixelsInFrame);
+
+            // statistics frames
+            for (auto& array : w)
+                if (array.size()) NR::reverse(array, _numPixelsInFrame);
+        }
+
+        // build a list of file names and corresponding pointers to the arrays (which may be empty)
+        vector<string> fileNames;
+        vector<Array*> arrayPtrs;
+        buildFiles(arrays, fileNames, arrayPtrs);
+
+        // output the files (ignoring empty arrays)
+        int numFiles = fileNames.size();
+        for (int q = 0; q != numFiles; ++q)
+        {
+            if (arrayPtrs[q]->size())
+            {
+                string filename = _instrumentName + "_" + fileNames[q];
+                string description = fileNames[q] + " flux";
+                FITSInOutFile::write(_parentItem, description, filename, *(arrayPtrs[q]), dataUnits, _numPixelsX,
+                                     _numPixelsY, axes.incx, axes.incy, axes.cx, axes.cy, axes.unitsxy, wavegrid,
+                                     units->uwavelength(), info);
+            }
+        }
+
+        // output statistics to additional files
+        if (_recordStatistics)
+        {
+            // the output files have single-precision floating point numbers with range of only about 10^+-38
+            // --> scale the values to a range that has a maximum of 10^+-38 to minimize the number of underflows
+            constexpr double WMAX = 1e38;
+            // since every contribution is nonnegative, w[1].max() > 0 guarantees w[k].max() > 0 for all k
+            bool anyContribution = w[1].max() > 0;
+            Array cs(maxContributionPower);
+            for (int k = 1; k <= maxContributionPower; ++k)
+            {
+                // inverse of WMAX == c**k w[k].max(); if there were no contributions, no rescaling is needed
+                cs[k - 1] = anyContribution ? pow(WMAX / w[k].max(), 1. / k) : 1.;
+            }
+            double c = cs.min();
+            double cn = 1.;
+            for (int k = 0; k <= maxContributionPower; ++k)
+            {
+                string filename = _instrumentName + "_stats" + std::to_string(k);
+                string description = "sum of contributions to the power of " + std::to_string(k);
+                w[k] *= cn;
+                FITSInOutFile::write(_parentItem, description, filename, w[k], "", _numPixelsX, _numPixelsY, axes.incx,
+                                     axes.incy, axes.cx, axes.cy, axes.unitsxy, wavegrid, units->uwavelength());
+                cn *= c;
+            }
+        }
+    };
+
     // ---------------------- SED: flux density ----------------------
 
     // write SEDs to a single text file with multiple columns
@@ -833,50 +927,8 @@ void FluxRecorder::calibrateAndWrite()
                 if (array.size()) array[ell] *= factor;
         }
 
-        // build a list of column names and corresponding pointers to sed arrays (which may be empty)
-        vector<string> sedNames;
-        vector<Array*> sedArrays;
-        buildCols(_sed, sedNames, sedArrays);
-
-        // open the file and add the column headers
-        ColumnOutFile sedFile(_parentItem, _instrumentName + "_sed", "SED");
-        sedFile.setLongDescription(header("SED"));
-        sedFile.addColumn("wavelength; " + units->swavelength(), units->uwavelength());
-        for (const string& name : sedNames)
-        {
-            sedFile.addColumn(name + "; " + units->sfluxdensity(), units->ufluxdensity());
-        }
-
-        // write the column data
-        for (int ell : Indices(_numWavelengths, units->rwavelength()))
-        {
-            vector<double> values({units->owavelength(_lambdagrid->wavelength(ell))});
-            for (const Array* array : sedArrays) values.push_back(array->size() ? (*array)[ell] : 0.);
-            sedFile.writeRow(values);
-        }
-        sedFile.close();
-
-        // output statistics to a seperate file
-        if (_recordStatistics)
-        {
-            // open the file and add the column headers
-            ColumnOutFile statFile(_parentItem, _instrumentName + "_sedstats", "SED statistics");
-            statFile.addColumn("wavelength; " + units->swavelength(), units->uwavelength());
-            for (int k = 0; k <= maxContributionPower; ++k)
-            {
-                statFile.addColumn("Sum[w_i**" + std::to_string(k) + "]");
-            }
-            statFile.addComment("--> w_i is luminosity contribution (in W) from i_th launched photon");
-
-            // write the column data
-            for (int ell : Indices(_numWavelengths, units->rwavelength()))
-            {
-                vector<double> values({units->owavelength(_lambdagrid->wavelength(ell))});
-                for (int k = 0; k <= maxContributionPower; ++k) values.push_back(_wsed[k][ell]);
-                statFile.writeRow(values);
-            }
-            statFile.close();
-        }
+        // output the file, and the statistics without description line if requested
+        writeSED(_sed, _wsed, _instrumentName, header("SED"), string());
     }
 
     // ---------------------- IFU: surface brightness ----------------------
@@ -897,66 +949,26 @@ void FluxRecorder::calibrateAndWrite()
                     for (size_t lell = begin; lell != end; ++lell) array[lell] *= factor;
         }
 
-        // copy the wavelength grid in output units
-        Array wavegrid(_numWavelengths);
-        for (int ell = 0; ell != _numWavelengths; ++ell)
-            wavegrid[ell] = units->owavelength(_lambdagrid->wavelength(ell));
-
-        // reverse the ordering of the wavelength grid and frames if necessary
-        if (units->rwavelength())
-        {
-            NR::reverse(wavegrid);
-
-            // flux frames
-            for (auto& array : _ifu)
-                if (array.size()) NR::reverse(array, _numPixelsInFrame);
-
-            // statistics frames
-            for (auto& array : _wifu)
-                if (array.size()) NR::reverse(array, _numPixelsInFrame);
-        }
-
-        // build a list of file names and corresponding pointers to ifu arrays (which may be empty)
-        vector<string> ifuNames;
-        vector<Array*> ifuArrays;
-        buildFiles(_ifu, ifuNames, ifuArrays);
-
         // determine spatial axes values and units
-        double incx, incy, cx, cy;
-        string unitsxy;
+        FrameAxes axes;
         if (_local)
         {
             // for local instruments, use the metadata provided by the instrument
-            providedAxes(incx, incy, cx, cy, unitsxy);
+            axes = providedAxes();
         }
         else
         {
             // for distant instruments, convert to angular sizes
-            incx = units->oangle(2. * atan(0.5 * _pixelSizeX / _angularDiameterDistance));
-            incy = units->oangle(2. * atan(0.5 * _pixelSizeY / _angularDiameterDistance));
-            cx = units->oangle(2. * atan(0.5 * _centerX / _angularDiameterDistance));
-            cy = units->oangle(2. * atan(0.5 * _centerY / _angularDiameterDistance));
-            unitsxy = units->uangle();
+            axes.incx = units->oangle(2. * atan(0.5 * _pixelSizeX / _angularDiameterDistance));
+            axes.incy = units->oangle(2. * atan(0.5 * _pixelSizeY / _angularDiameterDistance));
+            axes.cx = units->oangle(2. * atan(0.5 * _centerX / _angularDiameterDistance));
+            axes.cy = units->oangle(2. * atan(0.5 * _centerY / _angularDiameterDistance));
+            axes.unitsxy = units->uangle();
         }
 
-        // output the files (ignoring empty arrays)
+        // output the files, and the statistics if requested
         auto info = observerInfo();
-        int numFiles = ifuNames.size();
-        for (int q = 0; q != numFiles; ++q)
-        {
-            if (ifuArrays[q]->size())
-            {
-                string filename = _instrumentName + "_" + ifuNames[q];
-                string description = ifuNames[q] + " flux";
-                FITSInOutFile::write(_parentItem, description, filename, *(ifuArrays[q]), units->usurfacebrightness(),
-                                     _numPixelsX, _numPixelsY, incx, incy, cx, cy, unitsxy, wavegrid,
-                                     units->uwavelength(), info.get());
-            }
-        }
-
-        // output statistics to additional files
-        if (_recordStatistics)
-            writeStatisticsCubes(_wifu, _numPixelsX, _numPixelsY, incx, incy, cx, cy, unitsxy, wavegrid);
+        writeCubes(_ifu, _wifu, axes, units->usurfacebrightness(), info.get());
     }
 
     // ---------------------- escape bins: flux density ----------------------
@@ -999,74 +1011,29 @@ void FluxRecorder::calibrateAndWrite()
                 return result;
             };
 
+            // output the files for each bin, and the statistics if requested
             for (size_t b = 0; b != numBins; ++b)
             {
-                // build a list of column names and corresponding pointers to the arrays for this bin
                 vector<Array> binArrays = extract(_esc, b);
-                vector<string> sedNames;
-                vector<Array*> sedArrays;
-                buildCols(binArrays, sedNames, sedArrays);
-
-                // open the file and add the column headers
-                string binName =
+                string prefix =
                     _instrumentName + "_bin" + StringUtils::toString(static_cast<double>(b), 'd', 0, numDigits, '0');
-                ColumnOutFile sedFile(_parentItem, binName + "_sed", "SED");
-                sedFile.setLongDescription(escapeHeader("SED", static_cast<int>(b)));
-                sedFile.addColumn("wavelength; " + units->swavelength(), units->uwavelength());
-                for (const string& name : sedNames)
-                {
-                    sedFile.addColumn(name + "; " + units->sfluxdensity(), units->ufluxdensity());
-                }
-
-                // write the column data
-                for (int ell : Indices(_numWavelengths, units->rwavelength()))
-                {
-                    vector<double> values({units->owavelength(_lambdagrid->wavelength(ell))});
-                    for (const Array* array : sedArrays) values.push_back(array->size() ? (*array)[ell] : 0.);
-                    sedFile.writeRow(values);
-                }
-                sedFile.close();
-
-                // output statistics to a seperate file
-                if (_recordStatistics)
-                {
-                    vector<Array> binStats = extract(_wesc, b);
-
-                    // open the file and add the column headers
-                    ColumnOutFile statFile(_parentItem, binName + "_sedstats", "SED statistics");
-                    statFile.setLongDescription(escapeHeader("SED statistics", static_cast<int>(b)));
-                    statFile.addColumn("wavelength; " + units->swavelength(), units->uwavelength());
-                    for (int k = 0; k <= maxContributionPower; ++k)
-                    {
-                        statFile.addColumn("Sum[w_i**" + std::to_string(k) + "]");
-                    }
-                    statFile.addComment("--> w_i is luminosity contribution (in W) from i_th launched photon");
-
-                    // write the column data
-                    for (int ell : Indices(_numWavelengths, units->rwavelength()))
-                    {
-                        vector<double> values({units->owavelength(_lambdagrid->wavelength(ell))});
-                        for (int k = 0; k <= maxContributionPower; ++k) values.push_back(binStats[k][ell]);
-                        statFile.writeRow(values);
-                    }
-                    statFile.close();
-                }
+                writeSED(binArrays, extract(_wesc, b), prefix, escapeHeader("SED", b),
+                         escapeHeader("SED statistics", b));
             }
         }
         else
         {
             // local function to arrange the values for all bins in a frame for each wavelength
-            size_t numPixelsInFrame = static_cast<size_t>(_numPixelsX) * _numPixelsY;
-            auto arrange = [this, numBins, numPixelsInFrame](const vector<Array>& arrays) {
+            auto arrange = [this, numBins](const vector<Array>& arrays) {
                 vector<Array> result(arrays.size());
                 for (size_t q = 0; q != arrays.size(); ++q)
                 {
                     if (arrays[q].size())
                     {
-                        result[q].resize(numPixelsInFrame * _numWavelengths);
+                        result[q].resize(_numPixelsInFrame * _numWavelengths);
                         for (int ell = 0; ell != _numWavelengths; ++ell)
                             for (size_t b = 0; b != numBins; ++b)
-                                result[q][_escapePixelIndices[b] + ell * numPixelsInFrame] =
+                                result[q][_escapePixelIndices[b] + ell * _numPixelsInFrame] =
                                     arrays[q][b + ell * numBins];
                     }
                 }
@@ -1075,48 +1042,8 @@ void FluxRecorder::calibrateAndWrite()
             vector<Array> cubes = arrange(_esc);
             vector<Array> statCubes = arrange(_wesc);
 
-            // copy the wavelength grid in output units
-            Array wavegrid(_numWavelengths);
-            for (int ell = 0; ell != _numWavelengths; ++ell)
-                wavegrid[ell] = units->owavelength(_lambdagrid->wavelength(ell));
-
-            // reverse the ordering of the wavelength grid and frames if necessary
-            if (units->rwavelength())
-            {
-                NR::reverse(wavegrid);
-                for (auto& array : cubes)
-                    if (array.size()) NR::reverse(array, numPixelsInFrame);
-                for (auto& array : statCubes)
-                    if (array.size()) NR::reverse(array, numPixelsInFrame);
-            }
-
-            // build a list of file names and corresponding pointers to the data cubes (which may be empty)
-            vector<string> cubeNames;
-            vector<Array*> cubeArrays;
-            buildFiles(cubes, cubeNames, cubeArrays);
-
-            // determine spatial axes values and units, as provided by the instrument
-            double incx, incy, cx, cy;
-            string unitsxy;
-            providedAxes(incx, incy, cx, cy, unitsxy);
-
-            // output the files (ignoring empty arrays)
-            int numFiles = cubeNames.size();
-            for (int q = 0; q != numFiles; ++q)
-            {
-                if (cubeArrays[q]->size())
-                {
-                    string filename = _instrumentName + "_" + cubeNames[q];
-                    string description = cubeNames[q] + " flux";
-                    FITSInOutFile::write(_parentItem, description, filename, *(cubeArrays[q]), units->ufluxdensity(),
-                                         _numPixelsX, _numPixelsY, incx, incy, cx, cy, unitsxy, wavegrid,
-                                         units->uwavelength());
-                }
-            }
-
-            // output statistics to additional files
-            if (_recordStatistics)
-                writeStatisticsCubes(statCubes, _numPixelsX, _numPixelsY, incx, incy, cx, cy, unitsxy, wavegrid);
+            // output the files, and the statistics if requested, using the axes metadata provided by the instrument
+            writeCubes(cubes, statCubes, providedAxes(), units->ufluxdensity(), nullptr);
         }
     }
 

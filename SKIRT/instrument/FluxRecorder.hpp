@@ -480,7 +480,7 @@ private:
 
     // cached info, initialized when configuration is finalized
     bool _recordTotalOnly{true};          // becomes false if recordComponents and hasMedium are both true
-    size_t _numPixelsInFrame{0};          // number of pixels in a single IFU frame
+    size_t _numPixelsInFrame{0};          // number of pixels in a single IFU or escape bin data cube frame
     int _numEscapeBins{0};                // number of escape bins
     int _numWavelengths{0};               // number of wavelengths in wavelength grid
     bool _disjointWavelengthGrid{false};  // true if the wavelength grid has nonoverlapping bins

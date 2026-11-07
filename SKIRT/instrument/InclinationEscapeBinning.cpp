@@ -47,9 +47,10 @@ std::tuple<double, double, double, double> InclinationEscapeBinning::binRanges(i
 {
     int i = bin / _numAzimuthBins;
     int k = bin % _numAzimuthBins;
-    double width = _foldHemispheres ? 1. / _numInclinationBins : 2. / _numInclinationBins;
-    return {acos(1. - i * width), acos(max(-1., 1. - (i + 1) * width)), 2. * M_PI * k / _numAzimuthBins,
-            2. * M_PI * (k + 1) / _numAzimuthBins};
+    // multiply before dividing, so that the outer edge of the last bin is exact
+    double range = _foldHemispheres ? 1. : 2.;
+    return {acos(1. - range * i / _numInclinationBins), acos(max(-1., 1. - range * (i + 1) / _numInclinationBins)),
+            2. * M_PI * k / _numAzimuthBins, 2. * M_PI * (k + 1) / _numAzimuthBins};
 }
 
 ////////////////////////////////////////////////////////////////////
