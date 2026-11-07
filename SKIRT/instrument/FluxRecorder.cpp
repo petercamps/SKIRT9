@@ -731,22 +731,23 @@ void FluxRecorder::calibrateAndWrite()
         return info;
     };
 
-    // local function to construct the description of the contents of text column output files
-    auto header = [this, units, distanceInfo](string name) {
-        string header = name + " at ";
-        header += "inclination " + StringUtils::toString(units->oposangle(_inclination)) + " " + units->uposangle();
-        header += ", azimuth " + StringUtils::toString(units->oposangle(_azimuth)) + " " + units->uposangle();
+    // local function to construct the part of the description of text column output files that follows the name of
+    // their contents, for the observer of a distant instrument
+    auto observerText = [this, units, distanceInfo]() {
+        string text =
+            " at inclination " + StringUtils::toString(units->oposangle(_inclination)) + " " + units->uposangle();
+        text += ", azimuth " + StringUtils::toString(units->oposangle(_azimuth)) + " " + units->uposangle();
         if (_recordPolarization)
         {
-            header += ", roll " + StringUtils::toString(units->oposangle(_roll)) + " " + units->uposangle();
+            text += ", roll " + StringUtils::toString(units->oposangle(_roll)) + " " + units->uposangle();
         }
-        header += distanceInfo();
-        return header;
+        text += distanceInfo();
+        return text;
     };
 
-    // local function to construct the description of the contents of text column output files for an escape bin
-    auto escapeHeader = [this, distanceInfo](string name, size_t b) {
-        return name + " of escape bin " + std::to_string(b) + ": " + _escapeDescriptions[b] + ", sky fraction "
+    // local function to construct the same part of the description for an escape bin
+    auto escapeBinText = [this, distanceInfo](size_t b) {
+        return " of escape bin " + std::to_string(b) + ": " + _escapeDescriptions[b] + ", sky fraction "
                + StringUtils::toString(_escapeSkyFractions[b]) + distanceInfo();
     };
 
@@ -788,11 +789,11 @@ void FluxRecorder::calibrateAndWrite()
     };
 
     // local function to write a spectrum for each flux component to a text file with multiple columns,
-    // and the statistics to a separate text file if requested (an empty description adds no description line)
+    // and the statistics to a separate text file if requested
     // params: vector of recorded arrays and vector of statistics arrays for a single spectrum,
-    //         file name prefix, descriptions of the contents of the spectrum and statistics files
+    //         file name prefix, the part of the file descriptions that follows the name of their contents
     auto writeSED = [this, units, buildCols](vector<Array>& arrays, const vector<Array>& w, const string& prefix,
-                                             const string& description, const string& statsDescription) {
+                                             const string& descriptionText) {
         // build a list of column names and corresponding pointers to the arrays (which may be empty)
         vector<string> colNames;
         vector<Array*> arrayPtrs;
@@ -800,7 +801,7 @@ void FluxRecorder::calibrateAndWrite()
 
         // open the file and add the column headers
         ColumnOutFile sedFile(_parentItem, prefix + "_sed", "SED");
-        sedFile.setLongDescription(description);
+        sedFile.setLongDescription("SED" + descriptionText);
         sedFile.addColumn("wavelength; " + units->swavelength(), units->uwavelength());
         for (const string& name : colNames)
         {
@@ -821,7 +822,7 @@ void FluxRecorder::calibrateAndWrite()
         {
             // open the file and add the column headers
             ColumnOutFile statFile(_parentItem, prefix + "_sedstats", "SED statistics");
-            statFile.setLongDescription(statsDescription);
+            statFile.setLongDescription("SED statistics" + descriptionText);
             statFile.addColumn("wavelength; " + units->swavelength(), units->uwavelength());
             for (int k = 0; k <= maxContributionPower; ++k)
             {
@@ -927,8 +928,8 @@ void FluxRecorder::calibrateAndWrite()
                 if (array.size()) array[ell] *= factor;
         }
 
-        // output the file, and the statistics without description line if requested
-        writeSED(_sed, _wsed, _instrumentName, header("SED"), string());
+        // output the file, and the statistics if requested
+        writeSED(_sed, _wsed, _instrumentName, observerText());
     }
 
     // ---------------------- IFU: surface brightness ----------------------
@@ -1017,8 +1018,7 @@ void FluxRecorder::calibrateAndWrite()
                 vector<Array> binArrays = extract(_esc, b);
                 string prefix =
                     _instrumentName + "_bin" + StringUtils::toString(static_cast<double>(b), 'd', 0, numDigits, '0');
-                writeSED(binArrays, extract(_wesc, b), prefix, escapeHeader("SED", b),
-                         escapeHeader("SED statistics", b));
+                writeSED(binArrays, extract(_wesc, b), prefix, escapeBinText(b));
             }
         }
         else
@@ -1070,7 +1070,7 @@ void FluxRecorder::calibrateAndWrite()
 
         // open the file and add the column headers
         ColumnOutFile lcFile(_parentItem, _instrumentName + "_lc", "LC");
-        lcFile.setLongDescription(header("LC"));
+        lcFile.setLongDescription("LC" + observerText());
         lcFile.addColumn("time lag", units->utimelag());
         for (const string& name : lcNames)
         {
@@ -1091,6 +1091,7 @@ void FluxRecorder::calibrateAndWrite()
         {
             // open the file and add the column headers
             ColumnOutFile statFile(_parentItem, _instrumentName + "_lcstats", "LC statistics");
+            statFile.setLongDescription("LC statistics" + observerText());
             statFile.addColumn("time lag", units->utimelag());
             for (int p = 0; p <= maxContributionPower; ++p)
             {

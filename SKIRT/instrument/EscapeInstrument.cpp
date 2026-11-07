@@ -67,6 +67,7 @@ void EscapeInstrument::write()
 
     // write the bin table, with the columns provided by the binning
     ColumnOutFile file(this, instrumentName() + "_bins", "escape bins");
+    file.setLongDescription("Escape bins for instrument " + instrumentName());
     file.addColumn("bin index", "", 'd');
     file.addColumn("sky fraction");
     _binning->addBinTableColumns(file);

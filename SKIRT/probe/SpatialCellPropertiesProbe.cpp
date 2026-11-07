@@ -24,6 +24,7 @@ void SpatialCellPropertiesProbe::probe()
         ColumnOutFile out(this, itemName() + "_cellprops", "spatial cell properties");
 
         // write the header
+        out.setLongDescription("Basic properties per spatial cell");
         out.addColumn("spatial cell index", "", 'd');
         out.addColumn("x coordinate of cell center", units->ulength());
         out.addColumn("y coordinate of cell center", units->ulength());

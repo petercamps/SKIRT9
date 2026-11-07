@@ -20,19 +20,22 @@ void InstrumentWavelengthGridProbe::probe()
     for (auto instrument : find<InstrumentSystem>()->instruments())
     {
         writeWavelengthGrid(this, instrument->instrumentWavelengthGrid(), instrument->instrumentName() + "_wavelengths",
-                            "wavelengths for instrument " + instrument->instrumentName());
+                            "wavelengths for instrument " + instrument->instrumentName(),
+                            "Wavelength grid for instrument " + instrument->instrumentName());
     }
 }
 
 ////////////////////////////////////////////////////////////////////
 
 void InstrumentWavelengthGridProbe::writeWavelengthGrid(Probe* item, const WavelengthGrid* wavelengthGrid,
-                                                        const string& filename, const string& description)
+                                                        const string& filename, const string& description,
+                                                        const string& longDescription)
 {
     auto units = item->find<Units>();
 
     // create a text file and add the columns
     ColumnOutFile file(item, filename, description);
+    file.setLongDescription(longDescription);
     file.addColumn("characteristic wavelength; " + units->swavelength(), units->uwavelength());
     file.addColumn("effective wavelength bin width; " + units->swavelength(), units->uwavelength());
     file.addColumn("left border of wavelength bin; " + units->swavelength(), units->uwavelength());

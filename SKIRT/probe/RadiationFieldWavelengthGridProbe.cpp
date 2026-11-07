@@ -18,9 +18,9 @@ void RadiationFieldWavelengthGridProbe::probe()
 {
     if (find<Configuration>()->hasRadiationField())
     {
-        InstrumentWavelengthGridProbe::writeWavelengthGrid(this, find<Configuration>()->radiationFieldWLG(),
-                                                           itemName() + "_wavelengths",
-                                                           "wavelengths for mean intensity");
+        InstrumentWavelengthGridProbe::writeWavelengthGrid(
+            this, find<Configuration>()->radiationFieldWLG(), itemName() + "_wavelengths",
+            "wavelengths for mean intensity", "Radiation field wavelength grid");
     }
 }
 

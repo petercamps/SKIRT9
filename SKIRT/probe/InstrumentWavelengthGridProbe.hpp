@@ -11,11 +11,11 @@ class WavelengthGrid;
 
 ////////////////////////////////////////////////////////////////////
 
-/** WavelengthGridProbe outputs a text column file with information on the wavelength grid for each
-    instrument. Each file is named <tt>prefix_instr_wavelengths.txt</tt> so that it sits next to
-    the files written by the corresponding instrument. For each wavelength bin, the file lists the
-    characteristic wavelength, the wavelength bin width, and the left and right borders of the bin.
-    */
+/** InstrumentWavelengthGridProbe outputs a text column file with information on the wavelength grid
+    for each instrument. Each file is named <tt>prefix_instr_wavelengths.dat</tt> so that it sits
+    next to the files written by the corresponding instrument. For each wavelength bin, the file
+    lists the characteristic wavelength, the wavelength bin width, and the left and right borders of
+    the bin. */
 class InstrumentWavelengthGridProbe : public SpecialtyProbe
 {
     ITEM_CONCRETE(InstrumentWavelengthGridProbe, SpecialtyProbe, "wavelength grid: instruments")
@@ -31,9 +31,10 @@ protected:
 public:
     /** This function outputs a column text file for the specified wavelength grid in the format as
         described in the header of this class. It can be used from other probes to output
-        wavelength grid details. */
+        wavelength grid details. The short \em description is used in the log message, and the
+        \em longDescription is written as the first header line of the file. */
     static void writeWavelengthGrid(Probe* item, const WavelengthGrid* wavelengthGrid, const string& filename,
-                                    const string& description);
+                                    const string& description, const string& longDescription);
 };
 
 ////////////////////////////////////////////////////////////////////

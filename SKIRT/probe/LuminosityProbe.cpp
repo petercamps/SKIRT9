@@ -43,6 +43,7 @@ void LuminosityProbe::probe()
 
     // create a text file and add the columns
     ColumnOutFile file(this, itemName() + "_luminosities", "primary source luminosities");
+    file.setLongDescription("Luminosities of primary sources");
     file.addColumn("wavelength; " + units->swavelength(), units->uwavelength());
     file.addColumn("specific luminosity; " + units->smonluminosity(), units->umonluminosity());
     file.addColumn("luminosity in bin", units->ubolluminosity());

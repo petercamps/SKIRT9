@@ -25,6 +25,7 @@ void InstrumentTimeGridProbe::probe()
             string filename = timeInstrument->instrumentName() + "_timegrid";
             string description = "time grid for instrument " + timeInstrument->instrumentName();
             ColumnOutFile file(this, filename, description);
+            file.setLongDescription("Time grid for instrument " + timeInstrument->instrumentName());
             file.addColumn("characteristic time", units->utimelag());
             file.addColumn("left border of time bin", units->utimelag());
             file.addColumn("right border of time bin", units->utimelag());

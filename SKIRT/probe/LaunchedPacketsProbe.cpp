@@ -70,7 +70,9 @@ void LaunchedPacketsProbe::probe()
     int numSecondarySources = _secondaryCounts.size(0);
 
     // create a text file and add the columns
-    ColumnOutFile file(this, itemName() + "_launchedpackets", "photon packets launched by primary sources");
+    ColumnOutFile file(this, itemName() + "_launchedpackets", "photon packets launched");
+    file.setLongDescription(numSecondarySources ? "Number of photon packets launched by primary and secondary sources"
+                                                : "Number of photon packets launched by primary sources");
     file.addColumn("wavelength; " + units->swavelength(), units->uwavelength());
     file.addColumn("total nr of primary photon packets launched");
     for (int h = 0; h != numPrimarySources; ++h)

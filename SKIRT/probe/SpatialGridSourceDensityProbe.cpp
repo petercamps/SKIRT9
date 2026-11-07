@@ -38,6 +38,7 @@ void SpatialGridSourceDensityProbe::probe()
 
         // create a text file and add the columns
         ColumnOutFile out(this, itemName() + "_sourcedens", "gridded primary source densities");
+        out.setLongDescription("Normalized primary source density per spatial cell");
         out.addColumn("spatial cell index", "", 'd');
         for (int h : hv)
             out.addColumn("normalized density for source " + std::to_string(h + 1), "1/" + units->uvolume());

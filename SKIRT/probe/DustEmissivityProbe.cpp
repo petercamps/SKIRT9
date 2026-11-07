@@ -142,9 +142,9 @@ void DustEmissivityProbe::probe()
         // if requested, also output the wavelength grid
         if (writeWavelengthGrid())
         {
-            InstrumentWavelengthGridProbe::writeWavelengthGrid(this, find<Configuration>()->dustEmissionWLG(),
-                                                               itemName() + "_wavelengths",
-                                                               "emission spectrum wavelengths");
+            InstrumentWavelengthGridProbe::writeWavelengthGrid(
+                this, find<Configuration>()->dustEmissionWLG(), itemName() + "_wavelengths",
+                "emission spectrum wavelengths", "Dust emission wavelength grid for the emissivities");
         }
     }
 }

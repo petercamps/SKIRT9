@@ -87,8 +87,9 @@ void RadiationFieldProbe::probe()
         // if requested, also output the wavelength grid
         if (writeWavelengthGrid())
         {
-            InstrumentWavelengthGridProbe::writeWavelengthGrid(this, wlg, itemName() + "_wavelengths",
-                                                               "wavelengths for mean intensity");
+            InstrumentWavelengthGridProbe::writeWavelengthGrid(
+                this, wlg, itemName() + "_wavelengths", "wavelengths for mean intensity",
+                "Radiation field wavelength grid for the mean intensity");
         }
     }
 }

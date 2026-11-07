@@ -68,7 +68,9 @@ void DustAbsorptionPerCellProbe::probe()
         {
             InstrumentWavelengthGridProbe::writeWavelengthGrid(this, find<Configuration>()->radiationFieldWLG(),
                                                                itemName() + "_wavelengths",
-                                                               "wavelengths for mean intensity");
+                                                               "wavelengths for absorbed spectral luminosity",
+                                                               "Radiation field wavelength grid for the absorbed "
+                                                               "spectral luminosity");
         }
     }
 }
