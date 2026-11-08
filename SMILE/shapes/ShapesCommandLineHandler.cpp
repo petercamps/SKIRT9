@@ -40,7 +40,7 @@ namespace
         Console::info("Generating SMILE schema file '" + outPath + "' ...");
 
         auto schema = ShapeRegistry::getSchemaDef();
-        schema->save(outPath, "Shapes " + BuildInfo::projectVersion() + " " + BuildInfo::timestamp());
+        schema->save(outPath, "Shapes " + BuildInfo::description());
         return true;
     }
 }
@@ -52,8 +52,7 @@ int ShapesCommandLineHandler::perform()
     // Catch and properly report any exceptions
     try
     {
-        Console::warning("Welcome to 'shapes', a SMILE example " + BuildInfo::projectVersion() + " "
-                         + BuildInfo::timestamp());
+        Console::warning("Welcome to 'shapes', a SMILE example " + BuildInfo::description());
         Console::info("Running on host " + System::hostname() + " for " + System::username());
         Console::info("Executable path " + System::executablePath());
 

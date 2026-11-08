@@ -8,13 +8,6 @@
 
 ////////////////////////////////////////////////////////////////////
 
-string BuildInfo::timestamp()
-{
-    return "built on " BUILD_DATE " at " BUILD_TIME;
-}
-
-////////////////////////////////////////////////////////////////////
-
 string BuildInfo::projectVersion()
 {
     return PROJECT_VERSION;
@@ -24,7 +17,21 @@ string BuildInfo::projectVersion()
 
 string BuildInfo::codeVersion()
 {
-    return "git " CODE_VERSION;
+    return CODE_VERSION;
+}
+
+////////////////////////////////////////////////////////////////////
+
+string BuildInfo::timestamp()
+{
+    return "built on " BUILD_DATE " at " BUILD_TIME;
+}
+
+////////////////////////////////////////////////////////////////////
+
+string BuildInfo::description()
+{
+    return codeVersion() + " (" + timestamp() + ")";
 }
 
 ////////////////////////////////////////////////////////////////////

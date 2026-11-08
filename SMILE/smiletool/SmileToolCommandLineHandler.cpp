@@ -24,8 +24,7 @@ int SmileToolCommandLineHandler::perform()
     // Catch and properly report any exceptions
     try
     {
-        Console::warning("Welcome to the SMILE console tool " + BuildInfo::projectVersion() + " "
-                         + BuildInfo::timestamp());
+        Console::warning("Welcome to the SMILE console tool " + BuildInfo::description());
 
         // Process and validate the command line arguments
         CommandLineArguments args(System::arguments(), "-i* -o* -t* -l* -s*");
@@ -154,8 +153,7 @@ int SmileToolCommandLineHandler::perform()
         // If requested, save the dataset as XML and inform the user
         if (!outfilename.empty())
         {
-            XmlHierarchyWriter::write(top.get(), &schema, outfilename,
-                                      "smiletool " + BuildInfo::projectVersion() + " " + BuildInfo::timestamp());
+            XmlHierarchyWriter::write(top.get(), &schema, outfilename, "smiletool " + BuildInfo::description());
             Console::success("Saved " + schema.schemaTitle() + " to '" + outfilename + "'");
         }
 

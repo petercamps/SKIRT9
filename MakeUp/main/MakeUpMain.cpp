@@ -19,8 +19,7 @@ int main(int argc, char** argv)
     app.setOrganizationName("Ghent University, Astronomical Observatory, SKIRT research team");
     app.setOrganizationDomain("skirt.ugent.be");
     app.setApplicationName("MakeUp");
-    app.setApplicationVersion(QString::fromStdString(BuildInfo::projectVersion() + " (" + BuildInfo::codeVersion() + " "
-                                                     + BuildInfo::timestamp() + ")"));
+    app.setApplicationVersion(QString::fromStdString(BuildInfo::description()));
 
     // Initialize the system (do this after constructing QApplication to ensure proper locale)
     System system(argc, argv);

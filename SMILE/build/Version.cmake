@@ -13,10 +13,11 @@
 #
 #  - BUILDINFO_PROJECT_VERSION: the most recent release tag reachable from the current commit, e.g. "v10.1.0",
 #    or "unversioned" if there is no such tag or no git repository.
-#  - BUILDINFO_CODE_VERSION: the output of git describe, e.g. "v10.1.0" for the tagged commit itself,
-#    "v10.1.0-5-gabc1234" for commit abc1234 five commits past it, or just the abbreviated commit hash
-#    "abc1234" if there is no release tag; the suffix "-dirty" indicates uncommitted changes. The value is
-#    "unknown" if there is no git repository.
+#  - BUILDINFO_CODE_VERSION: the full version, i.e. the output of git describe, e.g. "v10.1.0" for the tagged
+#    commit itself, or "v10.1.0-5-gabc1234" for commit abc1234 five commits past it. If there is no release tag,
+#    the abbreviated commit hash follows "unversioned-g", e.g. "unversioned-gabc1234". The suffix "-dirty"
+#    indicates uncommitted changes. The value is "unversioned" if there is no git repository. In all cases,
+#    the full version starts with the project version.
 #
 # The script can be included by a CMake list file at configure time, and by a CMake script at build time.
 
@@ -33,9 +34,13 @@ if (GIT_EXECUTABLE)
 endif()
 if (NOT BUILDINFO_PROJECT_VERSION)
     set(BUILDINFO_PROJECT_VERSION "unversioned")
+    # without a release tag, git describe returns just the abbreviated commit hash
+    if (BUILDINFO_CODE_VERSION)
+        set(BUILDINFO_CODE_VERSION "unversioned-g${BUILDINFO_CODE_VERSION}")
+    endif()
 endif()
 if (NOT BUILDINFO_CODE_VERSION)
-    set(BUILDINFO_CODE_VERSION "unknown")
+    set(BUILDINFO_CODE_VERSION "unversioned")
 endif()
 
 # ------------------------------------------------------------------

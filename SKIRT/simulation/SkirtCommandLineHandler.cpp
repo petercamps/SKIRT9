@@ -38,8 +38,7 @@ namespace
 SkirtCommandLineHandler::SkirtCommandLineHandler() : _args(System::arguments(), allowedOptions)
 {
     // issue welcome message
-    _producerInfo =
-        "SKIRT " + BuildInfo::projectVersion() + " (" + BuildInfo::codeVersion() + " " + BuildInfo::timestamp() + ")";
+    _producerInfo = "SKIRT " + BuildInfo::description();
     H5Lib::setProducer(_producerInfo);
     _hostUserInfo = "Running on " + System::hostname() + " for " + System::username();
     _console.info("Welcome to " + _producerInfo);
