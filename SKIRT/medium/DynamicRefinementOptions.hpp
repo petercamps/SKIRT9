@@ -67,12 +67,15 @@
     unsplit.
 
     A decision also does not lead to a refinement round if the number of candidates is below the
-    fraction \em minCandidateFraction of the number of cells, which is zero by default. Monte Carlo
-    noise lets a few cells cross the threshold of a gradient criterion in nearly every decision,
-    and because a smaller cell is crossed by fewer photon packets, its children are noisier still
-    and more likely to be flagged in turn. Without such a lower limit, the refinement may therefore
-    never settle, and may even run away. The candidates left unsplit for this reason are reported
-    in an informational message rather than a warning, and the refinement counts as settled.
+    fraction \em minCandidateFraction of the number of cells, which is \f$10^{-3}\f$ by default; a
+    value of zero disables this limit. Monte Carlo noise lets a few cells cross the threshold of a
+    gradient criterion in nearly every decision, and because a smaller cell is crossed by fewer
+    photon packets, its children are noisier still and more likely to be flagged in turn. Without
+    such a lower limit, the refinement may therefore never settle, and may even run away. Noise
+    also lets a few cells near a bound of a criterion or condition flicker in and out of the
+    candidates, which can drag out the refinement with a long tail of tiny rounds that hardly
+    change the results. The candidates left unsplit for this reason are reported in an
+    informational message rather than a warning, and the refinement counts as settled.
 
     A refinement round subdivides each selected candidate by \em levelsPerRound tree levels, or by
     fewer levels if the level limits of the criteria that flag the candidate allow fewer (see the
@@ -152,7 +155,7 @@ class DynamicRefinementOptions : public SimulationItem
                         "round")
         ATTRIBUTE_MIN_VALUE(minCandidateFraction, "[0")
         ATTRIBUTE_MAX_VALUE(minCandidateFraction, "1]")
-        ATTRIBUTE_DEFAULT_VALUE(minCandidateFraction, "0")
+        ATTRIBUTE_DEFAULT_VALUE(minCandidateFraction, "1e-3")
         ATTRIBUTE_DISPLAYED_IF(minCandidateFraction, "Level3")
 
         PROPERTY_INT(levelsPerRound, "the number of tree levels by which a refinement round subdivides each candidate")
