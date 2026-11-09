@@ -138,15 +138,15 @@ void XRayAtomicGasMix::setupSelfBefore()
 
     // ---- load resources ----
 
-    // load the atom masses and default abundancies
+    // load the atom masses and default abundances
     auto atomv = loadStruct<AtomParams, 2>(this, "XRay_MA.txt", "atom masses");
 
-    // if the configured abundancies list is nonempty, use it instead of the defaults
-    if (!_abundancies.empty())
+    // if the configured abundances list is nonempty, use it instead of the defaults
+    if (!_abundances.empty())
     {
-        if (_abundancies.size() != numAtoms)
-            throw FATALERROR("The abundancies list must have exactly " + std::to_string(numAtoms) + " values");
-        for (size_t i = 0; i != numAtoms; ++i) atomv[i].abund = _abundancies[i];
+        if (_abundances.size() != numAtoms)
+            throw FATALERROR("The abundances list must have exactly " + std::to_string(numAtoms) + " values");
+        for (size_t i = 0; i != numAtoms; ++i) atomv[i].abund = _abundances[i];
     }
 
     // load the photo-absorption cross section parameters

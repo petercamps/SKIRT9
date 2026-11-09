@@ -132,7 +132,7 @@ namespace ElectronScatteringHelper
     The relative abundances of the 30 elements in the gas and the temperature of the gas are
     configured in the ski file as constant properties. In other words, the abundances and the
     temperature are considered to be spatially constant (for a given medium component). If the list
-    of abundances is left empty in the ski file, default abundancies are used, taken from Table 2
+    of abundances is left empty in the ski file, default abundances are used, taken from Table 2
     of Anders & Grevesse (1989), the default abundance table in Xspec. In the default list, the
     abundance of hydrogen is set to unity. However, it is acceptable to specify a hydrogen
     abundance lower than one, for example to model an ionized hydrogen fraction. The first element
@@ -145,8 +145,8 @@ namespace ElectronScatteringHelper
 
     The total photo-absorption cross section per hydrogen atom for this material mix is obtained by
     accumulating the photo-absorption cross sections for all shells and for all individual
-    elements, weighted by element abundancy, and convolved with a Gaussian profile reflecting each
-    element's thermal velocity. Because the abundancies and the temperature are fixed, this
+    elements, weighted by element abundance, and convolved with a Gaussian profile reflecting each
+    element's thermal velocity. Because the abundances and the temperature are fixed, this
     calculation can be performed during setup and the result stored, discretized on a
     high-resolution wavelength grid for later retrieval.
 
@@ -169,7 +169,7 @@ namespace ElectronScatteringHelper
     The total fluorescence cross section per hydrogen atom for this material mix is obtained
     similarly, but now including only the K and L shell photo-absorption cross sections for each
     element, multiplied by the appropriate fluorescence yields in addition to the element
-    abundancy.
+    abundance.
 
     <b>Electron scattering - cross section and phase function</b>
 
@@ -308,11 +308,11 @@ class XRayAtomicGasMix : public MaterialMix
                   "a neutral gas mix with photo-absorption and fluorescence at X-ray wavelengths")
         ATTRIBUTE_TYPE_INSERT(XRayAtomicGasMix, "GasMix")
 
-        PROPERTY_DOUBLE_LIST(abundancies, "the abundances of the elements with atomic number Z = 1,...,30")
-        ATTRIBUTE_MIN_VALUE(abundancies, "[0")
-        ATTRIBUTE_MAX_VALUE(abundancies, "1]")
-        ATTRIBUTE_REQUIRED_IF(abundancies, "false")
-        ATTRIBUTE_DISPLAYED_IF(abundancies, "Level2")
+        PROPERTY_DOUBLE_LIST(abundances, "the abundances of the elements with atomic number Z = 1,...,30")
+        ATTRIBUTE_MIN_VALUE(abundances, "[0")
+        ATTRIBUTE_MAX_VALUE(abundances, "1]")
+        ATTRIBUTE_REQUIRED_IF(abundances, "false")
+        ATTRIBUTE_DISPLAYED_IF(abundances, "Level2")
 
         PROPERTY_DOUBLE(temperature, "the temperature of the gas, or zero to disable thermal dispersion")
         ATTRIBUTE_QUANTITY(temperature, "temperature")
