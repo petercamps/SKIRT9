@@ -341,8 +341,8 @@ void SkirtCommandLineHandler::doSimulation(size_t index)
         if (ProcessManager::isRoot())
         {
             auto schema = SimulationItemRegistry::getSchemaDef();
-            XmlHierarchyWriter::write(simulation, schema, simulation->filePaths()->output("parameters.xml").first,
-                                      _producerInfo);
+            XmlHierarchyWriter::write(simulation, schema,
+                                      simulation->filePaths()->outputLocation("parameters.xml").first, _producerInfo);
         }
 
         // put the simulation in emulation mode if requested
@@ -382,7 +382,7 @@ void SkirtCommandLineHandler::doSimulation(size_t index)
                 // stored only if this is the only process, after recording the cutover now that reading has ended
                 auto filePaths = simulation->filePaths();
                 if (!filePaths->hasCutOver() && ProcessManager::isRoot()
-                    && !filePaths->output("log.txt").second.empty())
+                    && !filePaths->outputLocation("log.txt").second.empty())
                 {
                     if (ProcessManager::isMultiProc())
                     {

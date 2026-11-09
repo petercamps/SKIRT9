@@ -6,6 +6,7 @@
 #include "FilePaths.hpp"
 #include "FatalError.hpp"
 #include "H5Lib.hpp"
+#include "Log.hpp"
 #include "ProcessManager.hpp"
 #include "StringUtils.hpp"
 #include "System.hpp"
@@ -317,7 +318,60 @@ string FilePaths::outputPrefix() const
 
 ////////////////////////////////////////////////////////////////////
 
-std::pair<string, string> FilePaths::output(const string& name) const
+std::pair<string, string> FilePaths::output(const SimulationItem* item, const string& name)
+{
+    if (!item) throw FATALERROR("Output file " + name + " was requested without specifying a simulation item");
+
+    // register the name of the file, regardless of case, unless it has been registered before
+    string filename = _outputPrefix + "_" + name;
+    string description = item->typeAndName();
+    auto [position, inserted] =
+        _outputFiles.emplace(StringUtils::toLower(filename), OutputFile{filename, item, description});
+
+    // report a conflict with a name registered before, but only for the first conflict between a given pair of items
+    if (!inserted)
+    {
+        const OutputFile& earlier = position->second;
+        auto isSamePair = [&earlier, item](const std::pair<const SimulationItem*, const SimulationItem*>& pair) {
+            return (pair.first == earlier.item && pair.second == item)
+                   || (pair.first == item && pair.second == earlier.item);
+        };
+        if (std::none_of(_reportedConflicts.begin(), _reportedConflicts.end(), isSamePair))
+        {
+            _reportedConflicts.emplace_back(earlier.item, item);
+
+            bool sameCase = earlier.name == filename;
+            string message;
+            if (earlier.item == item)
+            {
+                if (sameCase)
+                    message = description + " writes output file " + filename
+                              + " more than once, so that only the last version is kept";
+                else
+                    message = description + " writes output files " + earlier.name + " and " + filename
+                              + ", which are the same file on a file system that ignores case";
+                message += "; further name conflicts for this item are not reported";
+            }
+            else
+            {
+                string writer = (earlier.itemDescription == description ? "another " : "") + earlier.itemDescription;
+                if (sameCase)
+                    message = description + " overwrites output file " + filename + " written earlier by " + writer;
+                else
+                    message = description + " writes output file " + filename + ", which overwrites output file "
+                              + earlier.name + " written earlier by " + writer + " on a file system that ignores case";
+                message += "; further name conflicts between these items are not reported";
+            }
+            find<Log>()->warning(message);
+        }
+    }
+
+    return outputLocation(name);
+}
+
+////////////////////////////////////////////////////////////////////
+
+std::pair<string, string> FilePaths::outputLocation(const string& name) const
 {
     string filename = _outputPrefix + "_" + name;
     string bundlePath;

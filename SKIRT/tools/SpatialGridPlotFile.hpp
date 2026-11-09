@@ -21,8 +21,10 @@ class Units;
     units.
 
     The public functions of this class draw various shapes, each as one or more polylines. The
-    file name passed to the constructor is passed to the FilePaths::output() function to obtain
-    the candidate locations of the output file:
+    constructor registers the name of the output file on behalf of the specified simulation item
+    through the FilePaths::output() function, which logs a warning if an output file with the same
+    name has been registered before, and which also returns the candidate locations of the output
+    file:
 
     - If the output path of the simulation includes an HDF5 file, the plot is written as a bundle
       in that file, as described below. The points are collected in memory, and the bundle is

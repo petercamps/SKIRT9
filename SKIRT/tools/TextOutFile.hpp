@@ -54,7 +54,9 @@ public:
         optional \em textType specifies the type of text for an unstructured text file bundle. If
         the text type is specified and the output path of the simulation includes an HDF5 file, no
         file is opened, and the text is collected for writing a bundle, as described in the class
-        header. */
+        header. In either case, the constructor registers the name of the output file on behalf of
+        the specified simulation item through the FilePaths::output() function, which logs a
+        warning if an output file with the same name has been registered before. */
     TextOutFile(const SimulationItem* item, const string& filename, const string& description,
                 const string& textType = string());
 
@@ -74,15 +76,15 @@ public:
         contents of the regular text file with the specified name as an unstructured text file
         bundle in that HDF5 file, with the specified text type. Otherwise, the function does
         nothing. The arguments are (1) a simulation item in the hierarchy of the caller, used to
-        retrieve the output file path and an appropriate logger; (2) the name of the file,
-        including its filename extension but excluding path and simulation prefix, as for the
-        FilePaths::output() function; (3) a description of the contents of the file, for use in
-        error messages; and (4) the text type. The file must have been written completely, and it
-        is left in place. The function returns the location of the bundle, or the empty string if
-        it did not store a bundle. It does not log a message, so that it can store the log file of
-        the simulation without changing it: tools that verify whether a simulation has finished
-        expect a specific message at the end of that file. In a multiprocessing environment, only
-        the root process stores the bundle. */
+        retrieve the output file path and an appropriate logger; (2) the name of the file, including
+        its filename extension but excluding path and simulation prefix, as for the
+        FilePaths::outputLocation() function; (3) a description of the contents of the file, for use
+        in error messages; and (4) the text type. The file must have been written completely, and it
+        is left in place. The function returns the location of the bundle, or the empty string if it
+        did not store a bundle. It does not log a message, so that it can store the log file of the
+        simulation without changing it: tools that verify whether a simulation has finished expect a
+        specific message at the end of that file. In a multiprocessing environment, only the root
+        process stores the bundle. */
     static string copyToBundle(const SimulationItem* item, const string& name, const string& description,
                                const string& textType);
 

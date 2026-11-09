@@ -35,18 +35,21 @@ SpatialGridPlotFile::SpatialGridPlotFile(const SimulationItem* item, const strin
     if (!ProcessManager::isRoot()) return;
     _units = item->find<Units>();
 
-    // determine the candidate locations for the output file: a regular file and a bundle in an HDF5 file
-    auto bundlePath = item->find<FilePaths>()->output(filename + ".dat").second;
+    // determine whether the output file is a regular file or a bundle in an HDF5 file
+    auto filePaths = item->find<FilePaths>();
+    string name = filename + ".dat";
 
-    // open a regular file, or remember the location of the bundle
-    if (bundlePath.empty())
+    // open a regular file, whose TextOutFile base class registers the name of the file
+    if (filePaths->outputLocation(name).second.empty())
     {
         _plain = std::make_unique<PlainFile>(item, filename, "data to plot the spatial grid");
         _plain->out() << std::setprecision(8);
     }
+
+    // or register the name of the file and remember the location of the bundle
     else
     {
-        _bundlePath = bundlePath;
+        _bundlePath = filePaths->output(item, name).second;
     }
 }
 

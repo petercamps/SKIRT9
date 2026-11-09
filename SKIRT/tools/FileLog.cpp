@@ -39,14 +39,16 @@ void FileLog::setupSelfBefore()
 
 void FileLog::open()
 {
+    // the name of the log file is not registered as an output file name: it cannot conflict with the names of the
+    // files written by simulation items, and a conflict would have to be reported through this log
     string filepath;
     if (ProcessManager::isRoot())
     {
-        filepath = find<FilePaths>()->output("log.txt").first;
+        filepath = find<FilePaths>()->outputLocation("log.txt").first;
     }
     else
     {
-        filepath = find<FilePaths>()->output("log" + processName() + ".txt").first;
+        filepath = find<FilePaths>()->outputLocation("log" + processName() + ".txt").first;
     }
 
     _out = System::ofstream(filepath);

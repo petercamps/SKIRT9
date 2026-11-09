@@ -14,11 +14,48 @@
 
 ////////////////////////////////////////////////////////////////////
 
+namespace
+{
+    // returns true if the two wavelength grids have the same bins, so that the files written for them are identical
+    bool haveSameBins(const WavelengthGrid* grid1, const WavelengthGrid* grid2)
+    {
+        if (grid1 == grid2) return true;
+        int numBins = grid1->numBins();
+        if (grid2->numBins() != numBins) return false;
+
+        // for output units with reverse ordering, the bin width written to the file depends on the type of grid
+        bool disjoint1 = dynamic_cast<const DisjointWavelengthGrid*>(grid1) != nullptr;
+        bool disjoint2 = dynamic_cast<const DisjointWavelengthGrid*>(grid2) != nullptr;
+        if (disjoint1 != disjoint2) return false;
+
+        for (int ell = 0; ell != numBins; ++ell)
+        {
+            if (grid1->wavelength(ell) != grid2->wavelength(ell) || grid1->leftBorder(ell) != grid2->leftBorder(ell)
+                || grid1->rightBorder(ell) != grid2->rightBorder(ell)
+                || grid1->effectiveWidth(ell) != grid2->effectiveWidth(ell))
+                return false;
+        }
+        return true;
+    }
+}
+
+////////////////////////////////////////////////////////////////////
+
 void InstrumentWavelengthGridProbe::probe()
 {
-    // loop over instruments
+    // loop over instruments, skipping an instrument with the same name and the same wavelength grid as an earlier one,
+    // such as the SEDInstrument and FrameInstrument that replace a FullInstrument in an upgraded ski file, because
+    // the file would be identical; for different grids, the file is written again, so that the conflict is reported
+    vector<const Instrument*> written;
     for (auto instrument : find<InstrumentSystem>()->instruments())
     {
+        if (std::any_of(written.begin(), written.end(), [instrument](const Instrument* other) {
+                return other->instrumentName() == instrument->instrumentName()
+                       && haveSameBins(other->instrumentWavelengthGrid(), instrument->instrumentWavelengthGrid());
+            }))
+            continue;
+        written.push_back(instrument);
+
         writeWavelengthGrid(this, instrument->instrumentWavelengthGrid(), instrument->instrumentName() + "_wavelengths",
                             "wavelengths for instrument " + instrument->instrumentName(),
                             "Wavelength grid for instrument " + instrument->instrumentName());

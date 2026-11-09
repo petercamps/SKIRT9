@@ -115,8 +115,9 @@ void FITSInOutFile::write(const SimulationItem* item, const string& description,
     // only the root process writes the output file
     if (!ProcessManager::isRoot()) return;
 
-    // determine the candidate locations for the output file: a regular FITS file and a bundle in an HDF5 file
-    auto [filePath, bundlePath] = item->find<FilePaths>()->output(filename + ".fits");
+    // determine the candidate locations for the output file: a regular FITS file and a bundle in an HDF5 file,
+    // registering the name of the file on behalf of the specified item
+    auto [filePath, bundlePath] = item->find<FilePaths>()->output(item, filename + ".fits");
 
     // write a regular FITS file if there is no bundle candidate
     if (bundlePath.empty())
@@ -159,8 +160,9 @@ void FITSInOutFile::writeMap(const SimulationItem* item, const string& descripti
     // only the root process writes the output file
     if (!ProcessManager::isRoot()) return;
 
-    // determine the candidate locations for the output file: a regular FITS file and a bundle in an HDF5 file
-    auto [filePath, bundlePath] = item->find<FilePaths>()->output(filename + ".fits");
+    // determine the candidate locations for the output file: a regular FITS file and a bundle in an HDF5 file,
+    // registering the name of the file on behalf of the specified item
+    auto [filePath, bundlePath] = item->find<FilePaths>()->output(item, filename + ".fits");
 
     // write a regular FITS file if there is no bundle candidate
     if (bundlePath.empty())

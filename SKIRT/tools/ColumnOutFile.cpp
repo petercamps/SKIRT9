@@ -128,11 +128,13 @@ void ColumnOutFile::open()
     // only the root process writes the output file
     if (!ProcessManager::isRoot()) return;
 
-    // determine the candidate locations for the output file: a regular file and a bundle in an HDF5 file
-    auto bundlePath = _item->find<FilePaths>()->output(_filename + ".dat").second;
+    // determine whether the output file is a regular file or a bundle in an HDF5 file
+    auto filePaths = _item->find<FilePaths>();
+    string name = _filename + ".dat";
 
-    // write a regular file through a TextOutFile instance, exactly as a client of that class would have written it
-    if (bundlePath.empty())
+    // write a regular file through a TextOutFile instance, exactly as a client of that class would have written it;
+    // that instance registers the name of the file
+    if (filePaths->outputLocation(name).second.empty())
     {
         _text = std::make_unique<TextOutFile>(_item, _filename, _description);
         if (!_longDescription.empty()) _text->writeLine("# " + _longDescription);
@@ -145,10 +147,10 @@ void ColumnOutFile::open()
         }
     }
 
-    // or collect the rows for writing a bundle when the file is closed
+    // or register the name of the file and collect the rows for writing a bundle when the file is closed
     else
     {
-        _bundlePath = bundlePath;
+        _bundlePath = filePaths->output(_item, name).second;
         _columns.resize(_numColumns);
     }
 }
@@ -206,9 +208,10 @@ void ColumnOutFile::writeBundle(const SimulationItem* item, const string& bundle
 
 void ColumnOutFile::copyToBundle(const SimulationItem* item, const string& filename, const string& description)
 {
-    // only the root process writes output, and only if the output path includes an HDF5 file
+    // only the root process writes output, and only if the output path includes an HDF5 file; the name of the file
+    // is not registered, because the file has already been written
     if (!ProcessManager::isRoot()) return;
-    auto [filePath, bundlePath] = item->find<FilePaths>()->output(filename + ".dat");
+    auto [filePath, bundlePath] = item->find<FilePaths>()->outputLocation(filename + ".dat");
     if (bundlePath.empty()) return;
 
     std::ifstream in = System::ifstream(filePath);

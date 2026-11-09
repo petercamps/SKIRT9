@@ -12,13 +12,43 @@
 
 ////////////////////////////////////////////////////////////////////
 
+namespace
+{
+    // returns true if the two time grids have the same bins, so that the files written for them are identical
+    bool haveSameBins(const TimeGrid* grid1, const TimeGrid* grid2)
+    {
+        if (grid1 == grid2) return true;
+        int numBins = grid1->numBins();
+        if (grid2->numBins() != numBins) return false;
+        for (int k = 0; k != numBins; ++k)
+        {
+            if (grid1->time(k) != grid2->time(k) || grid1->left(k) != grid2->left(k)
+                || grid1->right(k) != grid2->right(k) || grid1->width(k) != grid2->width(k))
+                return false;
+        }
+        return true;
+    }
+}
+
+////////////////////////////////////////////////////////////////////
+
 void InstrumentTimeGridProbe::probe()
 {
-    // loop over instruments
+    // loop over time instruments, skipping an instrument with the same name and the same time grid as an earlier one,
+    // because the file would be identical; for different grids, the file is written again, so that the conflict is
+    // reported
+    vector<const TimeInstrument*> written;
     for (auto instrument : find<InstrumentSystem>()->instruments())
     {
         if (auto timeInstrument = dynamic_cast<TimeInstrument*>(instrument))
         {
+            if (std::any_of(written.begin(), written.end(), [timeInstrument](const TimeInstrument* other) {
+                    return other->instrumentName() == timeInstrument->instrumentName()
+                           && haveSameBins(other->timeGrid(), timeInstrument->timeGrid());
+                }))
+                continue;
+            written.push_back(timeInstrument);
+
             auto units = find<Units>();
 
             // create a text file and add the columns

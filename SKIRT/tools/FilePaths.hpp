@@ -7,6 +7,7 @@
 #define FILEPATHS_HPP
 
 #include "SimulationItem.hpp"
+#include <unordered_map>
 
 ////////////////////////////////////////////////////////////////////
 
@@ -65,9 +66,33 @@
     written. Output files that are always written as regular files, such as the log file, are
     placed in the directory.
 
-    The output() function implements these rules by returning two candidate locations for an
-    output file, a regular file and a bundle. A caller that supports writing a bundle uses the
-    bundle candidate if it is nonempty, and the regular file otherwise.
+    The output() and outputLocation() functions implement these rules by returning two candidate
+    locations for an output file, a regular file and a bundle. A caller that supports writing a
+    bundle uses the bundle candidate if it is nonempty, and the regular file otherwise.
+
+    <b>Duplicate output file names</b>
+
+    Output files are named for the simulation items that write them, so that two items with
+    similar names may write output files with the same name, in which case the second file
+    overwrites the first (or the second bundle replaces the first). To report this situation, the
+    output() function, which a class calls once for each output file it writes, registers the file
+    name together with the simulation item on whose behalf the file is written. If the name has
+    been registered before, the function logs a warning that names both simulation items. The
+    names are compared regardless of case, because names that differ only in case refer to the
+    same file on a file system that ignores case, such as the default file systems on macOS and
+    Windows; the warning then mentions this condition. A warning is logged only for the first
+    conflict between a given pair of items (or for a given item, if it writes a file with the same
+    name more than once), so that two items that write a series of files with the same names
+    cause a single warning. The registration covers the files written since the FilePaths instance
+    was constructed, i.e. by a single simulation. The warning cannot prevent the overwrite, and it
+    is usually issued after the simulation has run, since most output files are written at the
+    end.
+
+    The outputLocation() function returns the same candidate locations without registering the
+    name. It is used to locate the log file and the parameter file, whose names cannot conflict
+    with those of the files written by simulation items, which always have the \c dat or \c fits
+    filename extension; to locate a file that has already been written, for example to store a
+    copy as a bundle; and to determine whether the output path includes an HDF5 file.
 
     <b>I/O cutover</b>
 
@@ -215,9 +240,15 @@ public:
     string outputPrefix() const;
 
     /** This function determines the candidate locations for the output file with the specified
-        name, as described in the class header. The prefix returned by outputPrefix() is inserted
-        in front of the specified name, separated by an underscore. The function returns a pair of
-        strings.
+        name, as described in the class header, and registers the name of that file as being
+        written on behalf of the specified simulation item. If the name has been registered
+        before, the function logs a warning, as described in the class header. A class that writes
+        an output file calls this function exactly once for that file, passing the simulation item
+        on whose behalf the file is written; it must not change the name of the file obtained from
+        the function. The function is not thread-safe; it must be called from serial code.
+
+        The prefix returned by outputPrefix() is inserted in front of the specified name, separated
+        by an underscore. The function returns a pair of strings.
 
         The first string is the absolute path of a regular file with that name in the output
         directory. It is always nonempty, because some output files, such as the log file, are
@@ -231,7 +262,14 @@ public:
         The function performs no input/output operations. A caller that supports writing a bundle
         is expected to write the bundle if the second string is nonempty, and the regular file
         otherwise. */
-    std::pair<string, string> output(const string& name) const;
+    std::pair<string, string> output(const SimulationItem* item, const string& name);
+
+    /** This function returns the same candidate locations for the output file with the specified
+        name as the output() function, without registering the name of the file. It is intended for
+        locating the log file and the parameter file, for locating a file that has already been
+        written, and for determining whether the output path includes an HDF5 file, as described in
+        the class header. */
+    std::pair<string, string> outputLocation(const string& name) const;
 
     /** This function returns the directory portion of the specified input or output path, which
         can have the form <tt>\<dir\>/\<hdf\>:\<suite\></tt> described in the class header. If
@@ -325,6 +363,16 @@ private:
     string _outputPrefix;    // prefix for the names of output files
     bool _sharedProcess{false};  // true if other simulations run in parallel in the same process
     bool _cutOver{false};        // true if the simulation has reached the I/O cutover
+
+    // an output file name registered by the output() function
+    struct OutputFile
+    {
+        string name;                          // the name of the file, including the prefix
+        const SimulationItem* item{nullptr};  // the simulation item on whose behalf the file is written
+        string itemDescription;               // the type and name of that simulation item
+    };
+    std::unordered_map<string, OutputFile> _outputFiles;  // the registered files, indexed by lowercase name
+    vector<std::pair<const SimulationItem*, const SimulationItem*>> _reportedConflicts;  // pairs of items
 };
 
 ////////////////////////////////////////////////////////////////////

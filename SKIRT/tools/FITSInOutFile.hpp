@@ -31,11 +31,13 @@ class SimulationItem;
     <b>Locating the output file</b>
 
     The output file is located through the FilePaths::output() function, which combines the
-    specified file name with the output path and prefix of the simulation. If the output path of
-    the simulation includes an HDF5 file, the frame or data cube is written as a bundle in that
-    file, as described below. Otherwise, it is written as a regular FITS file in the output
-    directory, exactly as the FITSInOut class writes it. In a multiprocessing environment, only the
-    root process writes the output file.
+    specified file name with the output path and prefix of the simulation, and which registers the
+    name of the file on behalf of the specified simulation item, logging a warning if an output file
+    with the same name has been registered before. If the output path of the simulation includes an
+    HDF5 file, the frame or data cube is written as a bundle in that file, as described below.
+    Otherwise, it is written as a regular FITS file in the output directory, exactly as the
+    FITSInOut class writes it. In a multiprocessing environment, only the root process writes the
+    output file.
 
     <b>FITS file bundle for input</b>
 

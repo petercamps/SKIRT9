@@ -15,7 +15,13 @@ class WavelengthGrid;
     for each instrument. Each file is named <tt>prefix_instr_wavelengths.dat</tt> so that it sits
     next to the files written by the corresponding instrument. For each wavelength bin, the file
     lists the characteristic wavelength, the wavelength bin width, and the left and right borders of
-    the bin. */
+    the bin.
+
+    Several instruments may have the same name, as long as they write output files with different
+    names, as do an SEDInstrument and a FrameInstrument. If such instruments have the same
+    wavelength grid, the probe writes a single file for them. If their grids differ, it writes the
+    file for each of them, so that only the last one is kept, and a warning about the conflicting
+    file names is logged (see the FilePaths class). */
 class InstrumentWavelengthGridProbe : public SpecialtyProbe
 {
     ITEM_CONCRETE(InstrumentWavelengthGridProbe, SpecialtyProbe, "wavelength grid: instruments")

@@ -25,7 +25,9 @@ class TextOutFile;
     addColumn() function. It then writes the rows through the writeRow() function, and finally
     calls the close() function. All columns must be added before the first row is written.
     Nothing is opened until the first row is written, or until the file is closed if there are no
-    rows. At that time, the filename is passed to the FilePaths::output() function to obtain the
+    rows. At that time, the name of the output file is registered on behalf of the simulation item
+    specified in the constructor through the FilePaths::output() function, which logs a warning if
+    an output file with the same name has been registered before, and which also returns the
     candidate locations of the output file:
 
     - If the output path of the simulation includes an HDF5 file, the table is written as a bundle
@@ -160,8 +162,8 @@ public:
         instance of this class would have created them. The comment lines in the header, other than
         the column information lines, become the description attribute of the bundle. The values
         on each data line are read as floating point numbers, one for each column. The regular file
-        is left in place. In a multiprocessing environment, only the root process stores the
-        bundle. */
+        is left in place, and its name is not registered again (see the FilePaths class). In a
+        multiprocessing environment, only the root process stores the bundle. */
     static void copyToBundle(const SimulationItem* item, const string& filename, const string& description);
 
     //======================== Private helpers ========================

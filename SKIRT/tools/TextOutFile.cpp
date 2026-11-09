@@ -27,8 +27,9 @@ TextOutFile::TextOutFile(const SimulationItem* item, const string& filename, con
         _log = item->find<Log>();
         _units = item->find<Units>();
 
-        // determine the candidate locations for the output file: a regular file and a bundle in an HDF5 file
-        auto [filepath, bundlePath] = item->find<FilePaths>()->output(filename + ".dat");
+        // determine the candidate locations for the output file: a regular file and a bundle in an HDF5 file,
+        // registering the name of the file on behalf of the specified item
+        auto [filepath, bundlePath] = item->find<FilePaths>()->output(item, filename + ".dat");
 
         // collect the text for a bundle if requested and possible
         if (!textType.empty() && !bundlePath.empty())
@@ -104,10 +105,11 @@ TextOutFile::~TextOutFile()
 string TextOutFile::copyToBundle(const SimulationItem* item, const string& name, const string& description,
                                  const string& textType)
 {
-    // only the root process writes output, and only if the output path includes an HDF5 file
+    // only the root process writes output, and only if the output path includes an HDF5 file; the name of the file
+    // is not registered, because the file has already been written
     if (!ProcessManager::isRoot()) return string();
     auto filePaths = item->find<FilePaths>();
-    auto [filePath, bundlePath] = filePaths->output(name);
+    auto [filePath, bundlePath] = filePaths->outputLocation(name);
     if (bundlePath.empty()) return string();
     filePaths->verifyBundleOutput(bundlePath);
 
