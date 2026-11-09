@@ -32,14 +32,13 @@ class RadiationFieldProbe : public SpatialGridFormProbe
         ENUM_VAL(ProbeAfter, Secondary, "after each iteration over secondary emission")
     ENUM_END()
 
-    ITEM_CONCRETE(RadiationFieldProbe, SpatialGridFormProbe,
-                  "internal spatial grid: the mean radiation field intensity")
+    ITEM_CONCRETE(RadiationFieldProbe, SpatialGridFormProbe, "internal spatial grid: mean radiation field intensity")
         ATTRIBUTE_TYPE_DISPLAYED_IF(RadiationFieldProbe, "Level2&SpatialGrid&RadiationField")
 
         PROPERTY_BOOL(writeWavelengthGrid, "output a text file with the radiation field wavelength grid")
         ATTRIBUTE_DEFAULT_VALUE(writeWavelengthGrid, "false")
 
-        PROPERTY_ENUM(probeAfter, ProbeAfter, "perform the probe after")
+        PROPERTY_ENUM(probeAfter, ProbeAfter, "when to perform the probe")
         ATTRIBUTE_DEFAULT_VALUE(probeAfter, "Run")
         ATTRIBUTE_DISPLAYED_IF(probeAfter, "DynamicState|IterateSecondary")
 

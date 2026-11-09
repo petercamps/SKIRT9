@@ -27,7 +27,7 @@ class BandLuminosityNormalization : public LuminosityNormalization
     ENUM_END()
 
     ITEM_CONCRETE(BandLuminosityNormalization, LuminosityNormalization,
-                  "source normalization through the specific luminosity for a given wavelength band")
+                  "source normalization through the specific luminosity in a wavelength band")
         ATTRIBUTE_TYPE_ALLOWED_IF(BandLuminosityNormalization, "ContSED")
 
         PROPERTY_ITEM(band, Band, "the wavelength band for which to provide the specific luminosity")

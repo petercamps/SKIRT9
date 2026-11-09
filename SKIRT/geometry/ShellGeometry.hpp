@@ -29,7 +29,7 @@ class ShellGeometry : public SpheGeometry
         ATTRIBUTE_QUANTITY(maxRadius, "length")
         ATTRIBUTE_MIN_VALUE(maxRadius, "]0")
 
-        PROPERTY_DOUBLE(exponent, "the power law exponent")
+        PROPERTY_DOUBLE(exponent, "the power-law exponent")
 
     ITEM_END()
 

@@ -21,7 +21,7 @@
     bulk mass density is set to the value of 2800 kg/m3 specified by Min. */
 class CrystalEnstatiteGrainComposition : public GrainComposition
 {
-    ITEM_CONCRETE(CrystalEnstatiteGrainComposition, GrainComposition, "a crystalline Enstatite dust grain composition")
+    ITEM_CONCRETE(CrystalEnstatiteGrainComposition, GrainComposition, "a crystalline enstatite dust grain composition")
     ITEM_END()
 
 public:

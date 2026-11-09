@@ -37,13 +37,13 @@ class ExpDiskGeometry : public SepAxGeometry
         ATTRIBUTE_MIN_VALUE(minRadius, "[0")
         ATTRIBUTE_DEFAULT_VALUE(minRadius, "0")
 
-        PROPERTY_DOUBLE(maxRadius, "the truncation radius (zero means no truncation)")
+        PROPERTY_DOUBLE(maxRadius, "the truncation radius, or zero for no truncation")
         ATTRIBUTE_QUANTITY(maxRadius, "length")
         ATTRIBUTE_MIN_VALUE(maxRadius, "[0")
         ATTRIBUTE_DEFAULT_VALUE(maxRadius, "0")
         ATTRIBUTE_DISPLAYED_IF(maxRadius, "Level2")
 
-        PROPERTY_DOUBLE(maxZ, "the truncation height (zero means no truncation)")
+        PROPERTY_DOUBLE(maxZ, "the truncation height, or zero for no truncation")
         ATTRIBUTE_QUANTITY(maxZ, "length")
         ATTRIBUTE_MIN_VALUE(maxZ, "[0")
         ATTRIBUTE_DEFAULT_VALUE(maxZ, "0")

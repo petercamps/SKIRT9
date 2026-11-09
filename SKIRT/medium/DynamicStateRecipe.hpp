@@ -68,7 +68,7 @@ class DynamicStateRecipe : public SimulationItem
 {
     ITEM_ABSTRACT(DynamicStateRecipe, SimulationItem, "a dynamic medium state recipe")
 
-        PROPERTY_DOUBLE(maxFractionNotConvergedCells, "the fraction of spatial cells allowed to not converge")
+        PROPERTY_DOUBLE(maxFractionNotConvergedCells, "the maximum fraction of cells allowed to not converge")
         ATTRIBUTE_MIN_VALUE(maxFractionNotConvergedCells, "[0")
         ATTRIBUTE_MAX_VALUE(maxFractionNotConvergedCells, "1]")
         ATTRIBUTE_DEFAULT_VALUE(maxFractionNotConvergedCells, "0")

@@ -26,8 +26,7 @@
     all ionizing radiation is being converted to Lyman-alpha emission. */
 class LyaSEDDecorator : public ContSED
 {
-    ITEM_CONCRETE(LyaSEDDecorator, ContSED,
-                  "an SED decorator replacing ionizing radiation with Lyman-alpha line emission")
+    ITEM_CONCRETE(LyaSEDDecorator, ContSED, "an SED decorator replacing ionizing radiation by Lyman-alpha emission")
         ATTRIBUTE_TYPE_DISPLAYED_IF(LyaSEDDecorator, "Resonance|Level3")
 
         PROPERTY_ITEM(sedOriginal, ContSED, "the original SED being adjusted")

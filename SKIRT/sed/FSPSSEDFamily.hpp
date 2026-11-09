@@ -43,7 +43,7 @@ class FSPSSEDFamily : public SEDFamily
         ENUM_VAL(IMF, Salpeter, "Salpeter IMF")
     ENUM_END()
 
-    ITEM_CONCRETE(FSPSSEDFamily, SEDFamily, "an FSPS SED family for single stellar populations")
+    ITEM_CONCRETE(FSPSSEDFamily, SEDFamily, "an FSPS SED family for simple stellar populations")
 
         PROPERTY_ENUM(imf, IMF, "the assumed initial mass function")
         ATTRIBUTE_DEFAULT_VALUE(imf, "Chabrier")

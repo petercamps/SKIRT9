@@ -308,24 +308,24 @@ class XRayAtomicGasMix : public MaterialMix
                   "a neutral gas mix with photo-absorption and fluorescence at X-ray wavelengths")
         ATTRIBUTE_TYPE_INSERT(XRayAtomicGasMix, "GasMix")
 
-        PROPERTY_DOUBLE_LIST(abundancies, "the abundancies for the elements with atomic number Z = 1,...,30")
+        PROPERTY_DOUBLE_LIST(abundancies, "the abundances of the elements with atomic number Z = 1,...,30")
         ATTRIBUTE_MIN_VALUE(abundancies, "[0")
         ATTRIBUTE_MAX_VALUE(abundancies, "1]")
         ATTRIBUTE_REQUIRED_IF(abundancies, "false")
         ATTRIBUTE_DISPLAYED_IF(abundancies, "Level2")
 
-        PROPERTY_DOUBLE(temperature, "the temperature of the gas or zero to disable thermal dispersion")
+        PROPERTY_DOUBLE(temperature, "the temperature of the gas, or zero to disable thermal dispersion")
         ATTRIBUTE_QUANTITY(temperature, "temperature")
         ATTRIBUTE_MIN_VALUE(temperature, "[0")
         ATTRIBUTE_MAX_VALUE(temperature, "1e9]")
         ATTRIBUTE_DEFAULT_VALUE(temperature, "1e4")
         ATTRIBUTE_DISPLAYED_IF(temperature, "Level2")
 
-        PROPERTY_ENUM(scatterBoundElectrons, BoundElectrons, "implementation of scattering by bound electrons")
+        PROPERTY_ENUM(scatterBoundElectrons, BoundElectrons, "the implementation of scattering by bound electrons")
         ATTRIBUTE_DEFAULT_VALUE(scatterBoundElectrons, "Good")
         ATTRIBUTE_DISPLAYED_IF(scatterBoundElectrons, "Level3")
 
-        PROPERTY_DOUBLE(H2fraction, "fraction of the H atoms in H2 molecules")
+        PROPERTY_DOUBLE(H2fraction, "the fraction of the H atoms in H2 molecules")
         ATTRIBUTE_MIN_VALUE(H2fraction, "[0")
         ATTRIBUTE_MAX_VALUE(H2fraction, "1]")
         ATTRIBUTE_DEFAULT_VALUE(H2fraction, "0")

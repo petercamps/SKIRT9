@@ -19,7 +19,8 @@
     a last column holds the level of each cell in the tree, with level zero for the root node. */
 class SpatialCellPropertiesProbe : public SpecialtyWavelengthProbe
 {
-    ITEM_CONCRETE(SpatialCellPropertiesProbe, SpecialtyWavelengthProbe, "properties: basic info for each spatial cell")
+    ITEM_CONCRETE(SpatialCellPropertiesProbe, SpecialtyWavelengthProbe,
+                  "properties: basic information for each spatial cell")
         ATTRIBUTE_TYPE_DISPLAYED_IF(SpatialCellPropertiesProbe, "Medium&SpatialGrid")
     ITEM_END()
 

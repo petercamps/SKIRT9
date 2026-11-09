@@ -62,7 +62,7 @@ class DustEmGrainComposition : public GrainComposition
         ENUM_VAL(GrainType, PAH1DL07, "ionized PAHs (Draine & Li 2007)")
         ENUM_VAL(GrainType, PAH0MC10, "neutral PAHs (Compiègne et al. 2011)")
         ENUM_VAL(GrainType, PAH1MC10, "ionized PAHs (Compiègne et al. 2011)")
-        ENUM_VAL(GrainType, CM20, "amorphous hydro-carbon grains (Jones et al. 2013)")
+        ENUM_VAL(GrainType, CM20, "amorphous hydrocarbon grains (Jones et al. 2013)")
         ENUM_VAL(GrainType, aOlM5, "amorphous olivine/forsterite grains (Koehler et al. 2014)")
         ENUM_VAL(GrainType, aPyM5, "amorphous pyroxene/enstatite grains (Koehler et al. 2014)")
     ENUM_END()

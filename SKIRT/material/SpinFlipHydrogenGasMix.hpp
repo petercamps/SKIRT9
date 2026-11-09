@@ -191,7 +191,7 @@
 class SpinFlipHydrogenGasMix : public EmittingGasMix
 {
     ITEM_CONCRETE(SpinFlipHydrogenGasMix, EmittingGasMix,
-                  "A gas mix supporting the spin-flip 21 cm hydrogen transition")
+                  "a gas mix supporting the spin-flip 21 cm hydrogen transition")
         ATTRIBUTE_TYPE_INSERT(SpinFlipHydrogenGasMix, "CustomMediumState,DynamicState")
 
         PROPERTY_DOUBLE(defaultMetallicity, "the default metallicity of the gas")

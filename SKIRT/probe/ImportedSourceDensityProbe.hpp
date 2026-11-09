@@ -45,7 +45,7 @@ class ImportedSourceDensityProbe : public InputModelFormProbe
     ITEM_CONCRETE(ImportedSourceDensityProbe, InputModelFormProbe, "imported source: mass density")
         ATTRIBUTE_TYPE_DISPLAYED_IF(ImportedSourceDensityProbe, "ImportedSource")
 
-        PROPERTY_ENUM(massType, MassType, "type of mass being probed")
+        PROPERTY_ENUM(massType, MassType, "the type of mass being probed")
         ATTRIBUTE_DEFAULT_VALUE(massType, "InitialMass")
         ATTRIBUTE_DISPLAYED_IF(massType, "CurrentMass")
 

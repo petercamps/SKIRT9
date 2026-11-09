@@ -16,8 +16,7 @@
     reference for evaluating more complicated library mechanisms. */
 class AllCellsLibrary : public SpatialCellLibrary
 {
-    ITEM_CONCRETE(AllCellsLibrary, SpatialCellLibrary,
-                  "a library scheme that has a separate entry for every spatial cell")
+    ITEM_CONCRETE(AllCellsLibrary, SpatialCellLibrary, "a library scheme with a separate entry for every cell")
     ITEM_END()
 
     //============= Construction - Setup - Destruction =============

@@ -48,7 +48,7 @@ class GeometricMedium : public Medium
         ATTRIBUTE_REQUIRED_IF(magneticFieldDistribution, "false")
         ATTRIBUTE_DISPLAYED_IF(magneticFieldDistribution, "Level3")
 
-        PROPERTY_DOUBLE(magneticFieldStrength, "the strength of the magnetic field  (multiplier)")
+        PROPERTY_DOUBLE(magneticFieldStrength, "the strength of the magnetic field (multiplier)")
         ATTRIBUTE_QUANTITY(magneticFieldStrength, "magneticfield")
         ATTRIBUTE_MIN_VALUE(magneticFieldStrength, "[-1 T")
         ATTRIBUTE_MAX_VALUE(magneticFieldStrength, "1 T]")

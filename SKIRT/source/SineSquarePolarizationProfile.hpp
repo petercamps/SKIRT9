@@ -35,7 +35,7 @@
 class SineSquarePolarizationProfile : public PolarizationProfile
 {
     ITEM_CONCRETE(SineSquarePolarizationProfile, PolarizationProfile,
-                  "an axysimmetric sine-square polarization emission profile")
+                  "an axisymmetric sine-square polarization emission profile")
         ATTRIBUTE_TYPE_INSERT(SineSquarePolarizationProfile, "SourceDimension2,Dimension2")
 
         PROPERTY_DOUBLE(symmetryX, "the direction of the positive symmetry axis, x component")

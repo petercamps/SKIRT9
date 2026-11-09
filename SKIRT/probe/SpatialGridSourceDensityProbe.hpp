@@ -25,7 +25,7 @@
 class SpatialGridSourceDensityProbe : public SpecialtyProbe
 {
     ITEM_CONCRETE(SpatialGridSourceDensityProbe, SpecialtyProbe,
-                  "specialty: primary source density discretized on spatial grid")
+                  "specialty: primary source density discretized on the spatial grid")
         ATTRIBUTE_TYPE_DISPLAYED_IF(SpatialGridSourceDensityProbe, "Level3&GeometricSource&SpatialGrid")
     ITEM_END()
 

@@ -26,7 +26,7 @@
     header info): \f[ R\,(\mathrm{km}) \quad T\,(\mathrm{K}) \f] */
 class BlackBodySEDFamily : public SEDFamily
 {
-    ITEM_CONCRETE(BlackBodySEDFamily, SEDFamily, "a black body SED family")
+    ITEM_CONCRETE(BlackBodySEDFamily, SEDFamily, "a black-body SED family")
     ITEM_END()
 
     //====================== Other functions =====================

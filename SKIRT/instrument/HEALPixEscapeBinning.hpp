@@ -29,7 +29,7 @@ class HEALPixEscapeBinning : public EscapeBinning
 {
     ITEM_CONCRETE(HEALPixEscapeBinning, EscapeBinning, "the pixels of a HEALPix tessellation")
 
-        PROPERTY_INT(order, "HEALPix order")
+        PROPERTY_INT(order, "the HEALPix order")
         ATTRIBUTE_MIN_VALUE(order, "0")
         ATTRIBUTE_MAX_VALUE(order, "10")
         ATTRIBUTE_DEFAULT_VALUE(order, "3")

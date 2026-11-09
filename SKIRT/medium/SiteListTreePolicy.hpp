@@ -53,7 +53,7 @@ class SiteListTreePolicy : public TreePolicy
     ITEM_CONCRETE(SiteListTreePolicy, TreePolicy, "a tree subdivision policy using a list of site positions")
         ATTRIBUTE_TYPE_DISPLAYED_IF(SiteListTreePolicy, "Level2")
 
-        PROPERTY_STRING(filename, "the name of the file with the site positions (empty to use an imported medium)")
+        PROPERTY_STRING(filename, "the name of the file with the site positions, or empty for an imported medium")
         ATTRIBUTE_REQUIRED_IF(filename, "!SiteListInterface")
 
         PROPERTY_INT(numExtraLevels, "the number of additional subdivision levels")

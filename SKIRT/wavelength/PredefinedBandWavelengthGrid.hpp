@@ -31,7 +31,7 @@ class PredefinedBandWavelengthGrid : public BandWavelengthGrid
         PROPERTY_BOOL(includeWISE, "include WISE W1, W2, W3 and W4 bands")
         ATTRIBUTE_DEFAULT_VALUE(includeWISE, "DustEmission:true;false")
 
-        PROPERTY_BOOL(includeHERSCHEL, "include HERSCHEL PACS 70,100,160 and SPIRE 250,350,500 bands")
+        PROPERTY_BOOL(includeHERSCHEL, "include Herschel PACS 70, 100, 160 and SPIRE 250, 350, 500 bands")
         ATTRIBUTE_DEFAULT_VALUE(includeHERSCHEL, "DustEmission:true;false")
 
     ITEM_END()

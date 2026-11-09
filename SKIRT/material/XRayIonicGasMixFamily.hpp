@@ -45,7 +45,7 @@ class XRayIonicGasMixFamily : public MaterialMixFamily
 
         PROPERTY_STRING(ions, "the names of the ions for each element (e.g. H,He+,Li+1,..)")
 
-        PROPERTY_ENUM(electronScattering, ElectronScattering, "implementation of scattering by electrons")
+        PROPERTY_ENUM(electronScattering, ElectronScattering, "the implementation of scattering by electrons")
         ATTRIBUTE_DEFAULT_VALUE(electronScattering, "Free")
         ATTRIBUTE_DISPLAYED_IF(electronScattering, "Level3")
 

@@ -46,7 +46,7 @@ class MarastonSEDFamily : public SEDFamily
         ENUM_VAL(IMF, Salpeter, "Salpeter IMF")
     ENUM_END()
 
-    ITEM_CONCRETE(MarastonSEDFamily, SEDFamily, "a Maraston SED family for single stellar populations")
+    ITEM_CONCRETE(MarastonSEDFamily, SEDFamily, "a Maraston SED family for simple stellar populations")
 
         PROPERTY_ENUM(imf, IMF, "the assumed initial mass function")
         ATTRIBUTE_DEFAULT_VALUE(imf, "Kroupa")

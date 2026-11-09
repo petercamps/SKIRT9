@@ -44,16 +44,16 @@ class ReadFitsGeometry : public GenGeometry
         ATTRIBUTE_MAX_VALUE(inclination, "90 deg[")
         ATTRIBUTE_DEFAULT_VALUE(inclination, "0 deg")
 
-        PROPERTY_INT(numPixelsX, "number of pixels in the x direction")
+        PROPERTY_INT(numPixelsX, "the number of pixels in the x direction")
         ATTRIBUTE_MIN_VALUE(numPixelsX, "1")
 
-        PROPERTY_DOUBLE(centerX, "x coordinate of the center (in pixels)")
+        PROPERTY_DOUBLE(centerX, "the x coordinate of the center (in pixels)")
         ATTRIBUTE_MIN_VALUE(centerX, "]0")
 
-        PROPERTY_INT(numPixelsY, "number of pixels in the y direction")
+        PROPERTY_INT(numPixelsY, "the number of pixels in the y direction")
         ATTRIBUTE_MIN_VALUE(numPixelsY, "1")
 
-        PROPERTY_DOUBLE(centerY, "y coordinate of the center (in pixels)")
+        PROPERTY_DOUBLE(centerY, "the y coordinate of the center (in pixels)")
         ATTRIBUTE_MIN_VALUE(centerY, "]0")
 
         PROPERTY_DOUBLE(scaleHeight, "the scale height")

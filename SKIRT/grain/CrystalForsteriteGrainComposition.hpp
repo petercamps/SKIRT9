@@ -23,7 +23,7 @@
 class CrystalForsteriteGrainComposition : public GrainComposition
 {
     ITEM_CONCRETE(CrystalForsteriteGrainComposition, GrainComposition,
-                  "a crystalline Forsterite dust grain composition")
+                  "a crystalline forsterite dust grain composition")
     ITEM_END()
 
 public:

@@ -34,7 +34,7 @@
     configured default temperature and the absorption cross section is zero. */
 class LyaNeutralHydrogenGasMix : public MaterialMix
 {
-    ITEM_CONCRETE(LyaNeutralHydrogenGasMix, MaterialMix, "neutral hydrogen for Lyman-alpha line transfer")
+    ITEM_CONCRETE(LyaNeutralHydrogenGasMix, MaterialMix, "a neutral hydrogen gas mix for Lyman-alpha line transfer")
         ATTRIBUTE_TYPE_DISPLAYED_IF(LyaNeutralHydrogenGasMix, "Resonance")
         ATTRIBUTE_TYPE_INSERT(LyaNeutralHydrogenGasMix, "GasMix,CustomMediumState")
 

@@ -34,9 +34,9 @@ class ReadFits3DGeometry : public GenGeometry
     ITEM_CONCRETE(ReadFits3DGeometry, GenGeometry, "a geometry read from a 3D FITS file")
         ATTRIBUTE_TYPE_DISPLAYED_IF(ReadFits3DGeometry, "Level2")
 
-        PROPERTY_STRING(filename, "the filename of the datacube")
+        PROPERTY_STRING(filename, "the name of the FITS file with the data cube")
 
-        PROPERTY_DOUBLE(pixelScale, "the pixel scale for the datacube (i.e. the physical length per pixel)")
+        PROPERTY_DOUBLE(pixelScale, "the physical scale of the data cube (length per pixel)")
         ATTRIBUTE_QUANTITY(pixelScale, "length")
         ATTRIBUTE_MIN_VALUE(pixelScale, "]0")
 

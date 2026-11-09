@@ -428,21 +428,21 @@ class XRayIonicGasMix : public MaterialMix
     ENUM_END()
 
     ITEM_CONCRETE(XRayIonicGasMix, MaterialMix,
-                  "A gas mix supporting hydrogen- and helium-like ions at X-ray wavelengths")
+                  "a gas mix supporting hydrogen- and helium-like ions at X-ray wavelengths")
         ATTRIBUTE_TYPE_INSERT(XRayIonicGasMix, "GasMix")
 
         PROPERTY_STRING(ions, "the names of the ions for each element (e.g. H,He+,Fe+25,..)")
 
         PROPERTY_DOUBLE_LIST(abundances, "the abundances of the ions in the same order as the ions property")
 
-        PROPERTY_DOUBLE(temperature, "the temperature of the gas in K")
+        PROPERTY_DOUBLE(temperature, "the temperature of the gas")
         ATTRIBUTE_QUANTITY(temperature, "temperature")
         ATTRIBUTE_MIN_VALUE(temperature, "[3")
         ATTRIBUTE_MAX_VALUE(temperature, "1e9]")
         ATTRIBUTE_DEFAULT_VALUE(temperature, "1e4")
         ATTRIBUTE_DISPLAYED_IF(temperature, "Level2")
 
-        PROPERTY_ENUM(electronScattering, ElectronScattering, "implementation of scattering by electrons")
+        PROPERTY_ENUM(electronScattering, ElectronScattering, "the implementation of scattering by electrons")
         ATTRIBUTE_DEFAULT_VALUE(electronScattering, "Free")
         ATTRIBUTE_DISPLAYED_IF(electronScattering, "Level3")
 

@@ -31,7 +31,7 @@
     the TreeSpatialGrid base class for both tree types. */
 class OctTreeSpatialGrid : public TreeSpatialGrid
 {
-    ITEM_CONCRETE(OctTreeSpatialGrid, TreeSpatialGrid, "an octtree spatial grid (8 children per node)")
+    ITEM_CONCRETE(OctTreeSpatialGrid, TreeSpatialGrid, "an octree spatial grid (8 children per node)")
     ITEM_END()
 
     //=========== Functions implementing the tree type ===========

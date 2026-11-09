@@ -33,7 +33,7 @@ class CellTreePolicy : public TreePolicy
     ITEM_CONCRETE(CellTreePolicy, TreePolicy, "a tree subdivision policy following a list of cuboidal cells")
         ATTRIBUTE_TYPE_DISPLAYED_IF(CellTreePolicy, "Level2")
 
-        PROPERTY_STRING(filename, "the name of the file with the cells (empty to use an imported medium)")
+        PROPERTY_STRING(filename, "the name of the file with the cells, or empty for an imported medium")
         ATTRIBUTE_REQUIRED_IF(filename, "!CellMeshInterface")
 
     ITEM_END()

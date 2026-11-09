@@ -28,7 +28,7 @@ class ImportedMedium : public Medium, public SiteListInterface
 
         ATTRIBUTE_SUB_PROPERTIES_HERE(ImportedMedium)
 
-        PROPERTY_DOUBLE(massFraction, "the fraction of the mass to be included (or one to include all)")
+        PROPERTY_DOUBLE(massFraction, "the fraction of the mass to be included, or one to include all")
         ATTRIBUTE_MIN_VALUE(massFraction, "[0")
         ATTRIBUTE_MAX_VALUE(massFraction, "1]")
         ATTRIBUTE_DEFAULT_VALUE(massFraction, "1")

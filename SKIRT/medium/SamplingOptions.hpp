@@ -40,9 +40,9 @@ class SamplingOptions : public SimulationItem
     /** The enumeration type defining a policy for aggregating (in each spatial cell) a single bulk
         velocity from the values in multiple medium components. */
     ENUM_DEF(AggregatePolicy, Average, Maximum, First)
-        ENUM_VAL(AggregatePolicy, Average, "Use the density-weighted average; missing values are taken to be zero")
-        ENUM_VAL(AggregatePolicy, Maximum, "Use the vector with largest magnitude; missing values are taken to be zero")
-        ENUM_VAL(AggregatePolicy, First, "Use the vector of the first medium component for which one is available")
+        ENUM_VAL(AggregatePolicy, Average, "use the density-weighted average; missing values are taken to be zero")
+        ENUM_VAL(AggregatePolicy, Maximum, "use the vector with largest magnitude; missing values are taken to be zero")
+        ENUM_VAL(AggregatePolicy, First, "use the vector of the first medium component for which one is available")
     ENUM_END()
 
     ITEM_CONCRETE(SamplingOptions, SimulationItem, "a set of options related to media sampling for the spatial grid")
@@ -60,7 +60,7 @@ class SamplingOptions : public SimulationItem
         ATTRIBUTE_DISPLAYED_IF(numPropertySamples, "Level3")
 
         PROPERTY_ENUM(aggregateVelocity, AggregatePolicy,
-                      "aggregating the bulk velocity from multiple medium components")
+                      "how to aggregate the bulk velocity of multiple medium components")
         ATTRIBUTE_DEFAULT_VALUE(aggregateVelocity, "Average")
         ATTRIBUTE_RELEVANT_IF(aggregateVelocity, "MediumVelocity")
 

@@ -18,7 +18,7 @@
 class LineLuminosityNormalization : public LuminosityNormalization
 {
     ITEM_CONCRETE(LineLuminosityNormalization, LuminosityNormalization,
-                  "source normalization through the luminosity for a given emission line")
+                  "source normalization through the luminosity of an emission line")
         ATTRIBUTE_TYPE_ALLOWED_IF(LineLuminosityNormalization, "LineSED")
         ATTRIBUTE_TYPE_DISPLAYED_IF(LineLuminosityNormalization, "Level2")
 
@@ -28,7 +28,7 @@ class LineLuminosityNormalization : public LuminosityNormalization
         ATTRIBUTE_MAX_VALUE(wavelength, "1 m")
         ATTRIBUTE_DEFAULT_VALUE(wavelength, "1215.67 Angstrom")
 
-        PROPERTY_DOUBLE(luminosity, "the luminosity for the emission line")
+        PROPERTY_DOUBLE(luminosity, "the luminosity of the emission line")
         ATTRIBUTE_QUANTITY(luminosity, "bolluminosity")
         ATTRIBUTE_MIN_VALUE(luminosity, "]0")
 

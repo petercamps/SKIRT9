@@ -43,11 +43,11 @@ class BruzualCharlotSEDFamily : public SEDFamily
 
     /** The enumeration type indicating the wavelength resolution. */
     ENUM_DEF(Resolution, Low, High)
-        ENUM_VAL(Resolution, Low, "Low wavelength resolution (1221 points)")
-        ENUM_VAL(Resolution, High, "High wavelength resolution (6900 points)")
+        ENUM_VAL(Resolution, Low, "low wavelength resolution (1221 points)")
+        ENUM_VAL(Resolution, High, "high wavelength resolution (6900 points)")
     ENUM_END()
 
-    ITEM_CONCRETE(BruzualCharlotSEDFamily, SEDFamily, "a Bruzual-Charlot SED family for single stellar populations")
+    ITEM_CONCRETE(BruzualCharlotSEDFamily, SEDFamily, "a Bruzual-Charlot SED family for simple stellar populations")
 
         PROPERTY_ENUM(imf, IMF, "the assumed initial mass function")
         ATTRIBUTE_DEFAULT_VALUE(imf, "Chabrier")

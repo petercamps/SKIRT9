@@ -229,7 +229,7 @@ class ToddlersSEDFamily : public SEDFamily
     /** The enumeration type indicating the SED calculation mode */
     ENUM_DEF(SedMode, SFRNormalized, Cloud, SFRNormalizedVariableDust)
         ENUM_VAL(SedMode, SFRNormalized, "SEDs normalized by star formation rate")
-        ENUM_VAL(SedMode, Cloud, "Individual cloud SEDs with time evolution")
+        ENUM_VAL(SedMode, Cloud, "individual cloud SEDs with time evolution")
         ENUM_VAL(SedMode, SFRNormalizedVariableDust, "SFR-normalized SEDs with a grain abundance scaling axis")
     ENUM_END()
 
@@ -243,8 +243,8 @@ class ToddlersSEDFamily : public SEDFamily
 
     /** The enumeration type indicating the wavelength resolution */
     ENUM_DEF(Resolution, Low, High)
-        ENUM_VAL(Resolution, Low, "Low wavelength resolution (continuum and lines at R=300)")
-        ENUM_VAL(Resolution, High, "High wavelength resolution (continuum at R=300 and lines at R=5e4)")
+        ENUM_VAL(Resolution, Low, "low wavelength resolution (continuum and lines at R=300)")
+        ENUM_VAL(Resolution, High, "high wavelength resolution (continuum at R=300 and lines at R=5e4)")
     ENUM_END()
 
     /** The enumeration type indicating the SFR integration period */
@@ -255,7 +255,7 @@ class ToddlersSEDFamily : public SEDFamily
 
     ITEM_CONCRETE(ToddlersSEDFamily, SEDFamily, "a TODDLERS SED family for emission from star-forming regions")
 
-        PROPERTY_ENUM(sedMode, SedMode, "SED calculation mode")
+        PROPERTY_ENUM(sedMode, SedMode, "the SED calculation mode")
         ATTRIBUTE_DEFAULT_VALUE(sedMode, "SFRNormalized")
 
         PROPERTY_ENUM(stellarTemplate, StellarTemplate, "the stellar template, IMF, and evolution model to use")

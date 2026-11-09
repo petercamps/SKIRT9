@@ -42,11 +42,11 @@
     only if the \em hasIonizationParameter option is enabled. */
 class FileSSPSEDFamily : public SEDFamily
 {
-    ITEM_CONCRETE(FileSSPSEDFamily, SEDFamily, "a user-provided SED family for single stellar populations")
+    ITEM_CONCRETE(FileSSPSEDFamily, SEDFamily, "a user-provided SED family for simple stellar populations")
 
         PROPERTY_STRING(filename, "the name of the stored table file defining the SED templates")
 
-        PROPERTY_BOOL(hasIonizationParameter, "include ionization U as an extra parameter for the SED family")
+        PROPERTY_BOOL(hasIonizationParameter, "include the ionization parameter U as an extra SED family parameter")
         ATTRIBUTE_DEFAULT_VALUE(hasIonizationParameter, "false")
         ATTRIBUTE_DISPLAYED_IF(hasIonizationParameter, "Level2")
 

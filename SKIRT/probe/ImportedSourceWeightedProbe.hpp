@@ -52,7 +52,7 @@ class ImportedSourceWeightedProbe : public InputModelFormProbe, public MaterialW
     ITEM_ABSTRACT(ImportedSourceWeightedProbe, InputModelFormProbe, "an imported source weighted probe")
         ATTRIBUTE_TYPE_DISPLAYED_IF(ImportedSourceWeightedProbe, "ImportedSource")
 
-        PROPERTY_ENUM(weight, Weight, "weight for averaging the probed quantity")
+        PROPERTY_ENUM(weight, Weight, "the weight for averaging the probed quantity")
         ATTRIBUTE_DEFAULT_VALUE(weight, "Luminosity")
 
         PROPERTY_DOUBLE(wavelength, "the wavelength at which to determine the luminosity")

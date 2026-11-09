@@ -45,7 +45,7 @@ class TorusGeometry : public AxGeometry
 {
     ITEM_CONCRETE(TorusGeometry, AxGeometry, "a torus geometry")
 
-        PROPERTY_DOUBLE(exponent, "the radial powerlaw exponent p of the torus")
+        PROPERTY_DOUBLE(exponent, "the radial power-law exponent p of the torus")
         ATTRIBUTE_MIN_VALUE(exponent, "[0")
 
         PROPERTY_DOUBLE(index, "the polar index q of the torus")

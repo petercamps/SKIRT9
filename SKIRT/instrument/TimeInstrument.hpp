@@ -18,7 +18,7 @@
 class TimeInstrument : public ApertureInstrument
 {
     ITEM_ABSTRACT(TimeInstrument, ApertureInstrument,
-                  "an instrument that records the timelag response to a source luminosity pulse")
+                  "an instrument that records the time-lag response to a source luminosity pulse")
         ATTRIBUTE_TYPE_ALLOWED_IF(TimeInstrument, "ExtinctionOnly")
         ATTRIBUTE_TYPE_DISPLAYED_IF(TimeInstrument, "Level2")
 

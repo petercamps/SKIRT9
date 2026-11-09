@@ -46,7 +46,7 @@
 class TrivialStagedGasMix : public TrivialGasMix
 {
     ITEM_CONCRETE(TrivialStagedGasMix, TrivialGasMix,
-                  "A trivial gas mix with a staged dynamic medium state update for testing purposes")
+                  "a trivial gas mix with a staged state update, for testing purposes")
         ATTRIBUTE_TYPE_DISPLAYED_IF(TrivialStagedGasMix, "Level3")
         ATTRIBUTE_TYPE_INSERT(TrivialStagedGasMix, "CustomMediumState,DynamicState")
 

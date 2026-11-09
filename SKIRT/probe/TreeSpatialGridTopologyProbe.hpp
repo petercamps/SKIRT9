@@ -64,7 +64,7 @@ class TreeSpatialGridTopologyProbe : public SpecialtyProbe
                   "specialty: data file representing the topology of the tree spatial grid")
         ATTRIBUTE_TYPE_DISPLAYED_IF(TreeSpatialGridTopologyProbe, "Level3&TreeSpatialGrid")
 
-        PROPERTY_ENUM(probeAfter, ProbeAfter, "perform the probe after")
+        PROPERTY_ENUM(probeAfter, ProbeAfter, "when to perform the probe")
         ATTRIBUTE_DEFAULT_VALUE(probeAfter, "Setup")
         ATTRIBUTE_DISPLAYED_IF(probeAfter, "IteratePrimary|IterateSecondary")
 

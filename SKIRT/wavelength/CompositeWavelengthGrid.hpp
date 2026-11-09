@@ -55,7 +55,7 @@ class CompositeWavelengthGrid : public DisjointWavelengthGrid
         PROPERTY_ITEM_LIST(wavelengthGrids, DisjointWavelengthGrid, "the wavelength grids to be composited")
         ATTRIBUTE_DEFAULT_VALUE(wavelengthGrids, "LogWavelengthGrid")
 
-        PROPERTY_BOOL(log, "use logarithmic scale")
+        PROPERTY_BOOL(log, "use a logarithmic scale")
         ATTRIBUTE_DEFAULT_VALUE(log, "true")
 
     ITEM_END()

@@ -40,7 +40,7 @@ class SecondaryDustLuminosityProbe : public SpatialGridFormProbe
                   "internal spatial grid: secondary dust luminosity")
         ATTRIBUTE_TYPE_DISPLAYED_IF(SecondaryDustLuminosityProbe, "DustMix&DustEmission")
 
-        PROPERTY_ENUM(probeAfter, ProbeAfter, "perform the probe after")
+        PROPERTY_ENUM(probeAfter, ProbeAfter, "when to perform the probe")
         ATTRIBUTE_DEFAULT_VALUE(probeAfter, "Run")
         ATTRIBUTE_DISPLAYED_IF(probeAfter, "IterateSecondary")
 

@@ -408,65 +408,66 @@ class DiffuseIonizedGasMix : public EmittingGasMix
 
         // ===== Abundance specification (metals + helium, for analytical emission solver) =====
         // T/kappa stabs always use the Gutkin baseline regardless of this setting.
-        PROPERTY_ENUM(abundanceMode, AbundanceMode, "abundance specification for the emission solver")
+        PROPERTY_ENUM(abundanceMode, AbundanceMode, "the abundance specification for the emission solver")
         ATTRIBUTE_DEFAULT_VALUE(abundanceMode, "SolarScaled")
         ATTRIBUTE_DISPLAYED_IF(abundanceMode, "Level2")
 
         // Range matches the (delta_N, delta_C) cross sampled in the multiZ stab DeltaMap:
         // delta_N in [-1.5, +1.0], delta_C in [-1.0, +1.0]. Values outside the cross are
         // endpoint-clamped at runtime.
-        PROPERTY_DOUBLE(solarScalingN, "nitrogen scaling factor on solar pattern * Zfrac (SolarScaled mode)")
+        PROPERTY_DOUBLE(solarScalingN,
+                        "the nitrogen scaling factor on the solar pattern times Zfrac (SolarScaled mode)")
         ATTRIBUTE_MIN_VALUE(solarScalingN, "[0.03162")
         ATTRIBUTE_MAX_VALUE(solarScalingN, "10.0]")
         ATTRIBUTE_DEFAULT_VALUE(solarScalingN, "1")
         ATTRIBUTE_RELEVANT_IF(solarScalingN, "abundanceModeSolarScaled")
         ATTRIBUTE_DISPLAYED_IF(solarScalingN, "Level2")
 
-        PROPERTY_DOUBLE(solarScalingC, "carbon scaling factor on solar pattern * Zfrac (SolarScaled mode)")
+        PROPERTY_DOUBLE(solarScalingC, "the carbon scaling factor on the solar pattern times Zfrac (SolarScaled mode)")
         ATTRIBUTE_MIN_VALUE(solarScalingC, "[0.1")
         ATTRIBUTE_MAX_VALUE(solarScalingC, "10.0]")
         ATTRIBUTE_DEFAULT_VALUE(solarScalingC, "1")
         ATTRIBUTE_RELEVANT_IF(solarScalingC, "abundanceModeSolarScaled")
         ATTRIBUTE_DISPLAYED_IF(solarScalingC, "Level2")
 
-        PROPERTY_DOUBLE(maxChangeInIonization, "maximum relative change in T or logU per cell for convergence")
+        PROPERTY_DOUBLE(maxChangeInIonization, "the maximum relative change in T or logU per cell for convergence")
         ATTRIBUTE_MIN_VALUE(maxChangeInIonization, "[0")
         ATTRIBUTE_MAX_VALUE(maxChangeInIonization, "1]")
         ATTRIBUTE_DEFAULT_VALUE(maxChangeInIonization, "0.01")
         ATTRIBUTE_DISPLAYED_IF(maxChangeInIonization, "Level2")
 
-        PROPERTY_DOUBLE(maxFractionNotConvergedCells, "maximum fraction of cells allowed to not converge")
+        PROPERTY_DOUBLE(maxFractionNotConvergedCells, "the maximum fraction of cells allowed to not converge")
         ATTRIBUTE_MIN_VALUE(maxFractionNotConvergedCells, "[0")
         ATTRIBUTE_MAX_VALUE(maxFractionNotConvergedCells, "1]")
         ATTRIBUTE_DEFAULT_VALUE(maxFractionNotConvergedCells, "0.1")
         ATTRIBUTE_DISPLAYED_IF(maxFractionNotConvergedCells, "Level2")
 
-        PROPERTY_DOUBLE(stabilityConvergenceThreshold, "convergence threshold on the converged-cell fraction")
+        PROPERTY_DOUBLE(stabilityConvergenceThreshold, "the convergence threshold on the converged-cell fraction")
         ATTRIBUTE_MIN_VALUE(stabilityConvergenceThreshold, "[0")
         ATTRIBUTE_MAX_VALUE(stabilityConvergenceThreshold, "1]")
         ATTRIBUTE_DEFAULT_VALUE(stabilityConvergenceThreshold, "0.005")
         ATTRIBUTE_DISPLAYED_IF(stabilityConvergenceThreshold, "Level2")
 
-        PROPERTY_DOUBLE(maxChangeInGlobalIonizedH, "convergence threshold on the total ionized-H change")
+        PROPERTY_DOUBLE(maxChangeInGlobalIonizedH, "the convergence threshold on the total ionized-H change")
         ATTRIBUTE_MIN_VALUE(maxChangeInGlobalIonizedH, "[0")
         ATTRIBUTE_MAX_VALUE(maxChangeInGlobalIonizedH, "1]")
         ATTRIBUTE_DEFAULT_VALUE(maxChangeInGlobalIonizedH, "0.001")
         ATTRIBUTE_DISPLAYED_IF(maxChangeInGlobalIonizedH, "Level2")
 
         // Diffuse reemission
-        PROPERTY_DOUBLE(reemissionFraction, "fraction of the theoretical reemission probability that is realised")
+        PROPERTY_DOUBLE(reemissionFraction, "the fraction of the theoretical re-emission probability that is realized")
         ATTRIBUTE_MIN_VALUE(reemissionFraction, "[0")
         ATTRIBUTE_MAX_VALUE(reemissionFraction, "1]")
         ATTRIBUTE_DEFAULT_VALUE(reemissionFraction, "1.0")
         ATTRIBUTE_DISPLAYED_IF(reemissionFraction, "Level3")
 
-        PROPERTY_DOUBLE(transitionBlendWidth, "blending width in logU between the standard and transition tables")
+        PROPERTY_DOUBLE(transitionBlendWidth, "the blending width in logU between the standard and transition tables")
         ATTRIBUTE_MIN_VALUE(transitionBlendWidth, "[0")
         ATTRIBUTE_MAX_VALUE(transitionBlendWidth, "1.5]")
         ATTRIBUTE_DEFAULT_VALUE(transitionBlendWidth, "0.3")
         ATTRIBUTE_DISPLAYED_IF(transitionBlendWidth, "Level2")
 
-        PROPERTY_DOUBLE(maxHydrogenDensity, "maximum hydrogen number density ceiling in cm^-3 (0 means no ceiling)")
+        PROPERTY_DOUBLE(maxHydrogenDensity, "the maximum hydrogen number density in cm^-3, or zero for no limit")
         ATTRIBUTE_MIN_VALUE(maxHydrogenDensity, "[0")
         ATTRIBUTE_DEFAULT_VALUE(maxHydrogenDensity, "100000")
 

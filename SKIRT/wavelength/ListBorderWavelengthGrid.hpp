@@ -50,7 +50,7 @@ class ListBorderWavelengthGrid : public DisjointWavelengthGrid
         ATTRIBUTE_MIN_VALUE(wavelengths, "0 pm")
         ATTRIBUTE_MAX_VALUE(wavelengths, "1 m")
 
-        PROPERTY_ENUM(characteristic, Characteristic, "determine the characteristic wavelength for each bin")
+        PROPERTY_ENUM(characteristic, Characteristic, "how to determine the characteristic wavelength of each bin")
         ATTRIBUTE_DEFAULT_VALUE(characteristic, "Logarithmic")
 
     ITEM_END()

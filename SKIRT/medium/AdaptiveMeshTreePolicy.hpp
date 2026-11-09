@@ -33,7 +33,7 @@ class AdaptiveMeshTreePolicy : public TreePolicy
     ITEM_CONCRETE(AdaptiveMeshTreePolicy, TreePolicy, "a tree subdivision policy following an adaptive mesh (AMR grid)")
         ATTRIBUTE_TYPE_DISPLAYED_IF(AdaptiveMeshTreePolicy, "Level2")
 
-        PROPERTY_STRING(filename, "the name of the file with the adaptive mesh (empty to use an imported medium)")
+        PROPERTY_STRING(filename, "the name of the file with the adaptive mesh, or empty for an imported medium")
         ATTRIBUTE_REQUIRED_IF(filename, "!AdaptiveMeshInterface")
 
     ITEM_END()

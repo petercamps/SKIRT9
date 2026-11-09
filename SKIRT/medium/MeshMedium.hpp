@@ -34,7 +34,7 @@ class MeshMedium : public ImportedMedium
         ENUM_VAL(MassType, NumberDensityAndNumber, "both number density and volume-integrated number")
     ENUM_END()
 
-    ITEM_ABSTRACT(MeshMedium, ImportedMedium, "a geometry imported from mesh-based data")
+    ITEM_ABSTRACT(MeshMedium, ImportedMedium, "a transfer medium imported from mesh-based data")
 
         PROPERTY_DOUBLE(minX, "the start point of the domain in the X direction")
         ATTRIBUTE_QUANTITY(minX, "length")

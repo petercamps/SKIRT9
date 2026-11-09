@@ -26,11 +26,11 @@ class BpassSED : public FamilySED
 
     /** The enumeration type indicating the wavelength resolution and spectral range */
     ENUM_DEF(Resolution, Original, Downsampled)
-        ENUM_VAL(Resolution, Original, "Original wavelength resolution and range")
-        ENUM_VAL(Resolution, Downsampled, "Downsampled wavelength resolution and extended wavelength range")
+        ENUM_VAL(Resolution, Original, "original wavelength resolution and range")
+        ENUM_VAL(Resolution, Downsampled, "downsampled wavelength resolution and extended wavelength range")
     ENUM_END()
 
-    ITEM_CONCRETE(BpassSED, FamilySED, "a BPASS single stellar population SED")
+    ITEM_CONCRETE(BpassSED, FamilySED, "a BPASS simple stellar population SED")
 
         PROPERTY_ENUM(imf, IMF, "the assumed initial mass function")
         ATTRIBUTE_DEFAULT_VALUE(imf, "Chabrier300")

@@ -48,7 +48,7 @@ class FileBorderWavelengthGrid : public DisjointWavelengthGrid
 
         PROPERTY_STRING(filename, "the name of the file with the wavelength bin borders")
 
-        PROPERTY_ENUM(characteristic, Characteristic, "determine the characteristic wavelength for each bin")
+        PROPERTY_ENUM(characteristic, Characteristic, "how to determine the characteristic wavelength of each bin")
         ATTRIBUTE_DEFAULT_VALUE(characteristic, "Logarithmic")
 
     ITEM_END()

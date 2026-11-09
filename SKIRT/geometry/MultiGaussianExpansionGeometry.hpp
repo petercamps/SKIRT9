@@ -20,12 +20,12 @@
     (2002, MNRAS, 333, 400). */
 class MultiGaussianExpansionGeometry : public AxGeometry
 {
-    ITEM_CONCRETE(MultiGaussianExpansionGeometry, AxGeometry, "a multi-gaussian expansion geometry")
+    ITEM_CONCRETE(MultiGaussianExpansionGeometry, AxGeometry, "a multi-Gaussian expansion geometry")
         ATTRIBUTE_TYPE_DISPLAYED_IF(MultiGaussianExpansionGeometry, "Level2")
 
-        PROPERTY_STRING(filename, "the name of the file with the multi-gaussian expansion parameters")
+        PROPERTY_STRING(filename, "the name of the file with the multi-Gaussian expansion parameters")
 
-        PROPERTY_DOUBLE(pixelscale, "the scale of the multi-gaussian-expanded image (length per pixel)")
+        PROPERTY_DOUBLE(pixelscale, "the physical scale of the image (length per pixel)")
         ATTRIBUTE_QUANTITY(pixelscale, "length")
         ATTRIBUTE_MIN_VALUE(pixelscale, "]0")
 

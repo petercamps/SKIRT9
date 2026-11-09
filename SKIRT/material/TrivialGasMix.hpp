@@ -28,7 +28,7 @@
     Henyey-Greenstein phase function. */
 class TrivialGasMix : public MaterialMix
 {
-    ITEM_CONCRETE(TrivialGasMix, MaterialMix, "A trivial gas mix for testing purposes")
+    ITEM_CONCRETE(TrivialGasMix, MaterialMix, "a trivial gas mix for testing purposes")
         ATTRIBUTE_TYPE_DISPLAYED_IF(TrivialGasMix, "Level3")
         ATTRIBUTE_TYPE_INSERT(TrivialGasMix, "GasMix")
 

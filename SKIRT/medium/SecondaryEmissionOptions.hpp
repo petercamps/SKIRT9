@@ -21,8 +21,7 @@ class SecondaryEmissionOptions : public SimulationItem
         ATTRIBUTE_DEFAULT_VALUE(storeEmissionRadiationField, "false")
         ATTRIBUTE_DISPLAYED_IF(storeEmissionRadiationField, "Level3")
 
-        PROPERTY_DOUBLE(secondaryPacketsMultiplier,
-                        "the multiplier on the number of photon packets launched for secondary emission")
+        PROPERTY_DOUBLE(secondaryPacketsMultiplier, "the multiplier on the number of packets for secondary emission")
         ATTRIBUTE_MIN_VALUE(secondaryPacketsMultiplier, "]0")
         ATTRIBUTE_MAX_VALUE(secondaryPacketsMultiplier, "1000]")
         ATTRIBUTE_DEFAULT_VALUE(secondaryPacketsMultiplier, "1")

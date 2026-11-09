@@ -143,7 +143,7 @@ class DustEmissionOptions : public SimulationItem, public SourceWavelengthRangeI
         ATTRIBUTE_DISPLAYED_IF(wavelengthBias, "Level3")
 
         PROPERTY_ITEM(wavelengthBiasDistribution, WavelengthDistribution,
-                      "the bias distribution for sampling secondary photon packet wavelengths")
+                      "the bias distribution for sampling secondary packet wavelengths")
         ATTRIBUTE_DEFAULT_VALUE(wavelengthBiasDistribution, "DefaultWavelengthDistribution")
         ATTRIBUTE_RELEVANT_IF(wavelengthBiasDistribution, "wavelengthBias")
         ATTRIBUTE_DISPLAYED_IF(wavelengthBiasDistribution, "Level3")

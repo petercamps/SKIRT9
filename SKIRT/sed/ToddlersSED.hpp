@@ -19,19 +19,19 @@
     class for more information. */
 class ToddlersSED : public FamilySED
 {
-    ITEM_CONCRETE(ToddlersSED, FamilySED, "a Toddlers SED for emission from star-forming regions")
+    ITEM_CONCRETE(ToddlersSED, FamilySED, "a TODDLERS SED for emission from star-forming regions")
 
-        PROPERTY_DOUBLE(metallicity, "metallicity")
+        PROPERTY_DOUBLE(metallicity, "the metallicity")
         ATTRIBUTE_MIN_VALUE(metallicity, "[0.001")
         ATTRIBUTE_MAX_VALUE(metallicity, "0.04]")
         ATTRIBUTE_DEFAULT_VALUE(metallicity, "0.02")
 
-        PROPERTY_DOUBLE(SFE, "star formation efficiency ")
+        PROPERTY_DOUBLE(SFE, "the star formation efficiency")
         ATTRIBUTE_MIN_VALUE(SFE, "[.01")
         ATTRIBUTE_MAX_VALUE(SFE, ".15]")
         ATTRIBUTE_DEFAULT_VALUE(SFE, ".025")
 
-        PROPERTY_DOUBLE(cloudNumDensity, "initial cloud number density")
+        PROPERTY_DOUBLE(cloudNumDensity, "the initial cloud number density")
         ATTRIBUTE_QUANTITY(cloudNumDensity, "numbervolumedensity")
         ATTRIBUTE_MIN_VALUE(cloudNumDensity, "[10 /cm3")
         ATTRIBUTE_MAX_VALUE(cloudNumDensity, "2560 /cm3]")

@@ -24,7 +24,7 @@ class SpecialtyWhenProbe : public SpecialtyProbe
 
         ATTRIBUTE_SUB_PROPERTIES_HERE(SpecialtyWhenProbe)
 
-        PROPERTY_ENUM(probeAfter, ProbeAfter, "perform the probe after")
+        PROPERTY_ENUM(probeAfter, ProbeAfter, "when to perform the probe")
         ATTRIBUTE_DEFAULT_VALUE(probeAfter, "Setup")
         ATTRIBUTE_DISPLAYED_IF(probeAfter, "DynamicState")
 

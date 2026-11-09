@@ -66,7 +66,7 @@ class PhotonPacketOptions : public SimulationItem
         ATTRIBUTE_DISPLAYED_IF(forceScattering, "Level3")
         ATTRIBUTE_INSERT(forceScattering, "Emission|IteratePrimary|forceScattering:ForceScattering")
 
-        PROPERTY_DOUBLE(minWeightReduction, "the minimum weight reduction factor before a photon packet is terminated")
+        PROPERTY_DOUBLE(minWeightReduction, "the minimum weight reduction factor before terminating a packet")
         ATTRIBUTE_MIN_VALUE(minWeightReduction, "[1e3")
         ATTRIBUTE_DEFAULT_VALUE(minWeightReduction, "1e4")
         ATTRIBUTE_RELEVANT_IF(minWeightReduction, "ForceScattering")

@@ -121,7 +121,7 @@ class DynamicRefinementOptions : public SimulationItem
 {
     ITEM_CONCRETE(DynamicRefinementOptions, SimulationItem, "a set of options for dynamic grid refinement")
 
-        PROPERTY_INT(maxCells, "the maximum number of cells in the grid (zero means no maximum)")
+        PROPERTY_INT(maxCells, "the maximum number of cells in the grid, or zero for no limit")
         ATTRIBUTE_MIN_VALUE(maxCells, "0")
         ATTRIBUTE_MAX_VALUE(maxCells, "2000000000")
         ATTRIBUTE_DEFAULT_VALUE(maxCells, "0")
@@ -143,7 +143,7 @@ class DynamicRefinementOptions : public SimulationItem
         ATTRIBUTE_DEFAULT_VALUE(numIterationsAfterRefinement, "1")
         ATTRIBUTE_DISPLAYED_IF(numIterationsAfterRefinement, "Level3")
 
-        PROPERTY_INT(maxRounds, "the maximum number of refinement rounds in each loop (zero means no maximum)")
+        PROPERTY_INT(maxRounds, "the maximum number of refinement rounds in each loop, or zero for no limit")
         ATTRIBUTE_MIN_VALUE(maxRounds, "0")
         ATTRIBUTE_MAX_VALUE(maxRounds, "1000")
         ATTRIBUTE_DEFAULT_VALUE(maxRounds, "0")

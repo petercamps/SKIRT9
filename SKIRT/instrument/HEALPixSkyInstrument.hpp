@@ -84,7 +84,7 @@ class HEALPixSkyInstrument : public PeelOffInstrument
                   "a HEALPix all-sky instrument (for Planck-like observations inside a model)")
         ATTRIBUTE_TYPE_DISPLAYED_IF(HEALPixSkyInstrument, "Level2")
 
-        PROPERTY_INT(order, "HEALPix order")
+        PROPERTY_INT(order, "the HEALPix order")
         ATTRIBUTE_MIN_VALUE(order, "0")
         ATTRIBUTE_MAX_VALUE(order, "15")
         ATTRIBUTE_DEFAULT_VALUE(order, "6")

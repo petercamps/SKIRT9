@@ -49,7 +49,7 @@ class ConicalShellGeometry : public AxGeometry
     ITEM_CONCRETE(ConicalShellGeometry, AxGeometry, "a conical shell geometry")
         ATTRIBUTE_TYPE_DISPLAYED_IF(ConicalShellGeometry, "Level2")
 
-        PROPERTY_DOUBLE(exponent, "the radial powerlaw exponent p of the conical shell")
+        PROPERTY_DOUBLE(exponent, "the radial power-law exponent p of the conical shell")
         ATTRIBUTE_MIN_VALUE(exponent, "[0")
 
         PROPERTY_DOUBLE(index, "the polar index q of the conical shell")

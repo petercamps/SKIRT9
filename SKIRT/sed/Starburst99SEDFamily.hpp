@@ -35,7 +35,7 @@
     t\,(\mathrm{yr}) \f] */
 class Starburst99SEDFamily : public SEDFamily
 {
-    ITEM_CONCRETE(Starburst99SEDFamily, SEDFamily, "a Starburst99 SED family for single stellar populations")
+    ITEM_CONCRETE(Starburst99SEDFamily, SEDFamily, "a Starburst99 SED family for simple stellar populations")
     ITEM_END()
 
     //============= Construction - Setup - Destruction =============
