@@ -19,7 +19,7 @@
 class FrameInstrument : public DistantInstrument
 {
     ITEM_CONCRETE(FrameInstrument, DistantInstrument,
-                  "a distant instrument that outputs the surface brightness in every pixel as a data cube")
+                  "a distant instrument that outputs the surface brightness as a data cube")
 
         PROPERTY_DOUBLE(fieldOfViewX, "the total field of view in the horizontal direction")
         ATTRIBUTE_QUANTITY(fieldOfViewX, "length")

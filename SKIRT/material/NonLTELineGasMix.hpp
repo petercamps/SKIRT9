@@ -491,7 +491,7 @@ class NonLTELineGasMix : public EmittingGasMix
     ENUM_DEF(InitialLevelPopsCase, LTE, CollisionallyExcited, Custom)
         ENUM_VAL(InitialLevelPopsCase, LTE, "LTE (the detailed balance condition between collisional transitions)")
         ENUM_VAL(InitialLevelPopsCase, CollisionallyExcited,
-                 "the detailed balance condition between collisional transitions and spontaneous emission")
+                 "detailed balance between collisional transitions and spontaneous emission")
         ENUM_VAL(InitialLevelPopsCase, Custom, "custom level populations provided in a file")
     ENUM_END()
 
@@ -530,21 +530,21 @@ class NonLTELineGasMix : public EmittingGasMix
         ATTRIBUTE_DISPLAYED_IF(defaultTurbulenceVelocity, "Level2")
 
         PROPERTY_DOUBLE(maxChangeInLevelPopulations,
-                        "the maximum relative change for the level populations in a cell to be considered converged")
+                        "the maximum relative change of the level populations for a converged cell")
         ATTRIBUTE_MIN_VALUE(maxChangeInLevelPopulations, "[0")
         ATTRIBUTE_MAX_VALUE(maxChangeInLevelPopulations, "1]")
         ATTRIBUTE_DEFAULT_VALUE(maxChangeInLevelPopulations, "0.05")
         ATTRIBUTE_DISPLAYED_IF(maxChangeInLevelPopulations, "Level2")
 
         PROPERTY_DOUBLE(maxFractionNotConvergedCells,
-                        "the maximum fraction of not-converged cells for all cells to be considered converged")
+                        "the maximum fraction of non-converged cells for global convergence")
         ATTRIBUTE_MIN_VALUE(maxFractionNotConvergedCells, "[0")
         ATTRIBUTE_MAX_VALUE(maxFractionNotConvergedCells, "1]")
         ATTRIBUTE_DEFAULT_VALUE(maxFractionNotConvergedCells, "0.01")
         ATTRIBUTE_DISPLAYED_IF(maxFractionNotConvergedCells, "Level2")
 
         PROPERTY_DOUBLE(maxChangeInGlobalLevelPopulations,
-                        "the maximum relative change for the global level populations to be considered converged")
+                        "the maximum relative change of the global level populations for convergence")
         ATTRIBUTE_MIN_VALUE(maxChangeInGlobalLevelPopulations, "[0")
         ATTRIBUTE_MAX_VALUE(maxChangeInGlobalLevelPopulations, "1]")
         ATTRIBUTE_DEFAULT_VALUE(maxChangeInGlobalLevelPopulations, "0.05")
@@ -573,7 +573,7 @@ class NonLTELineGasMix : public EmittingGasMix
         ATTRIBUTE_DISPLAYED_IF(updateDynamicStatesFlag, "Level3")
 
         PROPERTY_BOOL(errorForGaussianIntegral,
-                      "treat insufficient Gaussian-integral accuracy as a fatal error (otherwise issue a warning)")
+                      "treat an inaccurate Gaussian integral as a fatal error rather than a warning")
         ATTRIBUTE_DEFAULT_VALUE(errorForGaussianIntegral, "true")
         ATTRIBUTE_DISPLAYED_IF(errorForGaussianIntegral, "Level3")
 

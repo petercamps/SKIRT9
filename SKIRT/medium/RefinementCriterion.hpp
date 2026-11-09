@@ -71,14 +71,12 @@ class RefinementCriterion : public SimulationItem
         PROPERTY_ITEM_LIST(conditions, RefinementCondition, "the conditions that restrict the criterion")
         ATTRIBUTE_REQUIRED_IF(conditions, "false")
 
-        PROPERTY_INT(maxExtraLevels, "the maximum number of levels a cell may gain beyond its initial level "
-                                     "through this criterion (zero means no limit)")
+        PROPERTY_INT(maxExtraLevels, "the maximum number of extra levels through this criterion, or zero for no limit")
         ATTRIBUTE_MIN_VALUE(maxExtraLevels, "0")
         ATTRIBUTE_MAX_VALUE(maxExtraLevels, "99")
         ATTRIBUTE_DEFAULT_VALUE(maxExtraLevels, "0")
 
-        PROPERTY_DOUBLE(minColumnDensity, "the column density below which this criterion does not subdivide a cell "
-                                          "(zero means no limit)")
+        PROPERTY_DOUBLE(minColumnDensity, "the column density below which this criterion does not subdivide a cell")
         ATTRIBUTE_QUANTITY(minColumnDensity, "numbersurfacedensity")
         ATTRIBUTE_MIN_VALUE(minColumnDensity, "[0")
         ATTRIBUTE_DEFAULT_VALUE(minColumnDensity, "0")

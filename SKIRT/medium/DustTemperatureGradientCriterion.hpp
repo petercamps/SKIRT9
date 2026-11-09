@@ -43,7 +43,7 @@ class MediumSystem;
 class DustTemperatureGradientCriterion : public GradientCriterion
 {
     ITEM_CONCRETE(DustTemperatureGradientCriterion, GradientCriterion,
-                  "a criterion on the difference of the indicative dust temperature between neighboring cells")
+                  "a criterion on the difference of the dust temperature between neighboring cells")
         ATTRIBUTE_TYPE_ALLOWED_IF(DustTemperatureGradientCriterion, "DustMix&RadiationField")
     ITEM_END()
 

@@ -53,18 +53,16 @@ class SpheroidalSilicateGrainComposition : public PolarizedSilicateGrainComposit
         PROPERTY_ENUM(tableType, TableType, "the type of emission tables to use")
         ATTRIBUTE_DEFAULT_VALUE(tableType, "Builtin")
 
-        PROPERTY_STRING(emissionTable, "the name of the file tabulating properties for polarized emission by "
-                                       "arbitrarily aligned spheroidal grains")
+        PROPERTY_STRING(emissionTable,
+                        "the file tabulating polarized emission by arbitrarily aligned spheroidal grains")
         ATTRIBUTE_RELEVANT_IF(emissionTable, "tableTypeOneTable")
 
-        PROPERTY_STRING(
-            alignedEmissionTable,
-            "the name of the file tabulating properties for polarized emission by perfectly aligned spheroidal grains")
+        PROPERTY_STRING(alignedEmissionTable,
+                        "the file tabulating polarized emission by perfectly aligned spheroidal grains")
         ATTRIBUTE_RELEVANT_IF(alignedEmissionTable, "tableTypeTwoTables")
 
-        PROPERTY_STRING(
-            nonAlignedEmissionTable,
-            "the name of the file tabulating properties for polarized emission by non-aligned spheroidal grains")
+        PROPERTY_STRING(nonAlignedEmissionTable,
+                        "the file tabulating polarized emission by non-aligned spheroidal grains")
         ATTRIBUTE_RELEVANT_IF(nonAlignedEmissionTable, "tableTypeTwoTables")
 
         PROPERTY_DOUBLE(alignmentFraction,

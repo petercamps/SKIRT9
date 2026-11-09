@@ -49,7 +49,7 @@
 class TemperatureWavelengthCellLibrary : public SpatialCellLibrary
 {
     ITEM_CONCRETE(TemperatureWavelengthCellLibrary, SpatialCellLibrary,
-                  "a library scheme for grouping spatial cells based on indicative temperature and wavelength")
+                  "a library scheme grouping cells by indicative temperature and wavelength")
         ATTRIBUTE_TYPE_INSERT(TemperatureWavelengthCellLibrary, "NonIdentitySpatialCellLibrary")
 
         PROPERTY_INT(numTemperatures, "the number of temperature bins")

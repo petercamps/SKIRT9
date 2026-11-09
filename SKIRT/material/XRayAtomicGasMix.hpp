@@ -305,7 +305,7 @@ class XRayAtomicGasMix : public MaterialMix
     ENUM_END()
 
     ITEM_CONCRETE(XRayAtomicGasMix, MaterialMix,
-                  "A neutral gas mix supporting photo-absorption and fluorescence at X-ray wavelengths")
+                  "a neutral gas mix with photo-absorption and fluorescence at X-ray wavelengths")
         ATTRIBUTE_TYPE_INSERT(XRayAtomicGasMix, "GasMix")
 
         PROPERTY_DOUBLE_LIST(abundancies, "the abundancies for the elements with atomic number Z = 1,...,30")

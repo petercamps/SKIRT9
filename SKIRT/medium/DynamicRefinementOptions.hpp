@@ -126,14 +126,12 @@ class DynamicRefinementOptions : public SimulationItem
         ATTRIBUTE_MAX_VALUE(maxCells, "2000000000")
         ATTRIBUTE_DEFAULT_VALUE(maxCells, "0")
 
-        PROPERTY_INT(numIterationsBeforeRefinement,
-                     "the number of initial iterations of each loop during which refinement is not considered")
+        PROPERTY_INT(numIterationsBeforeRefinement, "the number of initial iterations in each loop without refinement")
         ATTRIBUTE_MIN_VALUE(numIterationsBeforeRefinement, "0")
         ATTRIBUTE_MAX_VALUE(numIterationsBeforeRefinement, "1000")
         ATTRIBUTE_DEFAULT_VALUE(numIterationsBeforeRefinement, "5")
 
-        PROPERTY_INT(numAveragedIterations,
-                     "the number of iterations over which the refinement fields are averaged before each decision")
+        PROPERTY_INT(numAveragedIterations, "the number of iterations over which the refinement fields are averaged")
         ATTRIBUTE_MIN_VALUE(numAveragedIterations, "1")
         ATTRIBUTE_MAX_VALUE(numAveragedIterations, "1000")
         ATTRIBUTE_DEFAULT_VALUE(numAveragedIterations, "3")
@@ -151,8 +149,7 @@ class DynamicRefinementOptions : public SimulationItem
         ATTRIBUTE_DEFAULT_VALUE(maxRounds, "0")
 
         PROPERTY_DOUBLE(minCandidateFraction,
-                        "the fraction of the number of cells below which the candidates do not lead to a refinement "
-                        "round")
+                        "the minimum fraction of cells that must be candidates for a refinement round")
         ATTRIBUTE_MIN_VALUE(minCandidateFraction, "[0")
         ATTRIBUTE_MAX_VALUE(minCandidateFraction, "1]")
         ATTRIBUTE_DEFAULT_VALUE(minCandidateFraction, "1e-3")

@@ -62,7 +62,7 @@ class ClumpyGeometryDecorator : public GenGeometry
         ATTRIBUTE_DEFAULT_VALUE(smoothingKernel, "CubicSplineSmoothingKernel")
         ATTRIBUTE_DISPLAYED_IF(smoothingKernel, "Level2")
 
-        PROPERTY_INT(seed, "the seed for the random clump position generator, or zero to use the default generator")
+        PROPERTY_INT(seed, "the seed for the random clump positions, or zero to use the default generator")
         ATTRIBUTE_MIN_VALUE(seed, "0")
         ATTRIBUTE_MAX_VALUE(seed, "1000000")
         ATTRIBUTE_DEFAULT_VALUE(seed, "0")

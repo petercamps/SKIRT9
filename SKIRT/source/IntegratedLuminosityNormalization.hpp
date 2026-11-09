@@ -24,7 +24,7 @@ class IntegratedLuminosityNormalization : public LuminosityNormalization
     ENUM_END()
 
     ITEM_CONCRETE(IntegratedLuminosityNormalization, LuminosityNormalization,
-                  "source normalization through the integrated luminosity for a given wavelength range")
+                  "source normalization through the integrated luminosity in a wavelength range")
 
         PROPERTY_ENUM(wavelengthRange, WavelengthRange,
                       "the wavelength range for which to provide the integrated luminosity")

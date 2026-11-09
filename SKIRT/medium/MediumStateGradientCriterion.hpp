@@ -52,7 +52,7 @@ class MediumSystem;
 class MediumStateGradientCriterion : public GradientCriterion
 {
     ITEM_CONCRETE(MediumStateGradientCriterion, GradientCriterion,
-                  "a criterion on the difference of a medium state variable between neighboring cells")
+                  "a criterion on the difference of a state variable between neighboring cells")
         ATTRIBUTE_TYPE_ALLOWED_IF(MediumStateGradientCriterion, "CustomMediumState")
 
         PROPERTY_STRING(variable, "the name of the medium state variable")

@@ -62,8 +62,7 @@ class GradientCriterion : public RefinementCriterion
         ATTRIBUTE_MIN_VALUE(maxChange, "]0")
         ATTRIBUTE_MAX_VALUE(maxChange, "1e300")
 
-        PROPERTY_DOUBLE(significance, "the number of standard errors by which a difference must exceed the "
-                                      "threshold (zero means no noise test)")
+        PROPERTY_DOUBLE(significance, "the noise margin in standard errors above the threshold, or zero for none")
         ATTRIBUTE_MIN_VALUE(significance, "[0")
         ATTRIBUTE_MAX_VALUE(significance, "100]")
         ATTRIBUTE_DEFAULT_VALUE(significance, "0")

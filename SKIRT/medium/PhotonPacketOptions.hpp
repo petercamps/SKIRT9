@@ -72,8 +72,7 @@ class PhotonPacketOptions : public SimulationItem
         ATTRIBUTE_RELEVANT_IF(minWeightReduction, "ForceScattering")
         ATTRIBUTE_DISPLAYED_IF(minWeightReduction, "Level3")
 
-        PROPERTY_INT(minScattEvents,
-                     "the minimum number of forced scattering events before a photon packet is terminated")
+        PROPERTY_INT(minScattEvents, "the minimum number of forced scattering events before terminating a packet")
         ATTRIBUTE_MIN_VALUE(minScattEvents, "0")
         ATTRIBUTE_MAX_VALUE(minScattEvents, "1000")
         ATTRIBUTE_DEFAULT_VALUE(minScattEvents, "0")

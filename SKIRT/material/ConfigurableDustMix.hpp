@@ -25,7 +25,7 @@ class ConfigurableDustMix : public MultiGrainDustMix
                  "use the phase function derived from actual material properties (unpolarized)")
         ENUM_VAL(ScatteringType, SphericalPolarization, "support polarization through scattering by spherical grains")
         ENUM_VAL(ScatteringType, SpheroidalPolarization,
-                 "support polarization through scattering, absorption and emission by spheroidal grains")
+                 "support polarized scattering, absorption and emission by spheroidal grains")
     ENUM_END()
 
     ITEM_CONCRETE(ConfigurableDustMix, MultiGrainDustMix, "a configurable dust mix with one or more grain populations")

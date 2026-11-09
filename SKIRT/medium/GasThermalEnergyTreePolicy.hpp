@@ -55,7 +55,7 @@ class Medium;
 class GasThermalEnergyTreePolicy : public TreePolicy
 {
     ITEM_CONCRETE(GasThermalEnergyTreePolicy, TreePolicy,
-                  "a tree subdivision policy limiting the fraction of the gas thermal energy in a cell")
+                  "a tree subdivision policy limiting the gas thermal energy fraction per cell")
         ATTRIBUTE_TYPE_ALLOWED_IF(GasThermalEnergyTreePolicy, "GasMix")
         ATTRIBUTE_TYPE_DISPLAYED_IF(GasThermalEnergyTreePolicy, "Level2")
 

@@ -16,7 +16,7 @@
 class SEDInstrument : public ApertureInstrument
 {
     ITEM_CONCRETE(SEDInstrument, ApertureInstrument,
-                  "a distant instrument that outputs the spatially integrated flux density as an SED")
+                  "a distant instrument that outputs the integrated flux density as an SED")
     ITEM_END()
 
     //============= Construction - Setup - Destruction =============

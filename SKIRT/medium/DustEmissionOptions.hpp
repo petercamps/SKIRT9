@@ -85,22 +85,20 @@ class DustEmissionOptions : public SimulationItem, public SourceWavelengthRangeI
                       "the wavelength grid for calculating the dust emission spectrum")
         ATTRIBUTE_DEFAULT_VALUE(dustEmissionWLG, "LogWavelengthGrid")
 
-        PROPERTY_DOUBLE(maxFractionOfPrimary, "convergence is reached when the total absorbed dust luminosity "
-                                              "is less than this fraction of the total absorbed primary luminosity")
+        PROPERTY_DOUBLE(maxFractionOfPrimary,
+                        "the absorbed dust/primary luminosity ratio below which dust emission converges")
         ATTRIBUTE_MIN_VALUE(maxFractionOfPrimary, "]0")
         ATTRIBUTE_MAX_VALUE(maxFractionOfPrimary, "1[")
         ATTRIBUTE_DEFAULT_VALUE(maxFractionOfPrimary, "0.01")
         ATTRIBUTE_RELEVANT_IF(maxFractionOfPrimary, "IterateSecondary")
 
-        PROPERTY_DOUBLE(maxLuminosityDeficit, "convergence requires the mean deficit of the escaping dust "
-                                              "luminosity relative to the absorbed primary luminosity to be smaller")
+        PROPERTY_DOUBLE(maxLuminosityDeficit, "the maximum mean relative deficit of the escaping dust luminosity")
         ATTRIBUTE_MIN_VALUE(maxLuminosityDeficit, "]0")
         ATTRIBUTE_MAX_VALUE(maxLuminosityDeficit, "1[")
         ATTRIBUTE_DEFAULT_VALUE(maxLuminosityDeficit, "0.01")
         ATTRIBUTE_RELEVANT_IF(maxLuminosityDeficit, "IterateSecondary")
 
-        PROPERTY_DOUBLE(maxSecondaryChange, "convergence requires the mean relative change per iteration "
-                                            "of the absorbed secondary luminosity to be smaller")
+        PROPERTY_DOUBLE(maxSecondaryChange, "the maximum mean relative change of the absorbed secondary luminosity")
         ATTRIBUTE_MIN_VALUE(maxSecondaryChange, "]0")
         ATTRIBUTE_MAX_VALUE(maxSecondaryChange, "1[")
         ATTRIBUTE_DEFAULT_VALUE(maxSecondaryChange, "0.01")
@@ -138,8 +136,7 @@ class DustEmissionOptions : public SimulationItem, public SourceWavelengthRangeI
         ATTRIBUTE_DEFAULT_VALUE(sourceWeight, "1")
         ATTRIBUTE_DISPLAYED_IF(sourceWeight, "Level3")
 
-        PROPERTY_DOUBLE(wavelengthBias,
-                        "the fraction of secondary photon packet wavelengths sampled from a bias distribution")
+        PROPERTY_DOUBLE(wavelengthBias, "the fraction of secondary packet wavelengths sampled from a bias distribution")
         ATTRIBUTE_MIN_VALUE(wavelengthBias, "[0")
         ATTRIBUTE_MAX_VALUE(wavelengthBias, "1]")
         ATTRIBUTE_DEFAULT_VALUE(wavelengthBias, "0.5")

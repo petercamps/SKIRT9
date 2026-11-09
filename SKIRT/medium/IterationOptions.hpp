@@ -27,8 +27,7 @@
     per cell. */
 class IterationOptions : public SimulationItem
 {
-    ITEM_CONCRETE(IterationOptions, SimulationItem,
-                  "a set of options for configuring iterations during primary and/or secondary emission")
+    ITEM_CONCRETE(IterationOptions, SimulationItem, "a set of options for primary and/or secondary emission iterations")
 
         PROPERTY_INT(minPrimaryIterations, "the minimum number of iterations during primary emission")
         ATTRIBUTE_MIN_VALUE(minPrimaryIterations, "1")
@@ -60,7 +59,7 @@ class IterationOptions : public SimulationItem
         ATTRIBUTE_DISPLAYED_IF(includePrimaryEmission, "Level3")
 
         PROPERTY_DOUBLE(primaryIterationPacketsMultiplier,
-                        "the multiplier on the number of photon packets launched for each primary emission iteration")
+                        "the multiplier on the number of packets for each primary iteration")
         ATTRIBUTE_MIN_VALUE(primaryIterationPacketsMultiplier, "]0")
         ATTRIBUTE_MAX_VALUE(primaryIterationPacketsMultiplier, "1000]")
         ATTRIBUTE_DEFAULT_VALUE(primaryIterationPacketsMultiplier, "1")
@@ -84,8 +83,7 @@ class IterationOptions : public SimulationItem
         ATTRIBUTE_DISPLAYED_IF(primaryIterationPacketsRamp, "Level3")
 
         PROPERTY_DOUBLE(primaryIterationPacketsPerCell,
-                        "the number of photon packets per spatial cell launched for each primary emission iteration "
-                        "(zero means no scaling with the number of cells)")
+                        "the number of packets per cell for each primary iteration, or zero to disable")
         ATTRIBUTE_MIN_VALUE(primaryIterationPacketsPerCell, "[0")
         ATTRIBUTE_MAX_VALUE(primaryIterationPacketsPerCell, "1e9]")
         ATTRIBUTE_DEFAULT_VALUE(primaryIterationPacketsPerCell, "0")
@@ -93,7 +91,7 @@ class IterationOptions : public SimulationItem
         ATTRIBUTE_DISPLAYED_IF(primaryIterationPacketsPerCell, "Level3")
 
         PROPERTY_DOUBLE(secondaryIterationPacketsMultiplier,
-                        "the multiplier on the number of photon packets launched for each secondary emission iteration")
+                        "the multiplier on the number of packets for each secondary iteration")
         ATTRIBUTE_MIN_VALUE(secondaryIterationPacketsMultiplier, "]0")
         ATTRIBUTE_MAX_VALUE(secondaryIterationPacketsMultiplier, "1000]")
         ATTRIBUTE_DEFAULT_VALUE(secondaryIterationPacketsMultiplier, "1")

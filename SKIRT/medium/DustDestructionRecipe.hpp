@@ -55,8 +55,7 @@ class DustDestructionRecipe : public DynamicStateRecipe
         ATTRIBUTE_MAX_VALUE(densityFractionTolerance, "0.5]")
         ATTRIBUTE_DEFAULT_VALUE(densityFractionTolerance, "0.05")
 
-        PROPERTY_DOUBLE(significance, "the number of standard errors of the radiation field by which the "
-                                      "convergence tolerance is widened (zero means no noise allowance)")
+        PROPERTY_DOUBLE(significance, "the noise allowance in standard errors of the radiation field, or zero for none")
         ATTRIBUTE_MIN_VALUE(significance, "[0")
         ATTRIBUTE_MAX_VALUE(significance, "100]")
         ATTRIBUTE_DEFAULT_VALUE(significance, "0")

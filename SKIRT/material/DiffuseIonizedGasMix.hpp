@@ -398,13 +398,11 @@ class DiffuseIonizedGasMix : public EmittingGasMix
         ATTRIBUTE_DEFAULT_VALUE(defaultTemperature, "10000")
         ATTRIBUTE_DISPLAYED_IF(defaultTemperature, "Level2")
 
-        PROPERTY_BOOL(useCloudyTemperature,
-                      "use the Cloudy-tabulated temperature (disabling keeps T fixed at defaultTemperature)")
+        PROPERTY_BOOL(useCloudyTemperature, "use the Cloudy-tabulated temperature (otherwise defaultTemperature)")
         ATTRIBUTE_DEFAULT_VALUE(useCloudyTemperature, "true")
         ATTRIBUTE_DISPLAYED_IF(useCloudyTemperature, "Level3")
 
-        PROPERTY_BOOL(useCloudyOpacity,
-                      "use the Cloudy-tabulated opacity (disabling falls back to Verner bound-free opacity)")
+        PROPERTY_BOOL(useCloudyOpacity, "use the Cloudy-tabulated opacity (otherwise Verner bound-free opacity)")
         ATTRIBUTE_DEFAULT_VALUE(useCloudyOpacity, "true")
         ATTRIBUTE_DISPLAYED_IF(useCloudyOpacity, "Level3")
 

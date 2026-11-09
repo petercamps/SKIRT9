@@ -16,7 +16,7 @@
 class SpectralTimeMapInstrument : public TimeInstrument
 {
     ITEM_CONCRETE(SpectralTimeMapInstrument, TimeInstrument,
-                  "a distant instrument that outputs the spatially integrated flux density as a spectral time map")
+                  "a distant instrument that outputs a spectral time map of the integrated flux")
     ITEM_END()
 
     //============= Construction - Setup - Destruction =============

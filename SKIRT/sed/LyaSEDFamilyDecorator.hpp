@@ -28,7 +28,7 @@
 class LyaSEDFamilyDecorator : public SEDFamily
 {
     ITEM_CONCRETE(LyaSEDFamilyDecorator, SEDFamily,
-                  "an SED family decorator replacing ionizing radiation with Lyman-alpha line emission")
+                  "an SED family decorator replacing ionizing radiation by Lyman-alpha emission")
         ATTRIBUTE_TYPE_DISPLAYED_IF(LyaSEDFamilyDecorator, "Resonance|Level3")
 
         PROPERTY_ITEM(sedFamilyOriginal, SEDFamily, "the original SED family being adjusted")

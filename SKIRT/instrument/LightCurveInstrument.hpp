@@ -34,7 +34,7 @@
 class LightCurveInstrument : public TimeInstrument
 {
     ITEM_CONCRETE(LightCurveInstrument, TimeInstrument,
-                  "a distant instrument that outputs the spatially integrated flux density as a light curve")
+                  "a distant instrument that outputs the integrated flux density as a light curve")
     ITEM_END()
 
     //============= Construction - Setup - Destruction =============

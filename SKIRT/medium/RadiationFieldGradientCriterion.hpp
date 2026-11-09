@@ -46,7 +46,7 @@ class MediumSystem;
 class RadiationFieldGradientCriterion : public GradientCriterion
 {
     ITEM_CONCRETE(RadiationFieldGradientCriterion, GradientCriterion,
-                  "a criterion on the difference of the integrated mean intensity between neighboring cells")
+                  "a criterion on the difference of the mean intensity between neighboring cells")
         ATTRIBUTE_TYPE_ALLOWED_IF(RadiationFieldGradientCriterion, "RadiationField")
 
         PROPERTY_DOUBLE(minWavelength, "the shortest wavelength of the integration range")

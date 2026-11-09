@@ -40,7 +40,7 @@ class DustMixFragment;
 class FragmentDustMixDecorator : public MaterialMix, public MultiGrainPopulationInterface
 {
     ITEM_CONCRETE(FragmentDustMixDecorator, MaterialMix,
-                  "a dust mix decorator that manages separate densities for fragments of another dust mix")
+                  "a decorator managing separate densities for fragments of a dust mix")
         ATTRIBUTE_TYPE_INSERT(FragmentDustMixDecorator, "CustomMediumState")
         ATTRIBUTE_TYPE_DISPLAYED_IF(FragmentDustMixDecorator, "Level2")
 

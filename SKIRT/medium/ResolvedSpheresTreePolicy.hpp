@@ -45,7 +45,7 @@ class ResolvedSpheresTreePolicy : public TreePolicy
         ATTRIBUTE_MAX_VALUE(numBins, "10000")
         ATTRIBUTE_DEFAULT_VALUE(numBins, "10")
 
-        PROPERTY_DOUBLE(reach, "the distance from the center, in sphere radii, out to which to resolve each sphere")
+        PROPERTY_DOUBLE(reach, "the distance in sphere radii out to which to resolve each sphere")
         ATTRIBUTE_MIN_VALUE(reach, "]0")
         ATTRIBUTE_MAX_VALUE(reach, "100]")
         ATTRIBUTE_DEFAULT_VALUE(reach, "1")

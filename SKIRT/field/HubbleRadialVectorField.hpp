@@ -25,7 +25,7 @@
 class HubbleRadialVectorField : public VectorField
 {
     ITEM_CONCRETE(HubbleRadialVectorField, VectorField,
-                  "a Hubble flow pointing away from the origin with a constant acceleration and decelaration")
+                  "a radial Hubble flow with a constant acceleration or deceleration")
         ATTRIBUTE_TYPE_INSERT(HubbleRadialVectorField, "InMedia:MediaDimension3,Dimension3;SourceDimension3,Dimension3")
 
         PROPERTY_DOUBLE(turnoverRadius, "the turnover radius marking the transition from acceleration to decelaration")
