@@ -40,7 +40,8 @@ class XRayIonicGasMixFamily : public MaterialMixFamily
         ENUM_VAL(ElectronScattering, FreeBound, "use an interpolation of free- and bound-electron Compton scattering")
     ENUM_END()
 
-    ITEM_CONCRETE(XRayIonicGasMixFamily, MaterialMixFamily, "a family of ionic mixes for each cell")
+    ITEM_CONCRETE(XRayIonicGasMixFamily, MaterialMixFamily,
+                  "a family of X-ray ionic gas mixes with imported abundances and temperature")
         ATTRIBUTE_TYPE_INSERT(XRayIonicGasMixFamily, "GasMix")
 
         PROPERTY_STRING(ions, "the names of the ions for each element (e.g. H,He+,Li+1,..)")
