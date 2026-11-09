@@ -11,6 +11,7 @@
 #include "SEDFamily.hpp"
 #include "Source.hpp"
 class Band;
+class Box;
 class Snapshot;
 
 //////////////////////////////////////////////////////////////////////
@@ -45,6 +46,16 @@ class Snapshot;
     option is enabled, the provided current mass can be used for probing the input model. This is
     relevant because %SED families usually do not request the current mass as a parameter (they
     often use the initial mass instead, or do not include direct mass information at all).
+
+    <em>Entities outside the spatial grid</em>
+
+    If the simulation includes a medium, the fraction of the luminosity of each imported source
+    that is emitted by entities located outside the bounding box of the spatial grid is reported
+    at the end of setup. Only the characteristic position of each entity (for example, the
+    particle position or the cell center) is considered, regardless of its extent. It is natural
+    for some entities to lie outside the grid, but if they emit a large fraction of the
+    luminosity, the imported data were often prepared incorrectly, for example with positions in
+    the wrong units or relative to the wrong origin.
 
     <em>%Source biasing</em>
 
@@ -230,6 +241,12 @@ public:
         simulation. To preserve proper data encapsulation, this function should \em not be called
         from anywhere else in the simulation machinery. */
     const Snapshot* snapshot() const;
+
+    /** This function returns the fraction of the luminosity of this source, integrated over its
+        wavelength range, that is emitted by the snapshot entities whose characteristic position
+        lies outside the specified box, or zero if the source has no luminosity. It is used to
+        compare the imported source with the spatial grid, as described in the class header. */
+    double luminosityFractionOutside(const Box& box) const;
 
     //======================== Data Members ========================
 

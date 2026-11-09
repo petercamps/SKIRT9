@@ -301,8 +301,9 @@ protected:
         setup() function and notifies the probe system when setup has been completed. */
     void setupSimulation() override;
 
-    /** This function constructs a SecondarySourceSystem object if the simulation configuration
-        requires secondary emission. */
+    /** This function reports imported sources with a significant fraction of their luminosity
+        outside the spatial grid (see reportImportedLuminosityOutsideGrid()), and constructs a
+        SecondarySourceSystem object if the simulation configuration requires secondary emission. */
     void setupSelfAfter() override;
 
     //======== Getters for Non-Discoverable Properties =======
@@ -461,6 +462,13 @@ private:
         the criteria described for the DustEmissionOptions class, and false otherwise. The function
         also returns true if the absorbed primary or secondary luminosity is zero. */
     bool isDustEmissionConverged(double Lemitted);
+
+    /** If the simulation includes a medium, this function logs, for each imported primary source,
+        the fraction of its luminosity that is emitted by entities located outside the bounding box
+        of the spatial grid. If that fraction is significant, the message is issued as a warning
+        that advises checking the imported data. See the ImportedSource class for more information.
+        Other sources, such as background sources, are not checked. */
+    void reportImportedLuminosityOutsideGrid();
 
     /** If the simulation accumulates the dust-absorbed luminosity per cell (see the
         MediumSystem::hasExactDustAbsorption() function), this function logs the fraction of the

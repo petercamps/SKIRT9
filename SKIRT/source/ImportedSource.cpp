@@ -5,6 +5,7 @@
 
 #include "ImportedSource.hpp"
 #include "Band.hpp"
+#include "Box.hpp"
 #include "Configuration.hpp"
 #include "FatalError.hpp"
 #include "Log.hpp"
@@ -394,6 +395,20 @@ void ImportedSource::launch(PhotonPacket* pp, size_t historyIndex, double L) con
 const Snapshot* ImportedSource::snapshot() const
 {
     return _snapshot;
+}
+
+////////////////////////////////////////////////////////////////////
+
+double ImportedSource::luminosityFractionOutside(const Box& box) const
+{
+    double fraction = 0.;
+    if (_L > 0.)
+    {
+        int M = _snapshot->numEntities();
+        for (int m = 0; m != M; ++m)
+            if (!box.contains(_snapshot->position(m))) fraction += _Lv[m];
+    }
+    return fraction;
 }
 
 ////////////////////////////////////////////////////////////////////

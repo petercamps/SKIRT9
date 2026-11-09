@@ -5,6 +5,7 @@
 
 #include "MonteCarloSimulation.hpp"
 #include "EscapeInstrument.hpp"
+#include "ImportedSource.hpp"
 #include "Log.hpp"
 #include "Parallel.hpp"
 #include "ParallelFactory.hpp"
@@ -12,6 +13,7 @@
 #include "ProcessManager.hpp"
 #include "SecondarySourceSystem.hpp"
 #include "ShortArray.hpp"
+#include "SpatialGrid.hpp"
 #include "StringUtils.hpp"
 #include "TimeLogger.hpp"
 
@@ -44,6 +46,9 @@ void MonteCarloSimulation::setupSimulation()
 void MonteCarloSimulation::setupSelfAfter()
 {
     Simulation::setupSelfAfter();
+
+    // report imported sources with a significant fraction of their luminosity outside the spatial grid
+    reportImportedLuminosityOutsideGrid();
 
     // construct a secondary source system to help launch secondary photon packets if required
     if (_config->hasSecondaryEmission()) _secondarySourceSystem = new SecondarySourceSystem(this);
@@ -206,6 +211,11 @@ namespace
     // is issued
     constexpr double maxFractionOutsideGrid = 0.01;
 
+    // the fractions of the luminosity of an imported source emitted outside the spatial grid above which an
+    // informational message or a warning is issued
+    constexpr double infoImportedFractionOutsideGrid = 0.01;
+    constexpr double warnImportedFractionOutsideGrid = 0.10;
+
     // returns the sum of the primary and secondary luminosities in the specified pair
     double totalLuminosity(std::pair<double, double> luminosities)
     {
@@ -351,6 +361,32 @@ bool MonteCarloSimulation::isDustEmissionConverged(double Lemitted)
                 + " (criterion " + percentage(maxChange) + ")");
     converged &= change.value() <= maxChange;
     return converged;
+}
+
+////////////////////////////////////////////////////////////////////
+
+void MonteCarloSimulation::reportImportedLuminosityOutsideGrid()
+{
+    if (!_config->hasMedium()) return;
+
+    Box box = mediumSystem()->grid()->boundingBox();
+    for (auto source : sourceSystem()->sources())
+    {
+        auto importedSource = dynamic_cast<const ImportedSource*>(source);
+        if (!importedSource) continue;
+
+        double fraction = importedSource->luminosityFractionOutside(box);
+        if (fraction > infoImportedFractionOutsideGrid)
+        {
+            string message = StringUtils::toString(fraction * 100., 'f', 1) + "% of the luminosity of the "
+                             + importedSource->type() + " imported from " + importedSource->filename()
+                             + " is emitted by entities outside the bounding box of the spatial grid";
+            if (fraction > warnImportedFractionOutsideGrid)
+                log()->warning(message + "; check the positions and their units in the imported data");
+            else
+                log()->info(message);
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////
