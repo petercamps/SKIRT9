@@ -461,7 +461,7 @@ class NonLTELineGasMix : public EmittingGasMix
         ENUM_VAL(Species, SixTimesIonizedSulfur, "six times ionized sulfur (SVII)")
         ENUM_VAL(Species, SevenTimesIonizedSulfur, "seven times ionized sulfur (SVIII)")
         ENUM_VAL(Species, EightTimesIonizedSulfur, "eight times ionized sulfur (SIX)")
-        ENUM_VAL(Species, NineTimesIonizedSulfur, "nine times ionized sulfur (SIX)")
+        ENUM_VAL(Species, NineTimesIonizedSulfur, "nine times ionized sulfur (SX)")
         ENUM_VAL(Species, TenTimesIonizedSulfur, "ten times ionized sulfur (SXI)")
 
         ENUM_VAL(Species, DoublyIonizedArgon, "doubly ionized argon (ArIII)")
