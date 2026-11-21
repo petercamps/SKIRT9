@@ -5,6 +5,7 @@
 
 #include "SphericalClumpBVH.hpp"
 #include "Quadrics.hpp"
+#include <array>
 
 ////////////////////////////////////////////////////////////////////
 
@@ -19,11 +20,74 @@ namespace
     // cost of the linear scan at each leaf, and guarantees the build terminates even when
     // many clumps have coincident or near-coincident centers.
     constexpr int MaxLeafSize = 32;
+
+    // Capacity of the traversal stack that nearestClumpAlongRay() allocates on the call stack.
+    // It accommodates trees with a maximum leaf depth below this value; a deeper tree uses a
+    // thread-local vector instead.
+    constexpr int LocalStackSize = 64;
+
+    // An instance of this class tests the intersection of a given ray with axis-aligned boxes.
+    // The test has the same outcome as Box::intersects(), except that it provides only the entry
+    // distance, but it is faster: the reciprocals of the direction components are calculated
+    // once for the ray rather than for every box, so that the test itself needs no divisions,
+    // and the compiler can inline it in the BVH traversal loop.
+    class RayBoxTest
+    {
+    public:
+        // prepares the test for the ray with starting position r and direction k
+        RayBoxTest(Position r, Direction k) : _x(r.x(), k.x()), _y(r.y(), k.y()), _z(r.z(), k.z()) {}
+
+        // returns true if the ray intersects the box, and in that case stores the distance from
+        // the starting position to the entry point in smin, or zero if the starting position is
+        // inside the box; the edge cases are handled as described for Box::intersects()
+        bool intersects(const Box& box, double& smin) const
+        {
+            smin = -std::numeric_limits<double>::infinity();
+            double smax = std::numeric_limits<double>::infinity();
+            if (!_x.clip(box.xmin(), box.xmax(), smin, smax)) return false;
+            if (!_y.clip(box.ymin(), box.ymax(), smin, smax)) return false;
+            if (!_z.clip(box.zmin(), box.zmax(), smin, smax)) return false;
+            if (smin < 0.) smin = 0.;
+            return true;
+        }
+
+    private:
+        // the starting coordinate and the reciprocal direction component of the ray along one axis
+        class Axis
+        {
+        public:
+            // as in Box::intersects(), a direction component smaller than 1e-9 in absolute value
+            // is considered to be zero, i.e. the ray is parallel to the planes perpendicular to
+            // the axis
+            Axis(double r, double k) : _r{r}, _parallel{abs(k) < 1e-9}, _inv{_parallel ? 0. : 1. / k} {}
+
+            // narrows the distance interval [smin, smax] to the part of the ray between the planes
+            // perpendicular to the axis at coordinates lo and hi, and returns false if the
+            // resulting interval is empty or lies behind the starting position
+            bool clip(double lo, double hi, double& smin, double& smax) const
+            {
+                if (_parallel) return _r >= lo && _r < hi;
+                double s1 = (lo - _r) * _inv;
+                double s2 = (hi - _r) * _inv;
+                if (s1 > s2) std::swap(s1, s2);
+                if (s1 > smin) smin = s1;
+                if (s2 < smax) smax = s2;
+                return smin < smax && smax > 0.;
+            }
+
+        private:
+            double _r;       // starting coordinate
+            bool _parallel;  // true if the direction component is considered to be zero
+            double _inv;     // reciprocal of the direction component, or zero if _parallel is true
+        };
+
+        Axis _x, _y, _z;
+    };
 }
 
 ////////////////////////////////////////////////////////////////////
 
-int SphericalClumpBVH::buildRecursive(int begin, int end)
+int SphericalClumpBVH::buildRecursive(int begin, int end, int depth)
 {
     // aggregate bounding box for this sub-range: the union of the entity boxes referenced
     // by _index[begin,end).
@@ -35,6 +99,7 @@ int SphericalClumpBVH::buildRecursive(int begin, int end)
 
     auto makeLeaf = [&]() {
         _nodes.emplace_back(box, -1, -1, begin, numPrims);
+        _maxDepth = max(_maxDepth, depth);
         return nodeIndex;
     };
 
@@ -181,8 +246,8 @@ int SphericalClumpBVH::buildRecursive(int begin, int end)
     // reserve this node's slot now; children are appended afterwards and get higher
     // indices, so we come back and fill in left/right once the recursion returns
     _nodes.emplace_back(box, -1, -1, 0, 0);
-    int leftIndex = buildRecursive(begin, mid);
-    int rightIndex = buildRecursive(mid, end);
+    int leftIndex = buildRecursive(begin, mid, depth + 1);
+    int rightIndex = buildRecursive(mid, end, depth + 1);
     _nodes[nodeIndex].left = leftIndex;
     _nodes[nodeIndex].right = rightIndex;
     return nodeIndex;
@@ -196,6 +261,7 @@ void SphericalClumpBVH::loadClumps(const vector<Clump>& clumps)
     int numClumps = static_cast<int>(clumps.size());
 
     _nodes.clear();
+    _maxDepth = 0;
     _index.resize(numClumps);
     for (int m = 0; m != numClumps; ++m) _index[m] = m;
 
@@ -204,7 +270,7 @@ void SphericalClumpBVH::loadClumps(const vector<Clump>& clumps)
         // rough heuristic upper bound on the final node count (a binary tree with roughly
         // numEntities/MaxLeafSize leaves has on the order of twice as many nodes total)
         _nodes.reserve(2 * numClumps / MaxLeafSize + 1);
-        buildRecursive(0, numClumps);
+        buildRecursive(0, numClumps, 0);
     }
 }
 
@@ -308,16 +374,27 @@ int SphericalClumpBVH::anyClumpContaining(Vec bfr) const
 ////////////////////////////////////////////////////////////////////
 
 // This is a nearest-first, depth-first traversal with branch-and-bound pruning: a node's
-// ray-box entry distance (from Box::intersects) is a valid lower bound on the entry
-// distance of any clump inside it, so a node whose entry distance is not smaller than the
-// best confirmed hit so far can be skipped outright. Visiting the geometrically nearer
-// child first tends to tighten that bound quickly. Unlike an ordered multi-hit iterator,
-// this only ever needs the single nearest hit, since the caller typically re-queries fresh
-// from its new position after every hit.
+// ray-box entry distance is a valid lower bound on the entry distance of any clump inside
+// it, so a node whose entry distance is not smaller than the best confirmed hit so far can
+// be skipped outright. Visiting the geometrically nearer child first tends to tighten that
+// bound quickly. Unlike an ordered multi-hit iterator, this only ever needs the single
+// nearest hit, since the caller typically re-queries fresh from its new position after
+// every hit.
+//
+// The function is called for every path segment through a clumpy medium, so it is kept
+// free of function calls other than the sphere intersection: the ray-box test is inlined
+// (see RayBoxTest), and the stack is a plain array rather than a std::vector, whose
+// push_back() involves a capacity check and, at least with GCC, an out-of-line function
+// call. The stack never holds more entries than the maximum leaf depth plus one: one
+// pending sibling for each node on the current path below the root, plus the two children
+// of the node being visited. The running bound is kept in a local variable, so that it is
+// not reloaded after every store to the stack.
 int SphericalClumpBVH::nearestClumpAlongRay(Position r0, Direction k, double& sBest) const
 {
     if (_nodes.empty()) return -1;
 
+    RayBoxTest ray(r0, k);
+    double sLimit = sBest;
     int bestIndex = -1;
 
     struct StackEntry
@@ -325,17 +402,23 @@ int SphericalClumpBVH::nearestClumpAlongRay(Position r0, Direction k, double& sB
         int nodeIndex;
         double boxEntry;
     };
-    thread_local vector<StackEntry> stack;  // thread_local to avoid reallocations on repeated use
-    stack.clear();
-
-    double smin, smax;
-    if (_nodes[0].box.intersects(r0, k, smin, smax) && smin < sBest) stack.push_back({0, smin});
-
-    while (!stack.empty())
+    std::array<StackEntry, LocalStackSize> localStack;
+    StackEntry* stack = localStack.data();
+    if (_maxDepth >= LocalStackSize)
     {
-        StackEntry top = stack.back();
-        stack.pop_back();
-        if (top.boxEntry >= sBest) continue;  // superseded by a tighter bound found meanwhile
+        thread_local vector<StackEntry> t_stack;  // thread_local to avoid reallocations on repeated use
+        t_stack.resize(_maxDepth + 1);
+        stack = t_stack.data();
+    }
+    int numEntries = 0;
+
+    double smin;
+    if (ray.intersects(_nodes[0].box, smin) && smin < sLimit) stack[numEntries++] = {0, smin};
+
+    while (numEntries > 0)
+    {
+        StackEntry top = stack[--numEntries];
+        if (top.boxEntry >= sLimit) continue;  // superseded by a tighter bound found meanwhile
 
         const Node& node = _nodes[top.nodeIndex];
         if (node.isLeaf())
@@ -345,40 +428,41 @@ int SphericalClumpBVH::nearestClumpAlongRay(Position r0, Direction k, double& sB
                 int m = _index[i];
                 const Clump& c = (*_clumps)[m];
                 double s0 = Quadrics::firstIntersectionSphere(r0, k, c.center(), c.radius());
-                if (s0 > 0. && s0 < sBest)
+                if (s0 > 0. && s0 < sLimit)
                 {
-                    sBest = s0;
+                    sLimit = s0;
                     bestIndex = m;
                 }
             }
         }
         else
         {
-            double sminL, smaxL, sminR, smaxR;
-            bool hitL = _nodes[node.left].box.intersects(r0, k, sminL, smaxL) && sminL < sBest;
-            bool hitR = _nodes[node.right].box.intersects(r0, k, sminR, smaxR) && sminR < sBest;
+            double sminL, sminR;
+            bool hitL = ray.intersects(_nodes[node.left].box, sminL) && sminL < sLimit;
+            bool hitR = ray.intersects(_nodes[node.right].box, sminR) && sminR < sLimit;
 
             // push the farther child first so the nearer one is popped (and processed) first
             if (hitL && hitR)
             {
                 if (sminL <= sminR)
                 {
-                    stack.push_back({node.right, sminR});
-                    stack.push_back({node.left, sminL});
+                    stack[numEntries++] = {node.right, sminR};
+                    stack[numEntries++] = {node.left, sminL};
                 }
                 else
                 {
-                    stack.push_back({node.left, sminL});
-                    stack.push_back({node.right, sminR});
+                    stack[numEntries++] = {node.left, sminL};
+                    stack[numEntries++] = {node.right, sminR};
                 }
             }
             else if (hitL)
-                stack.push_back({node.left, sminL});
+                stack[numEntries++] = {node.left, sminL};
             else if (hitR)
-                stack.push_back({node.right, sminR});
+                stack[numEntries++] = {node.right, sminR};
         }
     }
 
+    if (bestIndex >= 0) sBest = sLimit;
     return bestIndex;
 }
 

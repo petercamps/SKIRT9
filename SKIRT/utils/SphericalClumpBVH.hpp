@@ -136,10 +136,14 @@ private:
     // pointer to array with clumps, passed on when bulk-loading the BVH
     const vector<Clump>* _clumps;
 
+    // largest depth of any leaf in the tree (the root has depth zero), determined during the build
+    int _maxDepth{0};
+
     // Recursively builds the BVH using binned SAH over the clumps referenced by
     // _index[begin,end), reordering that sub-range in place. Appends the newly created
-    // node(s) to _nodes and returns the index of the node representing this sub-range.
-    int buildRecursive(int begin, int end);
+    // node(s) to _nodes and returns the index of the node representing this sub-range,
+    // which lies at the specified depth in the tree.
+    int buildRecursive(int begin, int end, int depth);
 };
 
 ////////////////////////////////////////////////////////////////////
